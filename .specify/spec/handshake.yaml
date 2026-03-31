@@ -6,6 +6,7 @@ entities:
       pair: string
       volume: float
       maxPrice: float
+      deadline: int
   - Authorization:
       isAllowed: bool
       reason: string

@@ -22,7 +22,6 @@ module.exports = {
   },
   mocha: {
     timeout: 100000,
-    extension: [".ts"],
-    require: ["ts-node/register"]
+    extension: [".ts"]
   }
 };
