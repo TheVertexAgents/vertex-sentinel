@@ -1,10 +1,7 @@
 import { expect } from "chai";
-import "@nomicfoundation/hardhat-chai-matchers";
-import hre from "hardhat";
-const { ethers } = hre as any;
+import { ethers } from "hardhat";
 import { parseEther } from "ethers";
-import pkgHelpers from "@nomicfoundation/hardhat-network-helpers";
-const { time } = pkgHelpers;
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("RiskRouter", function () {
   let riskRouter: any;
@@ -65,7 +62,7 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(agent, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature) as any)
+      await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeAuthorized")
         .withArgs(await riskRouter.hashTradeIntent(intent), agent.address, intent.pair, intent.volume);
     });
@@ -82,7 +79,7 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(otherAccount, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature) as any)
+      await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeRejected")
         .withArgs(await riskRouter.hashTradeIntent(intent), "Unauthorized or Unregistered Agent");
     });
@@ -120,7 +117,7 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(agent, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature) as any)
+      await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeRejected")
         .withArgs(await riskRouter.hashTradeIntent(intent), "Intent Expired");
     });
@@ -139,7 +136,7 @@ describe("RiskRouter", function () {
   
         const signature = await getSignature(agent, intent);
   
-        await expect(riskRouter.authorizeTrade(intent, signature) as any)
+        await expect(riskRouter.authorizeTrade(intent, signature))
           .to.emit(riskRouter, "TradeRejected")
           .withArgs(await riskRouter.hashTradeIntent(intent), "Circuit Breaker: Volume Exceeded");
       });
