@@ -1,7 +1,7 @@
-import pkgChai from "chai";
-const { expect } = pkgChai;
+import { expect } from "chai";
+import "@nomicfoundation/hardhat-chai-matchers";
 import hre from "hardhat";
-const { ethers } = hre;
+const { ethers } = hre as any;
 import { parseEther } from "ethers";
 import pkgHelpers from "@nomicfoundation/hardhat-network-helpers";
 const { time } = pkgHelpers;
@@ -65,10 +65,9 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(agent, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature))
+      await expect(riskRouter.authorizeTrade(intent, signature) as any)
         .to.emit(riskRouter, "TradeAuthorized")
-        .withArgs(ethers.keccak256(ethers.toUtf8Bytes("placeholder")), agent.address); 
-        // Note: hashing in JS for event matching might be tricky, checking success is enough
+        .withArgs(await riskRouter.hashTradeIntent(intent), agent.address, intent.pair, intent.volume);
     });
 
     it("Should reject un-authorized and un-registered agents", async function () {
@@ -83,9 +82,9 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(otherAccount, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature))
+      await expect(riskRouter.authorizeTrade(intent, signature) as any)
         .to.emit(riskRouter, "TradeRejected")
-        .withArgs(ethers.ZeroHash, "Unauthorized or Unregistered Agent");
+        .withArgs(await riskRouter.hashTradeIntent(intent), "Unauthorized or Unregistered Agent");
     });
 
     it("Should authorize if agent is in Registry (ERC-8004 Fallback)", async function () {
@@ -121,9 +120,9 @@ describe("RiskRouter", function () {
 
       const signature = await getSignature(agent, intent);
 
-      await expect(riskRouter.authorizeTrade(intent, signature))
+      await expect(riskRouter.authorizeTrade(intent, signature) as any)
         .to.emit(riskRouter, "TradeRejected")
-        .withArgs(ethers.ZeroHash, "Intent Expired");
+        .withArgs(await riskRouter.hashTradeIntent(intent), "Intent Expired");
     });
 
     it("Should trigger circuit breaker on high volume", async function () {
@@ -140,9 +139,9 @@ describe("RiskRouter", function () {
   
         const signature = await getSignature(agent, intent);
   
-        await expect(riskRouter.authorizeTrade(intent, signature))
+        await expect(riskRouter.authorizeTrade(intent, signature) as any)
           .to.emit(riskRouter, "TradeRejected")
-          .withArgs(ethers.ZeroHash, "Circuit Breaker: Volume Exceeded");
+          .withArgs(await riskRouter.hashTradeIntent(intent), "Circuit Breaker: Volume Exceeded");
       });
   });
 });
