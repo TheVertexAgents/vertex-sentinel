@@ -6,6 +6,14 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /**
+ * @title IAgentRegistry
+ * @dev Interface for ERC-8004 compatible Agent Registry.
+ */
+interface IAgentRegistry {
+    function isRegisteredAgent(address agent) external view returns (bool);
+}
+
+/**
  * @title RiskRouter
  * @dev The "Bouncer" for VertexAgents Sentinel Layer.
  * Intercepts Trade Intents and validates them against risk guardrails and Agent identity.
@@ -25,13 +33,15 @@ contract RiskRouter is EIP712 {
         uint256 deadline;
     }
 
-    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent);
+    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent, string pair, uint256 volume);
     event TradeRejected(bytes32 indexed intentHash, string reason);
 
+    address public agentRegistry;
     mapping(address => bool) public authorizedAgents;
 
-    constructor() EIP712("VertexAgents-Sentinel", "1") {
-        // Hardcoded authorized agent for demo
+    constructor(address _registry) EIP712("VertexAgents-Sentinel", "1") {
+        agentRegistry = _registry;
+        // Keep msg.sender authorized for fallback/demo
         authorizedAgents[msg.sender] = true;
     }
 
@@ -59,8 +69,8 @@ contract RiskRouter is EIP712 {
         bytes32 digest = hashTradeIntent(intent);
         address signer = digest.recover(signature);
 
-        if (!authorizedAgents[signer]) {
-            emit TradeRejected(digest, "Unauthorized Agent");
+        if (!authorizedAgents[signer] && (agentRegistry == address(0) || !IAgentRegistry(agentRegistry).isRegisteredAgent(signer))) {
+            emit TradeRejected(digest, "Unauthorized or Unregistered Agent");
             return false;
         }
 
@@ -75,7 +85,7 @@ contract RiskRouter is EIP712 {
              return false;
         }
 
-        emit TradeAuthorized(digest, signer);
+        emit TradeAuthorized(digest, signer, intent.pair, intent.volume);
         return true;
     }
 

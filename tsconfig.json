@@ -8,11 +8,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     // Loosening the strictness slightly so you don't get blocked by minor linting errors
     "verbatimModuleSyntax": false,
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "hardhat.config.ts"],
   "exclude": ["node_modules"]
 }

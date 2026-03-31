@@ -33,6 +33,40 @@ async function getAssetResolution(pair: string) {
   return { symbol: pair, precision: 18 };
 }
 
+import { genkit, z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+
+const ai = genkit({
+  plugins: [googleAI()],
+  model: 'googleai/gemini-1.5-flash',
+});
+
+/**
+ * @dev Genkit flow for verifiable risk assessment.
+ */
+const riskScoreFlow = ai.defineFlow(
+  {
+    name: 'riskScoreFlow',
+    inputSchema: z.object({
+      pair: z.string(),
+      volume: z.string(),
+    }),
+    outputSchema: z.object({
+      score: z.number(),
+      reason: z.string(),
+    }),
+  },
+  async (input) => {
+    console.log(`[Genkit] Running risk assessment for ${input.pair} trade...`);
+    // Placeholder logic for demo: lower volume = lower risk
+    const score = parseFloat(input.volume) > 10 ? 0.9 : 0.1;
+    return {
+      score,
+      reason: score > 0.5 ? "High volume detected" : "Standard trade parameters",
+    };
+  }
+);
+
 /**
  * @dev The Intent Layer creates a signed TradeIntent.
  */
@@ -44,6 +78,18 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     transport: http(),
   });
 
+  // Run Genkit Risk Assessment
+  const risk = await riskScoreFlow({
+    pair: intent.pair,
+    volume: intent.volume.toString(),
+  });
+
+  console.log(`[Agent Brain] Risk Score: ${risk.score} (${risk.reason})`);
+
+  if (risk.score > 0.8) {
+     return { isAllowed: false, reason: `Risk too high: ${risk.reason}`, signature: '0x' };
+  }
+
   console.log(`[Agent Brain] Intent Layer: Signing trade for ${intent.pair}...`);
 
   // Sign the intent using EIP-712
@@ -54,7 +100,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     message: intent,
   });
 
-  return { isAllowed: true, reason: "EIP-712 Signature Generated", signature };
+  return { isAllowed: true, reason: risk.reason, signature };
 }
 
 // Logic loop demo
