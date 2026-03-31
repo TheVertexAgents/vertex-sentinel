@@ -86,7 +86,7 @@ All data contracts and behavior definitions live in `.specify/spec/`:
 ### Install
 
 ```bash
-git clone https://github.com/VertexAgents/vertex-sentinel.git
+git clone https://github.com/TheVertexAgents/vertex-sentinel.git
 cd vertex-sentinel
 npm install
 ```
