@@ -1,0 +1,32 @@
+name: vertex-sentinel-protocol
+description: Verifiable trade execution and risk management layer
+
+entities:
+  - TradeIntent:
+      agentId: string
+      pair: string
+      volume: float
+      maxPrice: float
+      deadline: int
+  - ValidationArtifact:
+      intentHash: bytes32
+      timestamp: int
+      status: enum [AUTHORIZED, REJECTED]
+
+behaviors:
+  # This behavior defines the "Handshake"
+  submit_intent:
+    inputs: [TradeIntent]
+    outputs: [ValidationArtifact]
+    constraints:
+      - rule: "Price must be below maxPrice"
+      - rule: "Agent must have active ERC-8004 Registry ID"
+      - rule: "Slippage must be < 0.5%"
+    effects:
+      - emit: "TradeAuthorized"
+      - update_reputation: "Success +1, Fail -5"
+
+# The Spec Kit uses this to validate your code implementation
+implementations:
+  typescript: "src/logic/agent_brain.ts"
+  solidity: "src/contracts/RiskRouter.sol"

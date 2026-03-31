@@ -1,0 +1,16 @@
+name: trade-handshake
+description: Contract between Agent Brain and Risk Router
+entities:
+  - TradeIntent:
+      agentId: string
+      pair: string
+      volume: float
+      maxPrice: float
+  - Authorization:
+      isAllowed: bool
+      reason: string
+
+behaviors:
+  propose_trade:
+    inputs: [TradeIntent]
+    outputs: [Authorization]

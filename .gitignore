@@ -1,0 +1,47 @@
+# ── Secrets ──────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Node ─────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+out/
+
+# ── Hardhat ──────────────────────────────────────────────────
+cache/
+artifacts/
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ── Rust ─────────────────────────────────────────────────────
+target/
+**/*.rs.bk
+Cargo.lock
+
+# ── Agent & Tooling (never commit) ───────────────────────────
+.agent/
+.gemini/
+.genkit/
+
+# ── Nested Project Artifacts ─────────────────────────────────
+vertex-sentinel/
+
+# ── IDEs ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
