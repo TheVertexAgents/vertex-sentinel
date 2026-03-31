@@ -7,7 +7,7 @@
     "start": "npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "demo": "npx hardhat run scripts/demo_flow.ts --network localhost",
+    "demo": "npx hardhat run scripts/demo_flow.ts --network hardhat",
     "node": "npx hardhat node"
   },
   "keywords": [],
