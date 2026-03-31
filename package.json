@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --loader ts-node/esm --no-warnings src/logic/agent_brain.ts",
+    "start": "npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "demo": "npx hardhat run scripts/demo_flow.ts --network localhost",
@@ -13,7 +13,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@genkit-ai/google-genai": "^1.31.0",
     "@openzeppelin/contracts": "^5.6.1",
