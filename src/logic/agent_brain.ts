@@ -2,7 +2,7 @@ import { createWalletClient, http, parseEther } from 'viem';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet } from 'viem/chains';
-import type { TradeIntent, Authorization } from './types.js';
+import type { TradeIntent, Authorization } from './types';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -116,6 +116,9 @@ async function main() {
     deadline: BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour
   };
 
+  // Change volume to trigger allowed path
+  demoIntent.volume = BigInt(1);
+
   // Use a dummy private key if one is not provided in .env
   const pk = (process.env.AGENT_PRIVATE_KEY as Hex) || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
@@ -125,7 +128,7 @@ async function main() {
   console.log("--- END ---");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   main().catch(console.error);
 }
 
