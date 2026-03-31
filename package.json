@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node --loader ts-node/esm --no-warnings src/logic/agent_brain.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "demo": "npx hardhat run scripts/demo_flow.ts --network localhost",
+    "node": "npx hardhat node"
   },
   "keywords": [],
   "author": "",
@@ -22,10 +25,12 @@
     "viem": "^2.47.6"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^3.0.0",
-    "@nomicfoundation/hardhat-ethers": "^4.0.6",
-    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
-    "ethers": "^6.16.0",
-    "hardhat": "^3.2.0"
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/mocha": "^10.0.6",
+    "ethers": "^6.10.0",
+    "hardhat": "^2.22.1"
   }
 }
