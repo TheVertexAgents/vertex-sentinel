@@ -1,10 +1,7 @@
-import pkgChai from "chai";
-const { expect } = pkgChai;
-import hre from "hardhat";
-const { ethers } = hre;
+import { expect } from "chai";
+import { ethers } from "hardhat";
 import { parseEther } from "ethers";
-import pkgHelpers from "@nomicfoundation/hardhat-network-helpers";
-const { time } = pkgHelpers;
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("RiskRouter", function () {
   let riskRouter: any;
@@ -67,8 +64,7 @@ describe("RiskRouter", function () {
 
       await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeAuthorized")
-        .withArgs(ethers.keccak256(ethers.toUtf8Bytes("placeholder")), agent.address); 
-        // Note: hashing in JS for event matching might be tricky, checking success is enough
+        .withArgs(await riskRouter.hashTradeIntent(intent), agent.address, intent.pair, intent.volume);
     });
 
     it("Should reject un-authorized and un-registered agents", async function () {
@@ -85,7 +81,7 @@ describe("RiskRouter", function () {
 
       await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeRejected")
-        .withArgs(ethers.ZeroHash, "Unauthorized or Unregistered Agent");
+        .withArgs(await riskRouter.hashTradeIntent(intent), "Unauthorized or Unregistered Agent");
     });
 
     it("Should authorize if agent is in Registry (ERC-8004 Fallback)", async function () {
@@ -123,7 +119,7 @@ describe("RiskRouter", function () {
 
       await expect(riskRouter.authorizeTrade(intent, signature))
         .to.emit(riskRouter, "TradeRejected")
-        .withArgs(ethers.ZeroHash, "Intent Expired");
+        .withArgs(await riskRouter.hashTradeIntent(intent), "Intent Expired");
     });
 
     it("Should trigger circuit breaker on high volume", async function () {
@@ -142,7 +138,7 @@ describe("RiskRouter", function () {
   
         await expect(riskRouter.authorizeTrade(intent, signature))
           .to.emit(riskRouter, "TradeRejected")
-          .withArgs(ethers.ZeroHash, "Circuit Breaker: Volume Exceeded");
+          .withArgs(await riskRouter.hashTradeIntent(intent), "Circuit Breaker: Volume Exceeded");
       });
   });
 });
