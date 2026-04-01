@@ -2,11 +2,13 @@
   "name": "vertexagents-the-sentinel-layer",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "npx ts-node src/logic/agent_brain.ts",
+    "generate:types": "node scripts/generate_types.js",
+    "start": "npm run generate:types && npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test",
+    "test": "npx hardhat test test/RiskRouter.test.ts",
     "demo": "npx hardhat run scripts/demo_flow.ts --network hardhat",
     "node": "npx hardhat node"
   },
@@ -26,13 +28,19 @@
     "viem": "^2.47.6",
     "zod": "^4.3.6"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-viem": "^2.1.3",
+    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.6",
     "ethers": "^6.10.0",
-    "hardhat": "^2.22.1"
+    "hardhat": "^2.22.1",
+    "json-schema-to-typescript": "^15.0.4"
   }
 }

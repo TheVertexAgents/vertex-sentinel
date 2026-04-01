@@ -1,8 +1,8 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-ethers";
+/** @type {import('hardhat/config').HardhatUserConfig} */
+require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-viem");
 
-const config: HardhatUserConfig = {
+module.exports = {
   solidity: {
     version: "0.8.24",
     settings: {
@@ -19,5 +19,3 @@ const config: HardhatUserConfig = {
     timeout: 100000
   }
 };
-
-export default config;
