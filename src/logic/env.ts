@@ -1,4 +1,4 @@
-import { z, ZodIssue } from 'zod';
+import { z } from 'zod';
 import { CriticalSecurityException } from './errors.js';
 
 /**
@@ -20,8 +20,8 @@ export function validateEnv() {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    const errorMessages = result.error.issues
-      .map((issue: ZodIssue) => `${issue.path.join('.')}: ${issue.message}`)
+    const errorMessages = result.error.errors
+      .map((err) => `${err.path.join('.')}: ${err.message}`)
       .join(', ');
 
     throw new CriticalSecurityException(`Environment validation failed: ${errorMessages}`);

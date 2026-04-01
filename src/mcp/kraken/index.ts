@@ -6,7 +6,7 @@ import {
   ErrorCode,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
-import ccxt from 'ccxt';
+import { spawnSync } from 'child_process';
 import {
   TickerSchema,
   BalanceSchema,
@@ -15,19 +15,24 @@ import {
 } from './types.js';
 import { validateEnv } from '../../logic/env.js';
 import { CriticalSecurityException } from '../../logic/errors.js';
+import { ZodError } from 'zod';
 
 /**
  * @title Kraken MCP Server
- * @dev Standardized MCP server for Kraken exchange interactions.
+ * @dev Standardized MCP server for Kraken exchange interactions via Kraken CLI.
  * Decouples execution logic from the Sentinel Layer.
+ * Strictly adheres to Project Constitution v2.0.0.
  */
 export class KrakenMcpServer {
-  private server: Server;
-  private kraken: ccxt.kraken;
+  public server: Server; // Made public for testing
+  private apiKey: string;
+  private apiSecret: string;
 
   constructor() {
     // Validate Environment first (Fail-Closed)
     const env = validateEnv();
+    this.apiKey = env.KRAKEN_API_KEY;
+    this.apiSecret = env.KRAKEN_SECRET;
 
     this.server = new Server(
       {
@@ -41,26 +46,71 @@ export class KrakenMcpServer {
       }
     );
 
-    // Initialize Kraken via CCXT
-    this.kraken = new ccxt.kraken({
-      apiKey: env.KRAKEN_API_KEY,
-      secret: env.KRAKEN_SECRET,
-    });
-
     this.setupTools();
     
     this.server.onerror = (error) => {
-      console.error(JSON.stringify({ 
-        event: 'mcp_error', 
-        error: error.message, 
-        timestamp: new Date().toISOString() 
-      }));
+      this.log('mcp_error', { error: error.message });
     };
 
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
     });
+  }
+
+  /**
+   * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
+   */
+  private log(event: string, data: Record<string, unknown>) {
+    console.error(JSON.stringify({
+      event,
+      ...data,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
+  /**
+   * @dev Executes a command using the Kraken CLI.
+   * Implements "Fail-Closed" principle.
+   * Uses spawnSync with argument array to prevent command injection.
+   */
+  private executeKrakenCli(command: string, args: string[]): unknown {
+    const krakenPath = process.env.KRAKEN_CLI_PATH || 'kraken';
+
+    const finalArgs = [command, ...args, '-o', 'json'];
+
+    const result = spawnSync(krakenPath, finalArgs, {
+        env: {
+            ...process.env,
+            KRAKEN_API_KEY: this.apiKey,
+            KRAKEN_API_SECRET: this.apiSecret
+        },
+        stdio: ['inherit', 'pipe', 'pipe'],
+        encoding: 'utf-8'
+    });
+
+    if (result.error) {
+        throw new Error(`Failed to execute Kraken CLI: ${result.error.message}`);
+    }
+
+    if (!result.stdout) {
+        throw new Error(`Kraken CLI returned no output. Stderr: ${result.stderr}`);
+    }
+
+    try {
+      const parsed = JSON.parse(result.stdout);
+
+      if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+        throw new Error(`Kraken CLI Error (${parsed.error}): ${parsed.message}`);
+      }
+
+      return parsed;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+          throw error;
+      }
+      throw new Error(`Failed to parse Kraken CLI output: ${String(error)}`);
+    }
   }
 
   private setupTools() {
@@ -105,29 +155,45 @@ export class KrakenMcpServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
-      const timestamp = new Date().toISOString();
 
       try {
         switch (toolName) {
           case 'get_ticker': {
-            const args = request.params.arguments as unknown as { symbol: string };
+            const args = request.params.arguments as { symbol: string };
             const { symbol } = args;
             
-            console.error(JSON.stringify({ event: 'tool_call', tool: toolName, symbol, timestamp }));
+            this.log('tool_call', { tool: toolName, symbol });
+
+            const cleanSymbol = symbol.replace('/', '');
+            const result = this.executeKrakenCli('ticker', [cleanSymbol]);
+
+            if (!result || typeof result !== 'object') {
+                throw new Error('Invalid ticker response from CLI');
+            }
+
+            const pairKey = Object.keys(result)[0];
+            const tickerData = (result as Record<string, unknown>)[pairKey];
             
-            const ticker = await this.kraken.fetchTicker(symbol);
-            const validated = TickerSchema.parse(ticker);
+            if (!tickerData || typeof tickerData !== 'object') {
+                throw new Error(`Ticker data not found for ${pairKey}`);
+            }
+
+            const validated = TickerSchema.parse({
+                symbol: pairKey,
+                ...tickerData
+            });
+
             return {
               content: [{ type: 'text', text: JSON.stringify(validated) }],
             };
           }
 
           case 'get_balance': {
-            console.error(JSON.stringify({ event: 'tool_call', tool: toolName, timestamp }));
+            this.log('tool_call', { tool: toolName });
             
-            const balance = await this.kraken.fetchBalance();
-            const total = balance.total;
-            const validated = BalanceSchema.parse(total);
+            const result = this.executeKrakenCli('balance', []);
+            const validated = BalanceSchema.parse(result);
+
             return {
               content: [{ type: 'text', text: JSON.stringify(validated) }],
             };
@@ -135,16 +201,22 @@ export class KrakenMcpServer {
 
           case 'place_order': {
             const params = OrderParamsSchema.parse(request.params.arguments);
-            console.error(JSON.stringify({ event: 'tool_call', tool: toolName, params, timestamp }));
+            this.log('tool_call', { tool: toolName, params: params as unknown as Record<string, unknown> });
+
+            const cliArgs = [
+                params.side,
+                params.symbol.replace('/', ''),
+                params.amount.toString(),
+                '--type', params.type
+            ];
             
-            const order = await this.kraken.createOrder(
-              params.symbol,
-              params.type,
-              params.side,
-              params.amount,
-              params.price
-            );
-            const validated = OrderResultSchema.parse(order);
+            if (params.price) {
+                cliArgs.push('--price', params.price.toString());
+            }
+
+            const result = this.executeKrakenCli('order', cliArgs);
+            const validated = OrderResultSchema.parse(result);
+
             return {
               content: [{ type: 'text', text: JSON.stringify(validated) }],
             };
@@ -155,20 +227,15 @@ export class KrakenMcpServer {
         }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(JSON.stringify({ 
-          event: 'tool_error', 
-          tool: toolName, 
-          error: errorMessage, 
-          timestamp 
-        }));
+        this.log('tool_error', { tool: toolName, error: errorMessage });
 
-        if (error instanceof Error && error.name === 'ZodError') {
+        if (error instanceof ZodError) {
           throw new McpError(ErrorCode.InvalidParams, `Validation error: ${errorMessage}`);
         }
 
         // According to Constitution v2.0.0: Fail-Closed on sensitive errors
         if (toolName === 'place_order') {
-          throw new CriticalSecurityException(`Execution failure on Kraken: ${errorMessage}`);
+          throw new CriticalSecurityException(`Execution failure on Kraken CLI: ${errorMessage}`);
         }
 
         throw new McpError(ErrorCode.InternalError, `Exchange error: ${errorMessage}`);
@@ -179,18 +246,14 @@ export class KrakenMcpServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error(JSON.stringify({ 
-      event: 'server_start', 
-      message: 'Kraken MCP server running on stdio', 
-      timestamp: new Date().toISOString() 
-    }));
+    this.log('server_start', { message: 'Kraken MCP server running on stdio (CLI mode)' });
   }
 }
 
 // Entry point only if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new KrakenMcpServer();
-  server.run().catch((error) => {
+  server.run().catch((error: Error) => {
     console.error(JSON.stringify({
       event: 'startup_error',
       error: error.message,

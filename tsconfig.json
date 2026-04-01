@@ -15,8 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "verbatimModuleSyntax": false,
-    "types": ["node", "mocha", "chai", "sinon"]
+    "verbatimModuleSyntax": false
   },
   "include": ["src/**/*", "test/**/*", "hardhat.config.ts"],
   "exclude": ["node_modules"]

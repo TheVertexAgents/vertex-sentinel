@@ -1,8 +1,11 @@
-import { createPublicClient, http, parseAbi } from 'viem';
+import { createPublicClient, http, parseAbi, formatEther } from 'viem';
 import { hardhat, sepolia } from 'viem/chains';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { fileURLToPath } from 'url';
 import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -12,10 +15,20 @@ const RISK_ROUTER_ABI = parseAbi([
 
 type Network = 'local' | 'sepolia';
 
+interface McpContent {
+  type: string;
+  text: string;
+}
+
+interface McpResult {
+  content: McpContent[];
+}
+
 /**
  * @title ExecutionProxy
  * @dev The "Execution Layer" proxy that monitors the RiskRouter for
- * TradeAuthorized events and executes orders on the exchange via an MCP server.
+ * TradeAuthorized events and executes orders on the exchange via modular MCP.
+ * Strictly adheres to Project Constitution v2.0.0.
  */
 class ExecutionProxy {
   private client;
@@ -32,22 +45,34 @@ class ExecutionProxy {
           : 'http://127.0.0.1:8545'
       ),
     });
-    console.log(`[Execution Layer] Proxy Initialized.`);
-    console.log(`[Execution Layer] Network: ${network} | RiskRouter: ${contractAddress}`);
+    this.log('INFO', 'Execution Layer Proxy Initialized', { network, contractAddress });
+  }
+
+  /**
+   * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
+   */
+  private log(level: 'INFO' | 'ERROR' | 'CRITICAL', message: string, data: Record<string, unknown> = {}) {
+    console.error(JSON.stringify({
+      level,
+      module: 'ExecutionProxy',
+      message,
+      ...data,
+      timestamp: new Date().toISOString(),
+    }));
   }
 
   /**
    * @dev Initializes the connection to the Kraken MCP server.
    */
   async initMcp() {
-    console.log(`[Execution Layer] Initializing Kraken MCP Client...`);
+    this.log('INFO', 'Initializing Kraken MCP Client connection...');
     
-    // Path to the MCP server implementation
+    // Path to the modular MCP server implementation
     const serverPath = path.join(__dirname, '../mcp/kraken/index.ts');
     
     const transport = new StdioClientTransport({
-      command: 'npx',
-      args: ['ts-node', serverPath],
+      command: 'node',
+      args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
     });
 
     this.mcpClient = new Client(
@@ -61,7 +86,7 @@ class ExecutionProxy {
     );
 
     await this.mcpClient.connect(transport);
-    console.log(`[Execution Layer] Connected to Kraken MCP Server.`);
+    this.log('INFO', 'Successfully connected to Kraken MCP Server.');
   }
 
   /**
@@ -72,7 +97,7 @@ class ExecutionProxy {
       await this.initMcp();
     }
     
-    console.log(`[Execution Layer] Monitoring for TradeAuthorized events...`);
+    this.log('INFO', 'Monitoring for TradeAuthorized events on-chain...');
 
     // Listen for authorized trades
     this.client.watchContractEvent({
@@ -87,12 +112,17 @@ class ExecutionProxy {
             pair: string;
             volume: bigint;
           };
-          console.log(`\n[Execution Layer] ✅ TRADE AUTHORIZED ON-CHAIN`);
-          console.log(`  Intent Hash : ${intentHash}`);
-          console.log(`  Agent       : ${agent}`);
-          console.log(`  Pair        : ${pair}`);
-          console.log(`  Volume      : ${volume.toString()} wei`);
-          this.executeOnKraken(pair, volume);
+
+          this.log('INFO', 'TRADE AUTHORIZED ON-CHAIN', {
+              intentHash,
+              agent,
+              pair,
+              volume: volume.toString()
+          });
+
+          this.executeOnKraken(pair, volume).catch(err => {
+              this.log('ERROR', 'Background trade execution failed', { error: err.message });
+          });
         }
       },
     });
@@ -108,9 +138,11 @@ class ExecutionProxy {
             intentHash: `0x${string}`;
             reason: string;
           };
-          console.log(`\n[Execution Layer] 🚫 TRADE REJECTED BY SENTINEL`);
-          console.log(`  Intent Hash : ${intentHash}`);
-          console.log(`  Reason      : ${reason}`);
+
+          this.log('INFO', 'TRADE REJECTED BY SENTINEL', {
+              intentHash,
+              reason
+          });
         }
       },
     });
@@ -118,33 +150,38 @@ class ExecutionProxy {
 
   /**
    * @dev Calls the Kraken MCP server to execute an order.
+   * Implements "Fail-Closed" behavior.
    */
   private async executeOnKraken(pair: string, volume: bigint) {
     if (!this.mcpClient) {
-      console.error('[Execution Layer] MCP Client not initialized');
+      this.log('ERROR', 'MCP Client not initialized. Cannot execute trade.');
       return;
     }
 
-    console.log(`\n[KRAKEN] 📤 Submitting order via MCP...`);
+    this.log('INFO', 'Submitting order via MCP...', { pair, volume: volume.toString() });
     
     try {
-      // Note: In a real scenario, we'd need to map 'pair' to Kraken symbol format
-      // and 'volume' from wei to base currency units.
+      // Constitution Alignment: Unit conversion and symbol formatting
+      const amount = parseFloat(formatEther(volume));
+      const cleanSymbol = pair.replace('/', '');
+
       const result = await this.mcpClient.callTool({
         name: 'place_order',
         arguments: {
-          symbol: pair, // Assuming pair is already in correct format for this demo
+          symbol: cleanSymbol,
           side: 'buy',
           type: 'market',
-          amount: Number(volume) / 1e18, // Convert from wei for demo purposes
+          amount: amount
         },
-      });
+      }) as unknown as McpResult;
 
-      const content = (result as any).content;
-      const resultText = (content[0] as { type: 'text'; text: string }).text;
-      console.log(`[KRAKEN] MCP Result:`, JSON.parse(resultText));
-    } catch (error: any) {
-      console.error(`[KRAKEN] 🚫 Order Execution Failed:`, error.message);
+      const content = result.content;
+      const resultData = JSON.parse(content[0].text) as Record<string, unknown>;
+
+      this.log('INFO', 'MCP Order Execution Success', { result: resultData });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { error: errorMessage });
     }
   }
 
@@ -152,7 +189,10 @@ class ExecutionProxy {
    * @dev Process an authorized trade intent directly (non-event path, for testing).
    */
   async processAuthorizedTrade(pair: string, volume: bigint) {
-    console.log(`[Execution Layer] Direct call: processing trade for ${pair}`);
+    if (!this.mcpClient) {
+        await this.initMcp();
+    }
+    this.log('INFO', 'Processing direct trade authorization', { pair, volume: volume.toString() });
     await this.executeOnKraken(pair, volume);
   }
 }
