@@ -1,23 +1,8 @@
+import { TradeIntent, Authorization, ValidationArtifact } from './generated_types.ts';
+
+export { TradeIntent, Authorization, ValidationArtifact };
+
 /**
- * @title TradeIntent
- * @dev matches the EIP-712 TradeIntent typehash in RiskRouter.sol
+ * @dev Extension types or local overrides that are not in the spec.
  */
-export interface TradeIntent {
-  agentId: string;
-  pair: string;
-  volume: bigint;
-  maxPrice: bigint;
-  deadline: bigint;
-}
-
-export interface Authorization {
-  isAllowed: boolean;
-  reason: string;
-  signature?: `0x${string}`;
-}
-
-export interface ValidationArtifact {
-    intentHash: `0x${string}`;
-    timestamp: number;
-    status: 'AUTHORIZED' | 'REJECTED';
-}
+// Add here if needed, otherwise rely on generated_types.ts

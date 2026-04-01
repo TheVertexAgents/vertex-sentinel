@@ -10,8 +10,12 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./",
-    // Loosening the strictness slightly so you don't get blocked by minor linting errors
-    "verbatimModuleSyntax": false,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
     "isolatedModules": true
   },
   "include": ["src/**/*", "test/**/*", "hardhat.config.ts"],

@@ -43,7 +43,7 @@ npm run demo
 
 ### Prerequisites
 
-- **Node.js 18+** (LTS stable)
+- **Node.js 20+** (LTS stable)
 - `npm` or compatible package manager
 
 ### Install & Configure
@@ -118,7 +118,7 @@ The on-chain "bouncer" — intercepts `TradeIntent` structs and enforces:
 | Smart Contracts | Solidity 0.8.24, OpenZeppelin 5.x, Hardhat 2.22.x |
 | Signing / Web3 | Viem 2.x (EIP-712 `signTypedData`) |
 | AI Layer | **Google Genkit** (risk scoring flows) |
-| Runtime | **TypeScript 5.x**, Node.js 18+ (CommonJS stable) |
+| Runtime | **TypeScript 5.x**, Node.js 20+ (ESM mandated) |
 
 ---
 
