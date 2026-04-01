@@ -140,7 +140,8 @@ class ExecutionProxy {
         },
       });
 
-      const resultText = (result.content[0] as { type: 'text'; text: string }).text;
+      const content = (result as any).content;
+      const resultText = (content[0] as { type: 'text'; text: string }).text;
       console.log(`[KRAKEN] MCP Result:`, JSON.parse(resultText));
     } catch (error: any) {
       console.error(`[KRAKEN] 🚫 Order Execution Failed:`, error.message);

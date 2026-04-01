@@ -29,7 +29,7 @@ export const OrderParamsSchema = z.object({
   type: z.enum(['market', 'limit']),
   side: z.enum(['buy', 'sell']),
   amount: z.number().positive(),
-  price: z.number().optional().nullable(),
+  price: z.number().optional(),
 });
 
 export type OrderParams = z.infer<typeof OrderParamsSchema>;
