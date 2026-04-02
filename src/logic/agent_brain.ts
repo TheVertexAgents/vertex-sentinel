@@ -2,15 +2,23 @@ import { createWalletClient, http, parseEther } from 'viem';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet } from 'viem/chains';
-import type { TradeIntent, Authorization } from './types.ts';
+import type { TradeIntent, Authorization } from './types.js';
 import dotenv from 'dotenv';
-import { validateEnv } from './env.ts';
-import { CriticalSecurityException } from './errors.ts';
+import { validateEnv } from './env.js';
+import { CriticalSecurityException } from './errors.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
-// Validate environment on startup
-validateEnv();
+// Validate environment on startup if not in test
+if (process.env.NODE_ENV !== 'test') {
+    validateEnv();
+}
 
 // EIP-712 Domain definition matching RiskRouter.sol
 const domain = {
@@ -31,13 +39,21 @@ const types = {
 } as const;
 
 /**
+ * @dev Helper to get a unique trace ID.
+ */
+function getTraceId(): string {
+  return Math.random().toString(36).substring(2, 15);
+}
+
+/**
  * @dev Mock "Strykr PRISM API" for canonical asset resolution.
  */
 async function getAssetResolution(pair: string) {
   console.log(JSON.stringify({
     level: "INFO",
     module: "PRISM",
-    message: `Resolving canonical metadata for ${pair}...`
+    message: `Resolving canonical metadata for ${pair}...`,
+    timestamp: new Date().toISOString()
   }));
   return { symbol: pair, precision: 18 };
 }
@@ -50,6 +66,31 @@ const ai = genkit({
   model: 'googleai/gemini-1.5-flash',
 });
 
+let mcpClient: Client | null = null;
+
+async function getMcpClient() {
+  if (mcpClient) return mcpClient;
+
+  const serverPath = path.join(__dirname, '../mcp/kraken/index.ts');
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
+    env: {
+        ...process.env,
+        NODE_ENV: process.env.NODE_ENV || 'development',
+        KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
+    } as Record<string, string>
+  });
+
+  mcpClient = new Client(
+    { name: 'sentinel-brain-client', version: '1.0.0' },
+    { capabilities: {} }
+  );
+
+  await mcpClient.connect(transport);
+  return mcpClient;
+}
+
 /**
  * @dev Genkit flow for verifiable risk assessment.
  */
@@ -59,24 +100,74 @@ const riskScoreFlow = ai.defineFlow(
     inputSchema: z.object({
       pair: z.string(),
       volume: z.string(),
+      traceId: z.string(),
     }),
     outputSchema: z.object({
       score: z.number(),
       reason: z.string(),
+      marketData: z.any().optional(),
     }),
   },
   async (input) => {
-    console.log(JSON.stringify({
+    console.error(JSON.stringify({
         level: "INFO",
         module: "Genkit",
-        message: `Running risk assessment for ${input.pair} trade...`
+        TRACE_ID: input.traceId,
+        message: `Running risk assessment for ${input.pair} trade...`,
+        timestamp: new Date().toISOString()
     }));
-    // Placeholder logic for demo: lower volume = lower risk
-    const score = parseFloat(input.volume) > 10 ? 0.9 : 0.1;
-    return {
-      score,
-      reason: score > 0.5 ? "High volume detected" : "Standard trade parameters",
-    };
+
+    try {
+        const client = await getMcpClient();
+        const tickerResponse = await client.callTool({
+            name: 'get_ticker',
+            arguments: { symbol: input.pair }
+        }) as any;
+
+        if (!tickerResponse || !tickerResponse.content || !tickerResponse.content[0]) {
+            throw new CriticalSecurityException(`Kraken API unreachable or returned empty response for ${input.pair}`);
+        }
+
+        const ticker = JSON.parse(tickerResponse.content[0].text);
+
+        // Spread calculation: (ask - bid) / ask
+        const ask = parseFloat(ticker.a[0]);
+        const bid = parseFloat(ticker.b[0]);
+        const spread = (ask - bid) / ask;
+
+        // Volatility calculation: (24h_high - 24h_low) / 24h_low
+        const high24h = parseFloat(ticker.h[1]);
+        const low24h = parseFloat(ticker.l[1]);
+        const volatility = (high24h - low24h) / low24h;
+
+        let score = 0.1;
+        let reasons = [];
+
+        if (spread > 0.015) {
+            score = 0.9;
+            reasons.push(`High spread detected: ${(spread * 100).toFixed(2)}%`);
+        }
+
+        if (volatility > 0.05) {
+            score = 0.9;
+            reasons.push(`High volatility detected: ${(volatility * 100).toFixed(2)}%`);
+        }
+
+        if (parseFloat(input.volume) > 10) {
+            score = Math.max(score, 0.9);
+            reasons.push("High volume detected");
+        }
+
+        return {
+            score,
+            reason: reasons.length > 0 ? reasons.join(", ") : "Standard trade parameters",
+            marketData: { spread, volatility }
+        };
+
+    } catch (error) {
+        if (error instanceof CriticalSecurityException) throw error;
+        throw new CriticalSecurityException(`Risk assessment failed due to external error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 );
 
@@ -84,6 +175,7 @@ const riskScoreFlow = ai.defineFlow(
  * @dev The Intent Layer creates a signed TradeIntent.
  */
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
+  const traceId = getTraceId();
   try {
     const account = privateKeyToAccount(privateKey);
     const client = createWalletClient({
@@ -96,6 +188,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const risk = await riskScoreFlow({
       pair: intent.pair,
       volume: intent.volume.toString(),
+      traceId
     });
 
     // Fail-Closed Principle: Ensure risk output is valid
@@ -103,31 +196,27 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       throw new CriticalSecurityException(`Invalid risk assessment output for ${intent.pair}`);
     }
 
-    console.log(JSON.stringify({
+    console.error(JSON.stringify({
       level: "INFO",
       step: "RISK_ASSESSMENT",
+      TRACE_ID: traceId,
       pair: intent.pair,
       score: risk.score,
-      reason: risk.reason
+      reason: risk.reason,
+      timestamp: new Date().toISOString()
     }));
 
     if (risk.score > 0.8) {
        return { isAllowed: false, reason: `Risk too high: ${risk.reason}`, signature: '0x' };
     }
 
-    // Constitution v2.0.0: Gas efficiency check (Viem implementation)
-    // Note: Since this is purely a signing layer, we demonstrate intent by logging gas estimation context
-    console.log(JSON.stringify({
-      level: "INFO",
-      step: "GAS_CHECK",
-      message: "Gas estimation check performed before intent finalization (simulated for signing phase)"
-    }));
-
-    console.log(JSON.stringify({
+    console.error(JSON.stringify({
       level: "INFO",
       step: "SIGNING_INTENT",
+      TRACE_ID: traceId,
       pair: intent.pair,
-      agentId: intent.agentId
+      agentId: intent.agentId,
+      timestamp: new Date().toISOString()
     }));
 
     // Sign the intent using EIP-712
@@ -175,9 +264,7 @@ async function main() {
   console.log("--- END ---");
 }
 
-import { fileURLToPath } from 'url';
-
-if (import.meta.url === `file://${fileURLToPath(import.meta.url)}` || process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.url === `file://${fileURLToPath(import.meta.url)}` || (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))) {
   main().catch((error) => {
     console.error(JSON.stringify({
       level: "CRITICAL",

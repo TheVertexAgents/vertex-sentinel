@@ -1,9 +1,13 @@
 import { createPublicClient, http, parseAbi, formatEther } from 'viem';
 import { hardhat, sepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { Hex } from 'viem';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
+import { CriticalSecurityException } from '../logic/errors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +38,8 @@ class ExecutionProxy {
   private client;
   private contractAddress: `0x${string}`;
   private mcpClient: Client | null = null;
+  private agentAddress: `0x${string}`;
+  private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
 
   constructor(contractAddress: `0x${string}`, network: Network = 'local') {
     this.contractAddress = contractAddress;
@@ -45,7 +51,24 @@ class ExecutionProxy {
           : 'http://127.0.0.1:8545'
       ),
     });
-    this.log('INFO', 'Execution Layer Proxy Initialized', { network, contractAddress });
+
+    const pk = process.env.AGENT_PRIVATE_KEY as Hex;
+    if (!pk) {
+        throw new CriticalSecurityException('AGENT_PRIVATE_KEY is missing from environment');
+    }
+    this.agentAddress = privateKeyToAccount(pk).address;
+
+    this.log('INFO', 'Execution Layer Proxy Initialized', {
+        network,
+        contractAddress,
+        agentAddress: this.agentAddress
+    });
+
+    // Ensure logs directory exists
+    const logsDir = path.dirname(this.auditLogPath);
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
   }
 
   /**
@@ -62,6 +85,17 @@ class ExecutionProxy {
   }
 
   /**
+   * @dev Audit logging to JSONL file.
+   */
+  private auditLog(data: Record<string, unknown>) {
+    const entry = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        ...data
+    });
+    fs.appendFileSync(this.auditLogPath, entry + '\n');
+  }
+
+  /**
    * @dev Initializes the connection to the Kraken MCP server.
    */
   async initMcp() {
@@ -73,6 +107,11 @@ class ExecutionProxy {
     const transport = new StdioClientTransport({
       command: 'node',
       args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
+      env: {
+          ...process.env,
+          NODE_ENV: process.env.NODE_ENV || 'development',
+          KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
+      } as Record<string, string>
     });
 
     this.mcpClient = new Client(
@@ -120,7 +159,18 @@ class ExecutionProxy {
               volume: volume.toString()
           });
 
-          this.executeOnKraken(pair, volume).catch(err => {
+          // Phase B: Agent ID Verification (Strict Check)
+          if (agent.toLowerCase() !== this.agentAddress.toLowerCase()) {
+              this.log('CRITICAL', 'SECURITY_BREACH_ATTEMPT: Unauthorized agent address in event', {
+                  expected: this.agentAddress,
+                  actual: agent,
+                  intentHash
+              });
+              // Fail-Closed: Halt or ignore? Request says "halt"
+              throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`);
+          }
+
+          this.executeOnKraken(pair, volume, intentHash).catch(err => {
               this.log('ERROR', 'Background trade execution failed', { error: err.message });
           });
         }
@@ -152,13 +202,13 @@ class ExecutionProxy {
    * @dev Calls the Kraken MCP server to execute an order.
    * Implements "Fail-Closed" behavior.
    */
-  private async executeOnKraken(pair: string, volume: bigint) {
+  private async executeOnKraken(pair: string, volume: bigint, traceId: string) {
     if (!this.mcpClient) {
       this.log('ERROR', 'MCP Client not initialized. Cannot execute trade.');
       return;
     }
 
-    this.log('INFO', 'Submitting order via MCP...', { pair, volume: volume.toString() });
+    this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString() });
     
     try {
       // Constitution Alignment: Unit conversion and symbol formatting
@@ -176,24 +226,50 @@ class ExecutionProxy {
       }) as unknown as McpResult;
 
       const content = result.content;
-      const resultData = JSON.parse(content[0].text) as Record<string, unknown>;
+      const resultData = JSON.parse(content[0].text) as Record<string, any>;
 
-      this.log('INFO', 'MCP Order Execution Success', { result: resultData });
+      const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
+
+      this.log('INFO', 'MCP Order Execution Success', { TRACE_ID: traceId, result: resultData });
+
+      // Audit Logging
+      this.auditLog({
+          traceId,
+          orderId,
+          agentId: this.agentAddress,
+          pair,
+          volume: amount.toString(),
+          executionPrice: resultData.price || 0,
+          txHash: resultData.txid ? resultData.txid[0] : 'N/A', // Mocking txHash with orderId if real txHash is missing
+          krakenStatus: 'success'
+      });
+
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { error: errorMessage });
+      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, error: errorMessage });
+
+      this.auditLog({
+          traceId,
+          agentId: this.agentAddress,
+          pair,
+          volume: formatEther(volume),
+          krakenStatus: 'failed',
+          error: errorMessage
+      });
+
+      throw new CriticalSecurityException(`Execution failure: ${errorMessage}`);
     }
   }
 
   /**
    * @dev Process an authorized trade intent directly (non-event path, for testing).
    */
-  async processAuthorizedTrade(pair: string, volume: bigint) {
+  async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace') {
     if (!this.mcpClient) {
         await this.initMcp();
     }
-    this.log('INFO', 'Processing direct trade authorization', { pair, volume: volume.toString() });
-    await this.executeOnKraken(pair, volume);
+    this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
+    await this.executeOnKraken(pair, volume, traceId);
   }
 }
 

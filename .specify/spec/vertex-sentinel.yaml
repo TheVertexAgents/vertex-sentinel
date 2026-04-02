@@ -8,6 +8,10 @@ entities:
       volume: float
       maxPrice: float
       deadline: int
+  - Authorization:
+      isAllowed: boolean
+      reason: string
+      signature: string
   - ValidationArtifact:
       intentHash: bytes32
       timestamp: int
