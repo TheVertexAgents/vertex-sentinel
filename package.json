@@ -8,7 +8,7 @@
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test test/RiskRouter.test.ts",
+    "test": "npx hardhat test test/RiskRouter.test.ts && NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx mocha test/mcp/kraken_mcp.test.ts",
     "demo": "npx hardhat run scripts/demo_flow.ts --network hardhat",
     "node": "npx hardhat node"
   },
