@@ -28,7 +28,7 @@ module.exports = {
     },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
-      accounts: [AGENT_PRIVATE_KEY],
+      accounts: AGENT_PRIVATE_KEY ? [AGENT_PRIVATE_KEY] : [],
     },
   },
 };
