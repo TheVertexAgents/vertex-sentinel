@@ -18,6 +18,7 @@ describe('Kraken MCP Server (TDD)', () => {
     delete process.env.KRAKEN_API_KEY;
     delete process.env.KRAKEN_SECRET;
     delete process.env.GOOGLE_GENAI_API_KEY;
+    delete process.env.INFURA_KEY;
   });
 
   afterEach(async () => {
@@ -33,6 +34,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.INFURA_KEY = 'test-infura';
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     const server = new KrakenMcpServer();
@@ -51,6 +53,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.INFURA_KEY = 'test-infura';
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     const mockTickerResult = {
@@ -90,6 +93,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.INFURA_KEY = 'test-infura';
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     // Simulate CLI error
@@ -119,6 +123,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.INFURA_KEY = 'test-infura';
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     executeKrakenCliStub.throws(new Error('CLI connection lost'));

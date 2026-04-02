@@ -10,6 +10,7 @@ const envSchema = z.object({
   AGENT_PRIVATE_KEY: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "AGENT_PRIVATE_KEY must be a valid 0x-prefixed 64-character hex string"),
   KRAKEN_API_KEY: z.string().min(1, "KRAKEN_API_KEY is required"),
   KRAKEN_SECRET: z.string().min(1, "KRAKEN_SECRET is required"),
+  INFURA_KEY: z.string().min(1, "INFURA_KEY is required"),
 });
 
 /**

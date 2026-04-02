@@ -41,8 +41,23 @@ class ExecutionProxy {
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
 
-  constructor(contractAddress: `0x${string}`, network: Network = 'local') {
-    this.contractAddress = contractAddress;
+  constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia') {
+    // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia
+    if (!contractAddress && network === 'sepolia') {
+      const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
+      if (!fs.existsSync(deploymentsPath)) {
+        throw new CriticalSecurityException('Fail-Closed: deployments_sepolia.json is missing but network is set to sepolia');
+      }
+      try {
+        const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+        this.contractAddress = deployments.riskRouter;
+      } catch (error) {
+        throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    } else {
+      this.contractAddress = contractAddress || '0x0000000000000000000000000000000000000000';
+    }
+
     this.client = createPublicClient({
       chain: network === 'sepolia' ? sepolia : hardhat,
       transport: http(
@@ -60,8 +75,9 @@ class ExecutionProxy {
 
     this.log('INFO', 'Execution Layer Proxy Initialized', {
         network,
-        contractAddress,
-        agentAddress: this.agentAddress
+        contractAddress: this.contractAddress,
+        agentAddress: this.agentAddress,
+        chainId: network === 'sepolia' ? 11155111 : 31337
     });
 
     // Ensure logs directory exists

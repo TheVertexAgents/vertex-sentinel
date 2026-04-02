@@ -10,6 +10,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,12 +21,38 @@ if (process.env.NODE_ENV !== 'test') {
     validateEnv();
 }
 
+/**
+ * @dev Loads the deployment configuration for the current environment.
+ */
+function getDeploymentConfig() {
+  const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
+
+  if (process.env.NETWORK === 'sepolia') {
+    if (!fs.existsSync(deploymentsPath)) {
+      throw new CriticalSecurityException('Fail-Closed: deployments_sepolia.json is missing but NETWORK is set to sepolia');
+    }
+    try {
+      return JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+    } catch (error) {
+      throw new CriticalSecurityException(`Fail-Closed: Failed to parse deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Default to Local Hardhat if not explicitly set to sepolia
+  return {
+    chainId: 31337, // Hardhat default
+    riskRouter: '0x0000000000000000000000000000000000000000' // Placeholder for local
+  };
+}
+
+const config = getDeploymentConfig();
+
 // EIP-712 Domain definition matching RiskRouter.sol
 const domain = {
   name: 'VertexAgents-Sentinel',
   version: '1',
-  chainId: 1,
-  verifyingContract: '0x0000000000000000000000000000000000000000' as `0x${string}`, // TODO: Update after deployment
+  chainId: config.chainId,
+  verifyingContract: config.riskRouter as `0x${string}`,
 } as const;
 
 const types = {
