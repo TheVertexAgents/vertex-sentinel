@@ -1,6 +1,10 @@
 /** @type {import('hardhat/config').HardhatUserConfig} */
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-viem");
+require("dotenv").config();
+
+const INFURA_KEY = process.env.INFURA_KEY || "";
+const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY;
 
 module.exports = {
   solidity: {
@@ -17,5 +21,14 @@ module.exports = {
   },
   mocha: {
     timeout: 100000
-  }
+  },
+  networks: {
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
+      accounts: [AGENT_PRIVATE_KEY],
+    },
+  },
 };
