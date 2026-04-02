@@ -33,6 +33,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     const server = new KrakenMcpServer();
     const handlers = (server.server as any)._requestHandlers;
@@ -50,6 +51,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     const mockTickerResult = {
       "XXBTZUSD": {
@@ -88,6 +90,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     // Simulate CLI error
     executeKrakenCliStub.throws(new Error('Command failed: kraken order ...'));
@@ -116,6 +119,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
     executeKrakenCliStub.throws(new Error('CLI connection lost'));
 

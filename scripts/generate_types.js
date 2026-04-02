@@ -17,12 +17,12 @@ function generateTypes() {
  * DO NOT EDIT MANUALLY.
  */\n\n`;
 
-  const seenEntities = new Set<string>();
+  const seenEntities = new Set();
 
   for (const file of files) {
     const filePath = path.join(specDir, file);
     const content = fs.readFileSync(filePath, 'utf8');
-    const spec = yaml.load(content) as { entities?: Record<string, Record<string, string>>[] };
+    const spec = yaml.load(content);
 
     if (spec.entities && Array.isArray(spec.entities)) {
       for (const entityObj of spec.entities) {

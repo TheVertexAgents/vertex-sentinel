@@ -15,6 +15,7 @@ export interface TradeIntent {
 export interface Authorization {
   isAllowed: boolean;
   reason: string;
+  signature: string;
 }
 
 export interface ValidationArtifact {

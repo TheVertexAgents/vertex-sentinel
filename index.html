@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VertexAgents Sentinel Layer</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-glow"></div>
+
+    <header>
+        <div class="logo">VERTEX<span>SENTINEL</span></div>
+        <div class="status-badge">
+            <span class="status-dot"></span> SYSTEM ACTIVE
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Verifiable Risk Management for <span>Autonomous Agents</span></h1>
+            <p>The Sentinel Layer intercepts, scores, and authorizes trade intents before they hit the order book.</p>
+        </section>
+
+        <section class="diagram-container">
+            <div class="glass-card diagram-card">
+                <svg viewBox="0 0 800 300" class="sentinel-svg">
+                    <!-- Intent Node -->
+                    <g class="node" id="intent-node">
+                        <circle cx="100" cy="150" r="40" class="node-circle" />
+                        <text x="100" y="155" text-anchor="middle" class="node-text">INTENT</text>
+                        <foreignObject x="60" y="200" width="150" height="100">
+                            <div class="tooltip" id="intent-tooltip">
+                                <strong>TradeIntent</strong>
+                                <pre>{ agentId, pair, volume }</pre>
+                            </div>
+                        </foreignObject>
+                    </g>
+
+                    <!-- Sentinel Node -->
+                    <g class="node" id="sentinel-node">
+                        <circle cx="400" cy="150" r="60" class="node-circle highlight" />
+                        <text x="400" y="155" text-anchor="middle" class="node-text">SENTINEL</text>
+                        <foreignObject x="325" y="220" width="200" height="120">
+                            <div class="tooltip" id="sentinel-tooltip">
+                                <strong>Risk Assessment</strong>
+                                <pre>if (spread > 1.5%) throw Exception</pre>
+                            </div>
+                        </foreignObject>
+                    </g>
+
+                    <!-- Execution Node -->
+                    <g class="node" id="execution-node">
+                        <circle cx="700" cy="150" r="40" class="node-circle" />
+                        <text x="700" y="155" text-anchor="middle" class="node-text">EXECUTION</text>
+                        <foreignObject x="630" y="200" width="150" height="100">
+                            <div class="tooltip" id="execution-tooltip">
+                                <strong>Kraken Order</strong>
+                                <pre>krakenMcp.place_order()</pre>
+                            </div>
+                        </foreignObject>
+                    </g>
+
+                    <!-- Connection Lines -->
+                    <path d="M 140 150 L 340 150" class="connector" />
+                    <path d="M 460 150 L 660 150" class="connector" />
+
+                    <!-- Flow Particle -->
+                    <circle r="5" class="particle">
+                        <animateMotion dur="3s" repeatCount="indefinite" path="M 140 150 L 340 150 M 460 150 L 660 150" />
+                    </circle>
+                </svg>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="glass-card feature-card">
+                <h3>Fail-Closed Security</h3>
+                <p>If risk assessment fails or API is unreachable, the system halts execution immediately.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <h3>Real-time Guardrails</h3>
+                <p>Monitoring spread (>1.5%) and volatility (>5%) via Kraken MCP ticker data.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <h3>On-Chain Auth</h3>
+                <p>EIP-712 signed intents verified by the RiskRouter smart contract.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2024 VertexAgents Sentinel Layer | Audit-Ready Autonomous Trading
+    </footer>
+</body>
+</html>
