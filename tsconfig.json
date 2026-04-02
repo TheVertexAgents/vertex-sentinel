@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "ignoreDeprecations": "6.0",
     "strict": true,
     "esModuleInterop": true,
@@ -15,8 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true
+    "verbatimModuleSyntax": false
   },
   "include": ["src/**/*", "test/**/*", "hardhat.config.ts"],
   "exclude": ["node_modules"]
