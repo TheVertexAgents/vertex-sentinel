@@ -9,6 +9,7 @@
     "start": "npm run generate:types && npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
     "test": "NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx hardhat test test/RiskRouter.test.ts && NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx mocha test/mcp/kraken_mcp.test.ts",
+    "deploy:sepolia": "NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "demo": "npx hardhat run scripts/demo_flow.ts --network hardhat",
     "node": "npx hardhat node"
   },
