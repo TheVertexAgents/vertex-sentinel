@@ -23,3 +23,4 @@ export interface ValidationArtifact {
   timestamp: number;
   status: 'AUTHORIZED' | 'REJECTED';
 }
+

@@ -1,0 +1,75 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build, Lint & Type Safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Compile Contracts
+        run: npm run compile
+
+      - name: Enforce Strict TypeScript
+        run: npx tsc --noEmit
+
+  spec-validation:
+    name: Spec Immutability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Types from Specs
+        run: npm run generate:types
+
+      - name: Verify No Manual Type Changes
+        run: git diff --exit-code || (echo "Specs do not match generated types! Please run 'npm run generate:types' locally and commit the result." && exit 1)
+
+  test:
+    name: Smart Contracts & Agent logic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Starts an ephemeral Hardhat Node & runs compilation + tests defined in package.json
+      # Using fail-fast principles on 'test' script which bounds RiskRouter and MCP logic
+      - name: Run Integration Tests
+        run: npm run test
+        env:
+          # Optional: Expose mock variables for tests to bypass the Zod schema checks successfully
+          API_KEY_KRAKEN: 'mock-key'
+          API_SECRET_KRAKEN: 'mock-secret'
+          NODE_ENV: 'test'

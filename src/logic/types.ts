@@ -1,4 +1,4 @@
-import { TradeIntent, Authorization, ValidationArtifact } from './generated_types.ts';
+import { TradeIntent, Authorization, ValidationArtifact } from './generated_types.js';
 
 export { TradeIntent, Authorization, ValidationArtifact };
 
