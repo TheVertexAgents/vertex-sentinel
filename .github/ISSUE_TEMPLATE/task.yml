@@ -1,0 +1,36 @@
+name: 🛠️ Task
+description: Standardized technical task template for Vertex Sentinel development.
+title: "[TASK] "
+labels: ["kind:hackathon"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📝 Context
+        Provide a brief overview of why this task is being undertaken and its role in the **Sentinel Layer** architecture.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 🛠️ Technical Tasks
+      options:
+        - label: Research and define initial implementation details.
+        - label: Implement core logic in the primary target file.
+        - label: Add/Update unit tests to verify implementation.
+        - label: Verify against the 12-Day Roadmap requirements.
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: ✅ Acceptance Criteria
+      placeholder: What does success look like?
+      value: |
+        - [ ] Logic implemented and verified locally.
+        - [ ] All tests pass (`npm test`).
+        - [ ] Code follows existing architectural patterns.
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 🔗 References & Mentors
+      placeholder: Links to Notion, Specs, or Mentor advice.

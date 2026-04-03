@@ -1,0 +1,1 @@
+{"timestamp":"2026-04-02T05:28:32.980Z","traceId":"TEST-TRACE-123","orderId":"O12345-67890-ABCDE","agentId":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","pair":"BTC/USD","volume":"1e-18","executionPrice":50000,"txHash":"O12345-67890-ABCDE","krakenStatus":"success"}
