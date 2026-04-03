@@ -50,7 +50,7 @@ npm run demo
 
 ### Prerequisites
 
-- **Node.js 20+** (LTS stable)
+- **Node.js 20+** (LTS stable) — [Install with nvm](#nodejs-setup-with-nvm)
 - `npm` or compatible package manager
 
 ### Install & Configure
@@ -62,6 +62,44 @@ npm install
 cp .env.example .env
 # Set GOOGLE_GENAI_API_KEY and AGENT_PRIVATE_KEY
 ```
+
+### Node.js Setup with nvm
+
+**Install nvm** (if not already installed):
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+# Reload shell
+source ~/.bashrc
+# or for macOS:
+source ~/.zshrc
+```
+
+**Install Node 20:**
+
+```bash
+nvm install 20
+nvm use 20
+# Verify installation
+node --version  # Should output v20.x.x
+```
+
+**Auto-switch on directory change** (Optional):
+
+This repo includes a `.nvmrc` file specifying Node 20. To auto-switch when entering the project directory:
+
+```bash
+# Add to your ~/.bashrc or ~/.zshrc:
+# echo 'export NVM_AUTO_USE=true' >> ~/.bashrc
+
+# Then run (in the project directory):
+nvm use
+# Output: Now using node v20.x.x
+```
+
+**Verify Node 20 in CI/CD:**
+
+The project uses Node 20.x in GitHub Actions CI/CD pipelines. If you're on Node 24+ locally, the build should still work (forward compatible), but tests are verified on Node 20.20.1 in CI.
 
 ### Run the Agent Brain (Intent + Signing Demo)
 
