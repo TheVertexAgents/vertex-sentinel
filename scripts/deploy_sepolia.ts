@@ -9,11 +9,14 @@ async function main() {
   const [deployer] = await viem.getWalletClients();
   console.log(`Deploying contracts with the account: ${deployer.account.address}`);
 
-  const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY as Hex;
+  let AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY;
   if (!AGENT_PRIVATE_KEY) {
       throw new Error("AGENT_PRIVATE_KEY is missing from environment");
   }
-  const agentAddress = privateKeyToAccount(AGENT_PRIVATE_KEY).address;
+  if (!AGENT_PRIVATE_KEY.startsWith("0x")) {
+      AGENT_PRIVATE_KEY = "0x" + AGENT_PRIVATE_KEY;
+  }
+  const agentAddress = privateKeyToAccount(AGENT_PRIVATE_KEY as Hex).address;
   console.log(`Target Agent Address: ${agentAddress}`);
 
   // 1. Deploy MockRegistry
