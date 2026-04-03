@@ -15,10 +15,10 @@ jobs:
       url: https://sepolia.etherscan.io/
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -37,5 +37,4 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
           RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-          NODE_OPTIONS: "--loader ts-node/esm --no-warnings"
         run: npx hardhat run scripts/deploy_sepolia.ts --network sepolia
