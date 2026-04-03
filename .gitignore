@@ -12,6 +12,7 @@ out/
 # ── Hardhat ──────────────────────────────────────────────────
 cache/
 artifacts/
+typechain-types/
 
 # ── Python ───────────────────────────────────────────────────
 __pycache__/
@@ -35,6 +36,7 @@ Cargo.lock
 
 # ── Nested Project Artifacts ─────────────────────────────────
 vertex-sentinel/
+deployments_sepolia.json
 
 # ── IDEs ─────────────────────────────────────────────────────
 .vscode/
