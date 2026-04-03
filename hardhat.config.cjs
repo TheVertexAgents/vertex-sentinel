@@ -20,9 +20,7 @@ module.exports = {
     artifacts: "./artifacts"
   },
   mocha: {
-    timeout: 100000,
-    extensions: ["ts"],
-    loader: ["ts-node/esm"]
+    timeout: 100000
   },
   networks: {
     localhost: {
