@@ -1,4 +1,4 @@
-import { createWalletClient, http, parseEther } from 'viem';
+import { createWalletClient, http } from 'viem';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet } from 'viem/chains';

@@ -5,13 +5,13 @@
  */
 
 export interface TradeIntent {
-  agentId: bigint;
-  agentWallet: `0x${string}`;
+  agentId: number;
+  agentWallet: string;
   pair: string;
   action: string;
-  amountUsdScaled: bigint;
-  maxSlippageBps: bigint;
-  nonce: bigint;
+  amountUsdScaled: number;
+  maxSlippageBps: number;
+  nonce: number;
   deadline: bigint;
 }
 

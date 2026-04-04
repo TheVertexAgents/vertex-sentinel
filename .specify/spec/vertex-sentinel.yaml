@@ -3,10 +3,13 @@ description: Verifiable trade execution and risk management layer
 
 entities:
   - TradeIntent:
-      agentId: string
+      agentId: int
+      agentWallet: string
       pair: string
-      volume: float
-      maxPrice: float
+      action: string
+      amountUsdScaled: int
+      maxSlippageBps: int
+      nonce: int
       deadline: int
   - Authorization:
       isAllowed: boolean

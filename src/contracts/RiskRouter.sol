@@ -22,18 +22,20 @@ contract RiskRouter is EIP712 {
     using ECDSA for bytes32;
 
     bytes32 private constant TRADE_INTENT_TYPEHASH = keccak256(
-        "TradeIntent(string agentId,string pair,uint256 volume,uint256 maxPrice,uint256 deadline)"
+        "TradeIntent(uint256 agentId,address agentWallet,string pair,string action,uint256 amountUsdScaled,uint256 maxSlippageBps,uint256 nonce,uint256 deadline)"
     );
 
     struct TradeIntent {
-        string agentId;
+        uint256 agentId;
+        address agentWallet;
         string pair;
-        uint256 volume;
-        uint256 maxPrice;
+        string action;
+        uint256 amountUsdScaled;
+        uint256 maxSlippageBps;
+        uint256 nonce;
         uint256 deadline;
     }
 
-    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent, string pair, uint256 volume);
     event TradeRejected(bytes32 indexed intentHash, string reason);
 
     address public agentRegistry;
@@ -51,10 +53,13 @@ contract RiskRouter is EIP712 {
     function hashTradeIntent(TradeIntent memory intent) public view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(
             TRADE_INTENT_TYPEHASH,
-            keccak256(bytes(intent.agentId)),
+            intent.agentId,
+            intent.agentWallet,
             keccak256(bytes(intent.pair)),
-            intent.volume,
-            intent.maxPrice,
+            keccak256(bytes(intent.action)),
+            intent.amountUsdScaled,
+            intent.maxSlippageBps,
+            intent.nonce,
             intent.deadline
         )));
     }
@@ -79,13 +84,13 @@ contract RiskRouter is EIP712 {
             return false;
         }
 
-        // Circuit Breaker: Example logic for volume limit
-        if (intent.volume > 100 * 1e18) { // Arbitrary limit for demo
-             emit TradeRejected(digest, "Circuit Breaker: Volume Exceeded");
+        // Circuit Breaker: Example logic for volume limit ($100,000 demo cap)
+        if (intent.amountUsdScaled > 10000000) { 
+             emit TradeRejected(digest, "Circuit Breaker: Amount Exceeded");
              return false;
         }
 
-        emit TradeAuthorized(digest, signer, intent.pair, intent.volume);
+        emit TradeAuthorized(digest, signer, intent.pair, intent.amountUsdScaled);
         return true;
     }
 
