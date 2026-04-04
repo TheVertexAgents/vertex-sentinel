@@ -33,6 +33,7 @@ Cargo.lock
 .agent/
 .gemini/
 .genkit/
+.external_template/
 
 # ── Nested Project Artifacts ─────────────────────────────────
 vertex-sentinel/
