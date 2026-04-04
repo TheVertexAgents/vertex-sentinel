@@ -6,7 +6,7 @@
  *
  * Usage: npx hardhat run scripts/demo_flow.ts --network hardhat
  */
-import { parseEther, getAddress, decodeEventLog } from 'viem';
+import { parseUnits, getAddress, decodeEventLog } from 'viem';
 import hre from 'hardhat';
 import dotenv from 'dotenv';
 
@@ -20,11 +20,11 @@ class ExecutionProxy {
     console.log(`[Execution Layer] Proxy Initialized. Monitoring: ${contractAddress}`);
   }
 
-  async processAuthorizedTrade(pair: string, volume: bigint) {
+  async processAuthorizedTrade(pair: string, amountUsdScaled: bigint) {
     console.log(`\n[KRAKEN] 📤 Submitting order...`);
     console.log(`[KRAKEN]   Action : BUY`);
     console.log(`[KRAKEN]   Pair   : ${pair}`);
-    console.log(`[KRAKEN]   Volume : ${volume.toString()} wei`);
+    console.log(`[KRAKEN]   Amount : $${(Number(amountUsdScaled) / 100).toFixed(2)}`);
     console.log(`[KRAKEN]   Status : ✅ Accepted`);
     console.log(`[KRAKEN]   Order  : K-${Math.floor(Math.random() * 1_000_000)}`);
   }
@@ -74,20 +74,26 @@ async function main() {
 
   const types = {
     TradeIntent: [
-      { name: 'agentId', type: 'string' },
+      { name: 'agentId', type: 'uint256' },
+      { name: 'agentWallet', type: 'address' },
       { name: 'pair', type: 'string' },
-      { name: 'volume', type: 'uint256' },
-      { name: 'maxPrice', type: 'uint256' },
+      { name: 'action', type: 'string' },
+      { name: 'amountUsdScaled', type: 'uint256' },
+      { name: 'maxSlippageBps', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
       { name: 'deadline', type: 'uint256' },
     ],
   };
 
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
   const intent = {
-    agentId: 'AGENT_VERIFIED_001',
+    agentId: 1n,
+    agentWallet: agentSigner.account.address,
     pair: 'BTC/USDC',
-    volume: parseEther('10'),
-    maxPrice: parseEther('65000'),
+    action: 'BUY',
+    amountUsdScaled: 10000n, // $100.00
+    maxSlippageBps: 100n, // 1%
+    nonce: 1n,
     deadline: deadline,
   };
 
@@ -143,11 +149,11 @@ async function main() {
   // ─── STEP 6: Execution Proxy processes it ────────────────────────────────
   console.log('\n[Step 6] Execution Proxy: Processing authorized trade...');
   const proxy = new ExecutionProxy(routerAddress);
-  await proxy.processAuthorizedTrade(intent.pair, intent.volume);
+  await proxy.processAuthorizedTrade(intent.pair, intent.amountUsdScaled);
 
   // ─── STEP 7: Demo the REJECTED path ──────────────────────────────────────
   console.log('\n[Step 7] 🚫 REJECTED PATH DEMO: Attempting high-volume trade...');
-  const highVolumeIntent = { ...intent, volume: parseEther('200') };
+  const highVolumeIntent = { ...intent, amountUsdScaled: 20000000n, nonce: 2n };
 
   try {
       const highVolumeHash = await riskRouter.write.authorizeTrade([highVolumeIntent, signature], {

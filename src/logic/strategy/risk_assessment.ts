@@ -80,32 +80,33 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const low24h = parseFloat(ticker.l[1]);
     const volatility = (high24h - low24h) / low24h;
 
-    let riskScore = 0.1;
+    // Dynamic Penalty Model
+    // Weights: Spread (50%), Volatility (30%), Volume (20%)
+    const spreadPenalty = Math.min(0.5, (spread / 0.02) * 0.5);
+    const volatilityPenalty = Math.min(0.3, (volatility / 0.1) * 0.3);
+    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / 100000) * 0.2); // $1000 limit for demo volume penalty
+
+    const totalPenalty = spreadPenalty + volatilityPenalty + volumePenalty;
+    const confidence = Math.max(0, 1.0 - totalPenalty);
+    const riskScore = totalPenalty;
+
     let reasons = [];
+    if (spread > 0.015) reasons.push(`High spread: ${(spread * 100).toFixed(2)}%`);
+    if (volatility > 0.05) reasons.push(`High volatility: ${(volatility * 100).toFixed(2)}%`);
+    if (amountUsdScaled > 50000n) reasons.push("High volume");
 
-    if (spread > 0.015) {
-      riskScore = 0.9;
-      reasons.push(`High spread detected: ${(spread * 100).toFixed(2)}%`);
+    const confidenceThreshold = 0.8;
+    let action: 'BUY' | 'SELL' | 'HOLD' = 'BUY'; // Default demo action
+
+    if (confidence <= confidenceThreshold) {
+      action = 'HOLD';
+      reasons.push(`Insufficient Confidence (${(confidence * 100).toFixed(0)}% <= ${(confidenceThreshold * 100).toFixed(0)}%)`);
     }
-
-    if (volatility > 0.05) {
-      riskScore = 0.9;
-      reasons.push(`High volatility detected: ${(volatility * 100).toFixed(2)}%`);
-    }
-
-    if (amountUsdScaled > 50000n) { // $500 * 100
-      riskScore = Math.max(riskScore, 0.9);
-      reasons.push("High volume detected");
-    }
-
-    const isHighRisk = riskScore > 0.8;
-    const action = isHighRisk ? 'HOLD' : 'BUY'; // Simple demo: BUY if safe, else HOLD
-    const confidence = isHighRisk ? 0.95 : 0.85;
 
     return {
       action,
       pair,
-      amountUsdScaled: isHighRisk ? 0n : amountUsdScaled,
+      amountUsdScaled: action === 'HOLD' ? 0n : amountUsdScaled,
       confidence,
       reasoning: reasons.length > 0 ? reasons.join(", ") : "Standard trade parameters",
       riskScore,
