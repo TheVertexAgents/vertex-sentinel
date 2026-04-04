@@ -1,24 +1,35 @@
-import { createWalletClient, http } from 'viem';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
 import type { TradeIntent, Authorization } from './types.js';
 import dotenv from 'dotenv';
 import { validateEnv } from './env.js';
 import { CriticalSecurityException } from './errors.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { loadAgentMetadata } from './config.js';
+import { analyzeRisk } from './strategy/risk_assessment.js';
+import { createSignedCheckpoint } from '../utils/checkpoint.js';
+import { formatExplanation } from '../utils/explainability.js';
+import { RiskRouterClient } from '../onchain/risk_router.js';
+import { IdentityClient } from '../onchain/identity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 dotenv.config();
 
-// Validate environment on startup if not in test
+// Validate environment and load metadata on startup
 if (process.env.NODE_ENV !== 'test') {
     validateEnv();
+}
+
+/**
+ * @dev Lazily loaded agent metadata to support test environments.
+ */
+let _agentMetadata: any = null;
+function getAgentMetadata() {
+  if (!_agentMetadata) {
+    _agentMetadata = loadAgentMetadata();
+  }
+  return _agentMetadata;
 }
 
 /**
@@ -41,32 +52,16 @@ function getDeploymentConfig() {
   // Default to Local Hardhat if not explicitly set to sepolia
   return {
     chainId: 31337, // Hardhat default
-    riskRouter: '0x0000000000000000000000000000000000000000' // Placeholder for local
+    riskRouter: '0x0000000000000000000000000000000000000000', // Placeholder for local
+    agentRegistry: '0x0000000000000000000000000000000000000000' // Placeholder for local
   };
 }
 
 const config = getDeploymentConfig();
 
-// EIP-712 Domain definition matching RiskRouter.sol
-const domain = {
-  name: 'RiskRouter',
-  version: '1',
-  chainId: config.chainId || 11155111,
-  verifyingContract: config.riskRouter as `0x${string}`,
-} as const;
-
-const types = {
-  TradeIntent: [
-    { name: 'agentId', type: 'uint256' },
-    { name: 'agentWallet', type: 'address' },
-    { name: 'pair', type: 'string' },
-    { name: 'action', type: 'string' },
-    { name: 'amountUsdScaled', type: 'uint256' },
-    { name: 'maxSlippageBps', type: 'uint256' },
-    { name: 'nonce', type: 'uint256' },
-    { name: 'deadline', type: 'uint256' },
-  ],
-} as const;
+// Init On-Chain Clients
+const riskRouterClient = new RiskRouterClient(config.riskRouter as Hex, config.chainId);
+const identityClient = new IdentityClient(config.agentRegistry as Hex);
 
 /**
  * @dev Helper to get a unique trace ID.
@@ -88,156 +83,41 @@ async function getAssetResolution(pair: string) {
   return { symbol: pair, precision: 18 };
 }
 
-import { genkit, z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
-
-const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-1.5-flash',
-});
-
-let mcpClient: Client | null = null;
-
-async function getMcpClient() {
-  if (mcpClient) return mcpClient;
-
-  const serverPath = path.join(__dirname, '../mcp/kraken/index.ts');
-  const transport = new StdioClientTransport({
-    command: 'node',
-    args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
-    env: {
-        ...process.env,
-        NODE_ENV: process.env.NODE_ENV || 'development',
-        KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
-    } as Record<string, string>
-  });
-
-  mcpClient = new Client(
-    { name: 'sentinel-brain-client', version: '1.0.0' },
-    { capabilities: {} }
-  );
-
-  await mcpClient.connect(transport);
-  return mcpClient;
-}
-
 /**
- * @dev Genkit flow for verifiable risk assessment.
- */
-const riskScoreFlow = ai.defineFlow(
-  {
-    name: 'riskScoreFlow',
-    inputSchema: z.object({
-      pair: z.string(),
-      amountUsdScaled: z.string(),
-      traceId: z.string(),
-    }),
-    outputSchema: z.object({
-      score: z.number(),
-      reason: z.string(),
-      marketData: z.any().optional(),
-    }),
-  },
-  async (input) => {
-    console.error(JSON.stringify({
-        level: "INFO",
-        module: "Genkit",
-        TRACE_ID: input.traceId,
-        message: `Running risk assessment for ${input.pair} trade...`,
-        timestamp: new Date().toISOString()
-    }));
-
-    try {
-        const client = await getMcpClient();
-        const tickerResponse = await client.callTool({
-            name: 'get_ticker',
-            arguments: { symbol: input.pair }
-        }) as any;
-
-        if (!tickerResponse || !tickerResponse.content || !tickerResponse.content[0]) {
-            throw new CriticalSecurityException(`Kraken API unreachable or returned empty response for ${input.pair}`);
-        }
-
-        const ticker = JSON.parse(tickerResponse.content[0].text);
-
-        // Spread calculation: (ask - bid) / ask
-        const ask = parseFloat(ticker.a[0]);
-        const bid = parseFloat(ticker.b[0]);
-        const spread = (ask - bid) / ask;
-
-        // Volatility calculation: (24h_high - 24h_low) / 24h_low
-        const high24h = parseFloat(ticker.h[1]);
-        const low24h = parseFloat(ticker.l[1]);
-        const volatility = (high24h - low24h) / low24h;
-
-        let score = 0.1;
-        let reasons = [];
-
-        if (spread > 0.015) {
-            score = 0.9;
-            reasons.push(`High spread detected: ${(spread * 100).toFixed(2)}%`);
-        }
-
-        if (volatility > 0.05) {
-            score = 0.9;
-            reasons.push(`High volatility detected: ${(volatility * 100).toFixed(2)}%`);
-        }
-
-        if (parseInt(input.amountUsdScaled) > 50000) { // $500 * 100
-            score = Math.max(score, 0.9);
-            reasons.push("High volume detected");
-        }
-
-        return {
-            score,
-            reason: reasons.length > 0 ? reasons.join(", ") : "Standard trade parameters",
-            marketData: { spread, volatility }
-        };
-
-    } catch (error) {
-        if (error instanceof CriticalSecurityException) throw error;
-        throw new CriticalSecurityException(`Risk assessment failed due to external error: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-);
-
-/**
- * @dev The Intent Layer creates a signed TradeIntent.
+ * @dev The Intent Layer creates a signed TradeIntent after verifiable risk assessment.
  */
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
   const traceId = getTraceId();
   try {
     const account = privateKeyToAccount(privateKey);
-    const client = createWalletClient({
-      account,
-      chain: mainnet,
-      transport: http(),
-    });
 
-    // Run Genkit Risk Assessment
-    const risk = await riskScoreFlow({
-      pair: intent.pair,
-      amountUsdScaled: intent.amountUsdScaled.toString(),
-      traceId
-    });
-
-    // Fail-Closed Principle: Ensure risk output is valid
-    if (!risk || risk.score === undefined) {
-      throw new CriticalSecurityException(`Invalid risk assessment output for ${intent.pair}`);
+    // 1. Check Identity (ERC-8004 Alignment)
+    const isRegistered = await identityClient.isAgentRegistered(account.address);
+    if (!isRegistered) {
+       throw new CriticalSecurityException(`Fail-Closed: Agent ${account.address} is not registered in AgentRegistry.`);
     }
+
+    // 2. Run Strategic Risk Assessment (Refactored)
+    const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
+
+    // 3. Create and Sign Audit Checkpoint (Verifiable Execution)
+    await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId);
+
+    // 4. Log Human-Readable Explanation (UX Alignment)
+    console.log(`\n${formatExplanation(decision)}\n`);
 
     console.error(JSON.stringify({
       level: "INFO",
       step: "RISK_ASSESSMENT",
       TRACE_ID: traceId,
       pair: intent.pair,
-      score: risk.score,
-      reason: risk.reason,
+      score: decision.riskScore,
+      reason: decision.reasoning,
       timestamp: new Date().toISOString()
     }));
 
-    if (risk.score > 0.8) {
-       return { isAllowed: false, reason: `Risk too high: ${risk.reason}`, signature: '0x' };
+    if (decision.action === 'HOLD') {
+       return { isAllowed: false, reason: `Risk too high or strategy HOLD: ${decision.reasoning}`, signature: '0x' };
     }
 
     console.error(JSON.stringify({
@@ -249,18 +129,10 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       timestamp: new Date().toISOString()
     }));
 
-    // Sign the intent using EIP-712
-    const signature = await client.signTypedData({
-      domain,
-      types,
-      primaryType: 'TradeIntent',
-      message: {
-        ...intent,
-        agentWallet: intent.agentWallet as `0x${string}`,
-      },
-    });
+    // 4. Sign the intent using EIP-712 via RiskRouterClient
+    const signature = await riskRouterClient.signIntent(intent, privateKey);
 
-    return { isAllowed: true, reason: risk.reason, signature };
+    return { isAllowed: true, reason: decision.reasoning, signature };
   } catch (error) {
     if (error instanceof CriticalSecurityException) {
       throw error;
@@ -271,14 +143,15 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
 // Logic loop demo
 async function main() {
+  const agentMetadata = getAgentMetadata();
   console.log(JSON.stringify({
     level: "INFO",
-    message: "VertexAgents Sentinel Brain Initialization..."
+    message: `VertexAgents Sentinel Brain Initialization for ${agentMetadata.name} v${agentMetadata.version}...`
   }));
 
   // Demo Intent
   const demoIntent: TradeIntent = {
-    agentId: 1n,
+    agentId: BigInt(agentMetadata.agentId),
     agentWallet: '0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9',
     pair: 'BTC/USDC',
     action: 'BUY',
@@ -288,8 +161,8 @@ async function main() {
     deadline: BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour
   };
 
-  // Use a dummy private key if one is not provided in .env
-  const pk = (process.env.AGENT_PRIVATE_KEY as Hex) || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+  // Environment validation ensures AGENT_PRIVATE_KEY is present
+  const pk = process.env.AGENT_PRIVATE_KEY as Hex;
 
   const auth = await signIntent(demoIntent, pk);
   console.log("--- AUTHORIZATION ARTIFACT ---");
@@ -297,7 +170,17 @@ async function main() {
   console.log("--- END ---");
 }
 
-if (import.meta.url === `file://${fileURLToPath(import.meta.url)}` || (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))) {
+/**
+ * @dev Main entry point check.
+ * Ensures main() only runs when the script is executed directly.
+ */
+const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
+               (process.argv[1] && (
+                 path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
+                 process.argv[1].endsWith('agent_brain.ts')
+               ));
+
+if (isMain && process.env.NODE_ENV !== 'test') {
   main().catch((error) => {
     console.error(JSON.stringify({
       level: "CRITICAL",
