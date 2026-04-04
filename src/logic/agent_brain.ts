@@ -1,7 +1,5 @@
-import { createWalletClient, http } from 'viem';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
 import type { TradeIntent, Authorization } from './types.js';
 import dotenv from 'dotenv';
 import { validateEnv } from './env.js';
@@ -9,6 +7,8 @@ import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
 import { analyzeRisk } from './strategy/risk_assessment.js';
 import { createSignedCheckpoint } from '../utils/checkpoint.js';
+import { RiskRouterClient } from '../onchain/risk_router.js';
+import { IdentityClient } from '../onchain/identity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -41,32 +41,16 @@ function getDeploymentConfig() {
   // Default to Local Hardhat if not explicitly set to sepolia
   return {
     chainId: 31337, // Hardhat default
-    riskRouter: '0x0000000000000000000000000000000000000000' // Placeholder for local
+    riskRouter: '0x0000000000000000000000000000000000000000', // Placeholder for local
+    agentRegistry: '0x0000000000000000000000000000000000000000' // Placeholder for local
   };
 }
 
 const config = getDeploymentConfig();
 
-// EIP-712 Domain definition matching RiskRouter.sol
-const domain = {
-  name: 'RiskRouter',
-  version: '1',
-  chainId: config.chainId || 11155111,
-  verifyingContract: config.riskRouter as `0x${string}`,
-} as const;
-
-const types = {
-  TradeIntent: [
-    { name: 'agentId', type: 'uint256' },
-    { name: 'agentWallet', type: 'address' },
-    { name: 'pair', type: 'string' },
-    { name: 'action', type: 'string' },
-    { name: 'amountUsdScaled', type: 'uint256' },
-    { name: 'maxSlippageBps', type: 'uint256' },
-    { name: 'nonce', type: 'uint256' },
-    { name: 'deadline', type: 'uint256' },
-  ],
-} as const;
+// Init On-Chain Clients
+const riskRouterClient = new RiskRouterClient(config.riskRouter as Hex, config.chainId);
+const identityClient = new IdentityClient(config.agentRegistry as Hex);
 
 /**
  * @dev Helper to get a unique trace ID.
@@ -95,16 +79,17 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
   const traceId = getTraceId();
   try {
     const account = privateKeyToAccount(privateKey);
-    const client = createWalletClient({
-      account,
-      chain: mainnet,
-      transport: http(),
-    });
 
-    // 1. Run Strategic Risk Assessment (Refactored)
+    // 1. Check Identity (ERC-8004 Alignment)
+    const isRegistered = await identityClient.isAgentRegistered(account.address);
+    if (!isRegistered) {
+       console.warn(`[agent] Warning: Agent ${account.address} is not registered in AgentRegistry. Trade might be rejected on-chain.`);
+    }
+
+    // 2. Run Strategic Risk Assessment (Refactored)
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
-    // 2. Create and Sign Audit Checkpoint (Verifiable Execution)
+    // 3. Create and Sign Audit Checkpoint (Verifiable Execution)
     await createSignedCheckpoint(agentMetadata, decision, privateKey);
 
     console.error(JSON.stringify({
@@ -130,16 +115,8 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       timestamp: new Date().toISOString()
     }));
 
-    // 3. Sign the intent using EIP-712
-    const signature = await client.signTypedData({
-      domain,
-      types,
-      primaryType: 'TradeIntent',
-      message: {
-        ...intent,
-        agentWallet: intent.agentWallet as `0x${string}`,
-      },
-    });
+    // 4. Sign the intent using EIP-712 via RiskRouterClient
+    const signature = await riskRouterClient.signIntent(intent, privateKey);
 
     return { isAllowed: true, reason: decision.reasoning, signature };
   } catch (error) {
