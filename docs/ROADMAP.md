@@ -5,18 +5,18 @@
 
 | Issue | Label | Status |
 | :--- | :--- | :--- |
-| **[BUG]** Fix hardcoded `verifyingContract` in `agent_brain.ts` | `P0: Critical` | `TODO` |
-| **[REFACTOR]** Extract `SentinelClient` into reusable SDK structure | `P1: Feature` | `TODO` |
-| **[TECH DEBT]** Implement automatic type generation from YAML specs | `P2: DevEx` | `TODO` |
+| **[BUG]** Fix hardcoded `verifyingContract` in `agent_brain.ts` | `P0: Critical` | `DONE` ✅ |
+| **[REFACTOR]** Extract `SentinelClient` into reusable SDK structure | `P1: Feature` | `DONE` ✅ |
+| **[TECH DEBT]** Implement automatic type generation from YAML specs | `P2: DevEx` | `IN PROGRESS` |
 
 ## Milestone 2: Intelligent Verifiability (Genkit + Audit)
 *Goal: Enhance the risk engine and provide verifiable "proofs" of security.*
 
 | Issue | Label | Status |
 | :--- | :--- | :--- |
-| **[FEATURE]** Implement "Security Audit Trail" generator (JSON/Markdown) | `P1: Demo` | `TODO` |
-| **[ENHANCEMENT]** Strengthen Genkit risk assessment flow with market context | `P2: Research` | `TODO` |
-| **[FEATURE]** Integration of real-time ERC-8004 Identity Verification | `P2: Strategic` | `TODO` |
+| **[FEATURE]** Implement "Security Audit Trail" generator (JSON/Markdown) | `P1: Demo` | `DONE` ✅ |
+| **[ENHANCEMENT]** Strengthen Genkit risk assessment flow with market context | `P2: Research` | `DONE` ✅ |
+| **[FEATURE]** Integration of real-time ERC-8004 Identity Verification | `P2: Strategic` | `ACTIVE` ⚡ |
 
 ## Milestone 3: Productization & Marketing (GTM)
 *Goal: Positioning the Sentinel Layer as a "Security SDK" for the OpenServ ecosystem.*

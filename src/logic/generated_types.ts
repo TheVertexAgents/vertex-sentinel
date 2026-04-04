@@ -5,10 +5,13 @@
  */
 
 export interface TradeIntent {
-  agentId: string;
+  agentId: bigint;
+  agentWallet: string;
   pair: string;
-  volume: bigint;
-  maxPrice: bigint;
+  action: string;
+  amountUsdScaled: bigint;
+  maxSlippageBps: bigint;
+  nonce: bigint;
   deadline: bigint;
 }
 
@@ -20,7 +23,7 @@ export interface Authorization {
 
 export interface ValidationArtifact {
   intentHash: string;
-  timestamp: number;
+  timestamp: bigint;
   status: 'AUTHORIZED' | 'REJECTED';
 }
 

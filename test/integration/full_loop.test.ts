@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { parseEther, getAddress, type Hex } from "viem";
+import { getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import path from 'path';
@@ -92,10 +92,13 @@ describe("Sentinel Full Loop Integration", function () {
     // 1. Brain: Create and Sign Intent
     const deadline = BigInt((await time.latest()) + 3600);
     const intent = {
-      agentId: "AGENT_VERIFIED_001",
-      pair: "BTC/USD",
-      volume: BigInt(1),
-      maxPrice: parseEther("60000"),
+      agentId: 1n,
+      agentWallet: agentAccount.address,
+      pair: "BTC/USDC",
+      action: "BUY",
+      amountUsdScaled: 10000n, // $100.00
+      maxSlippageBps: 50n,     // 0.5%
+      nonce: 0n,
       deadline: deadline,
     };
 
@@ -111,10 +114,13 @@ describe("Sentinel Full Loop Integration", function () {
     };
     const types = {
         TradeIntent: [
-          { name: 'agentId', type: 'string' },
+          { name: 'agentId', type: 'uint256' },
+          { name: 'agentWallet', type: 'address' },
           { name: 'pair', type: 'string' },
-          { name: 'volume', type: 'uint256' },
-          { name: 'maxPrice', type: 'uint256' },
+          { name: 'action', type: 'string' },
+          { name: 'amountUsdScaled', type: 'uint256' },
+          { name: 'maxSlippageBps', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
           { name: 'deadline', type: 'uint256' },
         ],
     };
@@ -140,7 +146,7 @@ describe("Sentinel Full Loop Integration", function () {
     const txHash = await walletClient.writeContract(request);
     await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-    await proxy.processAuthorizedTrade(intent.pair, intent.volume, "TEST-TRACE-123");
+    await proxy.processAuthorizedTrade(intent.pair, intent.amountUsdScaled, "TEST-TRACE-123");
 
     // 4. Verification: Check Audit Logs
     expect(fs.existsSync(auditLogPath)).to.be.true;

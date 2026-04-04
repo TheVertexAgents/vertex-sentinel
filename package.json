@@ -8,8 +8,10 @@
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
-    "test": "NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx hardhat test test/RiskRouter.test.ts && NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" npx mocha test/mcp/kraken_mcp.test.ts",
-    "demo": "npx hardhat run scripts/demo_flow.ts --network hardhat",
+    "test": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat test test/RiskRouter.test.ts && NODE_OPTIONS='--import tsx --no-warnings' npx mocha test/mcp/kraken_mcp.test.ts",
+    "demo": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/demo_flow.ts --network hardhat",
+    "onboard:sepolia": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
+    "hackathon:submit": "NETWORK=sepolia KRAKEN_CLI_PATH=/home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/scripts/mock_kraken.sh NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/hackathon_submit.ts --network sepolia",
     "node": "npx hardhat node"
   },
   "keywords": [],
@@ -52,8 +54,10 @@
     "hardhat-gas-reporter": "^1.0.10",
     "json-schema-to-typescript": "^15.0.4",
     "solidity-coverage": "^0.8.17",
+    "tsx": "^4.21.0",
     "typechain": "^8.3.2",
     "viem": "^2.47.6",
+    "winston": "^3.19.0",
     "zod": "^3.25.76"
   }
 }
