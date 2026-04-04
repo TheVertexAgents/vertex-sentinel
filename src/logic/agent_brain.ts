@@ -20,7 +20,17 @@ dotenv.config();
 if (process.env.NODE_ENV !== 'test') {
     validateEnv();
 }
-const agentMetadata = loadAgentMetadata();
+
+/**
+ * @dev Lazily loaded agent metadata to support test environments.
+ */
+let _agentMetadata: any = null;
+function getAgentMetadata() {
+  if (!_agentMetadata) {
+    _agentMetadata = loadAgentMetadata();
+  }
+  return _agentMetadata;
+}
 
 /**
  * @dev Loads the deployment configuration for the current environment.
@@ -91,7 +101,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
     // 3. Create and Sign Audit Checkpoint (Verifiable Execution)
-    await createSignedCheckpoint(agentMetadata, decision, privateKey, config.chainId);
+    await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId);
 
     // 4. Log Human-Readable Explanation (UX Alignment)
     console.log(`\n${formatExplanation(decision)}\n`);
@@ -133,6 +143,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
 // Logic loop demo
 async function main() {
+  const agentMetadata = getAgentMetadata();
   console.log(JSON.stringify({
     level: "INFO",
     message: `VertexAgents Sentinel Brain Initialization for ${agentMetadata.name} v${agentMetadata.version}...`
@@ -159,7 +170,17 @@ async function main() {
   console.log("--- END ---");
 }
 
-if (import.meta.url === `file://${fileURLToPath(import.meta.url)}` || (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))) {
+/**
+ * @dev Main entry point check.
+ * Ensures main() only runs when the script is executed directly.
+ */
+const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
+               (process.argv[1] && (
+                 path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
+                 process.argv[1].endsWith('agent_brain.ts')
+               ));
+
+if (isMain && process.env.NODE_ENV !== 'test') {
   main().catch((error) => {
     console.error(JSON.stringify({
       level: "CRITICAL",

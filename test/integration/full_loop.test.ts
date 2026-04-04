@@ -9,6 +9,7 @@ import sinon from 'sinon';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { signIntent } from "../../src/logic/agent_brain.js";
 import ExecutionProxy from "../../src/execution/proxy.js";
+import { IdentityClient } from "../../src/onchain/identity.js";
 
 describe("Sentinel Full Loop Integration", function () {
   let riskRouter: any;
@@ -58,6 +59,7 @@ describe("Sentinel Full Loop Integration", function () {
     process.env.AGENT_PRIVATE_KEY = agentPrivateKey;
     process.env.KRAKEN_API_KEY = "test-kraken-key";
     process.env.KRAKEN_SECRET = "test-kraken-secret";
+    process.env.INFURA_KEY = "test-infura-key";
 
     const viem = (hre as any).viem;
     publicClient = await viem.getPublicClient();
@@ -79,6 +81,19 @@ describe("Sentinel Full Loop Integration", function () {
         account: agentAccount
     });
     await walletClient.writeContract(request);
+
+    // Mock agent-id.json for tests
+    const agentIdPath = path.join(process.cwd(), 'agent-id.json');
+    if (!fs.existsSync(agentIdPath)) {
+      fs.writeFileSync(agentIdPath, JSON.stringify({
+        name: "Test Agent",
+        version: "1.0.0",
+        agentId: 1
+      }));
+    }
+
+    // Mock Identity check in the Client
+    sandbox.stub(IdentityClient.prototype, 'isAgentRegistered').resolves(true);
   });
 
   after(function () {
