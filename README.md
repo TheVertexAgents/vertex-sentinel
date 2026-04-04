@@ -1,6 +1,23 @@
-# ⚡ Vertex Sentinel
+# 🛡️ Vertex Sentinel: The Guardrail for AI Agents
 
-> **Verifiable risk-management for autonomous AI trading agents.**  
+> **Building the Sentinel Layer for AI. Open-source, trustless, and verifiable execution.**
+> **Replacing the "Black-Box" with on-chain risk guardrails.**
+
+---
+
+## 📦 The Problem: The AI "Black-Box"
+Today, autonomous AI agents are treated as "Black-Boxes" with your capital.
+1. **Blind Trust**: You delegate private keys and hope the model doesn't hallucinate.
+2. **Rogue Execution**: A single compromised prompt can drain an entire treasury.
+3. **No Safety Net**: Most AI safety is "advisory"—it can't physically stop a bad trade.
+
+## 🛡️ The Solution: Vertex Sentinel
+Vertex Sentinel is a verifiable, **Fail-Closed** security layer that acts as an on-chain "Bouncer" for AI trade intents.
+- **Verifiable Intents**: EIP-712 signed TradeIntents that can be audited on-chain.
+- **Hard Guardrails**: Smart contract circuit breakers that physically block unauthorized or risky trades.
+- **Trustless Execution**: No private key delegation. The agent only signs specific, safe intents.
+
+---
 > EIP-712 signed TradeIntents · On-chain guardrails · Fail-Closed execution · No private key delegation.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
