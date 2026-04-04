@@ -49,18 +49,21 @@ const config = getDeploymentConfig();
 
 // EIP-712 Domain definition matching RiskRouter.sol
 const domain = {
-  name: 'VertexAgents-Sentinel',
+  name: 'RiskRouter',
   version: '1',
-  chainId: config.chainId,
+  chainId: config.chainId || 11155111,
   verifyingContract: config.riskRouter as `0x${string}`,
 } as const;
 
 const types = {
   TradeIntent: [
-    { name: 'agentId', type: 'string' },
+    { name: 'agentId', type: 'uint256' },
+    { name: 'agentWallet', type: 'address' },
     { name: 'pair', type: 'string' },
-    { name: 'volume', type: 'uint256' },
-    { name: 'maxPrice', type: 'uint256' },
+    { name: 'action', type: 'string' },
+    { name: 'amountUsdScaled', type: 'uint256' },
+    { name: 'maxSlippageBps', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
     { name: 'deadline', type: 'uint256' },
   ],
 } as const;
@@ -126,7 +129,7 @@ const riskScoreFlow = ai.defineFlow(
     name: 'riskScoreFlow',
     inputSchema: z.object({
       pair: z.string(),
-      volume: z.string(),
+      amountUsdScaled: z.string(),
       traceId: z.string(),
     }),
     outputSchema: z.object({
@@ -180,7 +183,7 @@ const riskScoreFlow = ai.defineFlow(
             reasons.push(`High volatility detected: ${(volatility * 100).toFixed(2)}%`);
         }
 
-        if (parseFloat(input.volume) > 10) {
+        if (parseInt(input.amountUsdScaled) > 50000) { // $500 * 100
             score = Math.max(score, 0.9);
             reasons.push("High volume detected");
         }
@@ -214,7 +217,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // Run Genkit Risk Assessment
     const risk = await riskScoreFlow({
       pair: intent.pair,
-      volume: intent.volume.toString(),
+      amountUsdScaled: intent.amountUsdScaled.toString(),
       traceId
     });
 
@@ -242,7 +245,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       step: "SIGNING_INTENT",
       TRACE_ID: traceId,
       pair: intent.pair,
-      agentId: intent.agentId,
+      agentId: intent.agentId.toString(),
       timestamp: new Date().toISOString()
     }));
 
@@ -272,15 +275,15 @@ async function main() {
 
   // Demo Intent
   const demoIntent: TradeIntent = {
-    agentId: "AGENT_VERIFIED_001",
-    pair: "BTC/USDC",
-    volume: parseEther("0.5"),
-    maxPrice: parseEther("65000"),
+    agentId: 1n,
+    agentWallet: '0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9',
+    pair: 'BTC/USDC',
+    action: 'BUY',
+    amountUsdScaled: 10000n, // $100.00
+    maxSlippageBps: 100n,
+    nonce: 0n,
     deadline: BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour
   };
-
-  // Change volume to trigger allowed path
-  demoIntent.volume = BigInt(1);
 
   // Use a dummy private key if one is not provided in .env
   const pk = (process.env.AGENT_PRIVATE_KEY as Hex) || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
