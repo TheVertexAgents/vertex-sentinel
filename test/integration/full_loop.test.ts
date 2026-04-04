@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { parseEther, getAddress, type Hex } from "viem";
+import { getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import path from 'path';

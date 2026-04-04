@@ -35,13 +35,20 @@ function generateTypes() {
             const typeStr = String(propType);
             let tsType = 'string';
 
-            if (propName === 'deadline' || propName === 'volume' || propName === 'maxPrice' || typeStr === 'uint256') {
+            if (typeStr === 'bigint' || typeStr === 'int' || typeStr === 'uint256' || typeStr === 'uint' ||
+                propName === 'deadline' || propName === 'volume' || propName === 'maxPrice' ||
+                propName === 'agentId' || propName === 'amountUsdScaled' || propName === 'maxSlippageBps' ||
+                propName === 'nonce' || propName === 'maxPrice') {
                tsType = 'bigint';
-            } else if (typeStr === 'float' || typeStr === 'int' || typeStr === 'timestamp') {
+            } else if (typeStr === 'float' || typeStr === 'timestamp') {
                tsType = 'number';
             } else if (typeStr === 'bool' || typeStr === 'boolean') {
                tsType = 'boolean';
-            } else if (typeStr === 'bytes32' || typeStr === 'address' || propName === 'agentId' || propName === 'pair') {
+            } else if (typeStr === 'bytes32') {
+               tsType = 'string';
+            } else if (typeStr === 'address') {
+               tsType = '`0x${string}`';
+            } else if (propName === 'pair') {
                tsType = 'string';
             } else if (typeStr.includes('enum')) {
                const enumMatch = typeStr.match(/\[(.*?)\]/);

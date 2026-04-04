@@ -36,6 +36,7 @@ contract RiskRouter is EIP712 {
         uint256 deadline;
     }
 
+    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent, string pair, uint256 amountUsdScaled);
     event TradeRejected(bytes32 indexed intentHash, string reason);
 
     address public agentRegistry;

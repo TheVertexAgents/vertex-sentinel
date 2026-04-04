@@ -254,7 +254,10 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       domain,
       types,
       primaryType: 'TradeIntent',
-      message: intent,
+      message: {
+        ...intent,
+        agentWallet: intent.agentWallet as `0x${string}`,
+      },
     });
 
     return { isAllowed: true, reason: risk.reason, signature };
