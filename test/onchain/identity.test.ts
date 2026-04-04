@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { createPublicClient, http, type Hex } from 'viem';
 import { IdentityClient } from '../../src/onchain/identity.js';
 
 describe('Identity Client Unit Tests', function () {
@@ -15,10 +14,6 @@ describe('Identity Client Unit Tests', function () {
   });
 
   it('Should correctly check agent registration status', async function () {
-    const mockClient = {
-      readContract: sandbox.stub().resolves(true)
-    };
-
     // We can't easily mock createPublicClient as it's an export from viem
     // But we can test the fallback/error handling of the Client
     const client = new IdentityClient('0x0000000000000000000000000000000000000000');
