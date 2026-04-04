@@ -7,6 +7,7 @@ import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
 import { analyzeRisk } from './strategy/risk_assessment.js';
 import { createSignedCheckpoint } from '../utils/checkpoint.js';
+import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
 import { IdentityClient } from '../onchain/identity.js';
 import path from 'path';
@@ -83,14 +84,17 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // 1. Check Identity (ERC-8004 Alignment)
     const isRegistered = await identityClient.isAgentRegistered(account.address);
     if (!isRegistered) {
-       console.warn(`[agent] Warning: Agent ${account.address} is not registered in AgentRegistry. Trade might be rejected on-chain.`);
+       throw new CriticalSecurityException(`Fail-Closed: Agent ${account.address} is not registered in AgentRegistry.`);
     }
 
     // 2. Run Strategic Risk Assessment (Refactored)
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
     // 3. Create and Sign Audit Checkpoint (Verifiable Execution)
-    await createSignedCheckpoint(agentMetadata, decision, privateKey);
+    await createSignedCheckpoint(agentMetadata, decision, privateKey, config.chainId);
+
+    // 4. Log Human-Readable Explanation (UX Alignment)
+    console.log(`\n${formatExplanation(decision)}\n`);
 
     console.error(JSON.stringify({
       level: "INFO",

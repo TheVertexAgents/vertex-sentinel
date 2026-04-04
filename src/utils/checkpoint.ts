@@ -11,11 +11,11 @@ import path from 'path';
  * @dev EIP-712 Domain definition for checkpoints.
  * These are local verifiable audit artifacts, not on-chain state changes.
  */
-const DOMAIN = {
+const getDomain = (chainId: number) => ({
   name: 'Vertex-Sentinel-Audit',
   version: '1',
-  chainId: 11155111, // Sepolia default for hackathon
-} as const;
+  chainId,
+} as const);
 
 const TYPES = {
   TradeCheckpoint: [
@@ -42,7 +42,8 @@ export interface SignedCheckpoint {
 export async function createSignedCheckpoint(
   agent: AgentMetadata,
   decision: TradeDecision,
-  privateKey: `0x${string}`
+  privateKey: `0x${string}`,
+  chainId: number = 11155111
 ): Promise<SignedCheckpoint> {
   try {
     const timestamp = BigInt(Math.floor(Date.now() / 1000));
@@ -66,7 +67,7 @@ export async function createSignedCheckpoint(
     };
 
     const signature = await client.signTypedData({
-      domain: DOMAIN,
+      domain: getDomain(chainId),
       types: TYPES,
       primaryType: 'TradeCheckpoint',
       message,
