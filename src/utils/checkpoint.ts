@@ -1,6 +1,6 @@
-import { createWalletClient, http, keccak256, toHex, stringToBytes } from 'viem';
+import { createWalletClient, http, keccak256, stringToBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
+import { sepolia } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import type { TradeDecision } from '../logic/strategy/risk_assessment.js';
 import type { AgentMetadata } from '../logic/config.js';
@@ -51,7 +51,7 @@ export async function createSignedCheckpoint(
     const account = privateKeyToAccount(privateKey);
     const client = createWalletClient({
       account,
-      chain: mainnet,
+      chain: sepolia,
       transport: http(),
     });
 

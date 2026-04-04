@@ -169,8 +169,8 @@ async function main() {
     deadline: BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour
   };
 
-  // Use a dummy private key if one is not provided in .env
-  const pk = (process.env.AGENT_PRIVATE_KEY as Hex) || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+  // Environment validation ensures AGENT_PRIVATE_KEY is present
+  const pk = process.env.AGENT_PRIVATE_KEY as Hex;
 
   const auth = await signIntent(demoIntent, pk);
   console.log("--- AUTHORIZATION ARTIFACT ---");

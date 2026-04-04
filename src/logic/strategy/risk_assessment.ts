@@ -3,9 +3,7 @@ import { CriticalSecurityException } from '../errors.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import type { Ticker } from '../../mcp/kraken/types.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -17,7 +15,10 @@ export const TradeDecisionSchema = z.object({
   confidence: z.number().min(0).max(1),
   reasoning: z.string(),
   riskScore: z.number().optional(),
-  marketData: z.any().optional(),
+  marketData: z.object({
+    spread: z.number(),
+    volatility: z.number(),
+  }).optional(),
 });
 
 export type TradeDecision = z.infer<typeof TradeDecisionSchema>;
@@ -61,13 +62,13 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const tickerResponse = await client.callTool({
       name: 'get_ticker',
       arguments: { symbol: pair }
-    }) as any;
+    }) as { content: Array<{ type: string; text: string }> };
 
     if (!tickerResponse || !tickerResponse.content || !tickerResponse.content[0]) {
       throw new CriticalSecurityException(`Kraken API unreachable or returned empty response for ${pair}`);
     }
 
-    const ticker = JSON.parse(tickerResponse.content[0].text);
+    const ticker = JSON.parse(tickerResponse.content[0].text) as Ticker;
 
     // Spread calculation: (ask - bid) / ask
     const ask = parseFloat(ticker.a[0]);
