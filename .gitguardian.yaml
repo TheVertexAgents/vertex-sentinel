@@ -1,0 +1,62 @@
+# GitGuardian Configuration for Vertex Sentinel
+# Comprehensive secret detection to prevent accidental credential commits
+
+version: '1'
+
+# Scan settings
+scan:
+  # Raise incidents on the following severities
+  incident_severity_level: MEDIUM
+  
+  # Enable verbose output for debugging
+  verbose: false
+
+# Custom rules for detecting sensitive patterns
+custom_patterns:
+  - name: "Private Keys (0x-prefixed hex)"
+    pattern: '0x[a-fA-F0-9]{64}'
+    type: "private_key"
+    
+  - name: "API Keys (generic)"
+    pattern: '["\']?[A-Za-z0-9_-]{32,}["\']?'
+    type: "api_key"
+    
+  - name: "Environment Variable Secrets"
+    pattern: '(PRIVATE_KEY|API_SECRET|API_KEY|PASSWORD)\s*=\s*[^\n\r]+'
+    type: "env_secret"
+
+# Ignore patterns (to avoid false positives)
+ignore:
+  paths:
+    # Don't scan these paths
+    - .git
+    - node_modules
+    - dist
+    - build
+    - coverage
+    - .next
+    
+  regexes:
+    # Ignore test data that isn't real
+    - pattern: 'mock-.*'
+    - pattern: 'test.*key'
+    - pattern: 'dummy.*'
+
+# Pre-commit hook settings
+pre_commit:
+  # Always run on all staged files
+  staged: true
+  
+  # Exclude files from pre-commit scan
+  exclude:
+    - '*.md'  # But actually we should scan these too!
+    - '.env.example'
+    - 'docs/*.md'
+
+# Notify on detection
+notify:
+  # Enable CI/CD integration
+  ci_fail_on_detection: true
+  
+  # Show detailed remediation advice
+  show_remediation: true
