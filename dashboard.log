@@ -1,9 +1,0 @@
- INFO  Accepting connections at http://localhost:3000
- HTTP  4/5/2026 2:38:35 PM ::1 GET /dashboard/index.html
- HTTP  4/5/2026 2:38:35 PM ::1 Returned 301 in 32 ms
- HTTP  4/5/2026 2:38:35 PM ::1 GET /dashboard/index
- HTTP  4/5/2026 2:38:35 PM ::1 Returned 301 in 1 ms
- HTTP  4/5/2026 2:38:35 PM ::1 GET /dashboard
- HTTP  4/5/2026 2:38:35 PM ::1 Returned 200 in 7 ms
- HTTP  4/5/2026 2:38:35 PM ::1 GET /logs/audit.json
- HTTP  4/5/2026 2:38:35 PM ::1 Returned 200 in 2 ms
