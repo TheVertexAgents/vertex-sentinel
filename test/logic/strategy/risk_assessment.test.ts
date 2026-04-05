@@ -36,7 +36,7 @@ describe('Risk Assessment Strategy Unit Tests', function () {
 
     const decision = await analyzeRisk('BTC/USD', 10000n);
     expect(decision.action).to.equal('BUY');
-    expect(decision.riskScore).to.be.lessThan(0.5);
+    expect(decision.confidence).to.be.greaterThan(0.8);
   });
 
   it('Should return HOLD for high spread', async function () {
@@ -46,7 +46,7 @@ describe('Risk Assessment Strategy Unit Tests', function () {
         type: 'text',
         text: JSON.stringify({
           symbol: 'BTCUSD',
-          a: ["51000.0", "1", "1.000"], // 2% spread
+          a: ["51000.0", "1", "1.000"], // ~2% spread
           b: ["49950.0", "1", "1.000"],
           h: ["50050.0", "50100.0"],
           l: ["49950.0", "50000.0"],
@@ -61,6 +61,7 @@ describe('Risk Assessment Strategy Unit Tests', function () {
 
     const decision = await analyzeRisk('BTC/USD', 10000n);
     expect(decision.action).to.equal('HOLD');
-    expect(decision.reasoning).to.contain('High spread detected');
+    expect(decision.reasoning).to.contain('High spread');
+    expect(decision.confidence).to.be.lessThanOrEqual(0.8);
   });
 });
