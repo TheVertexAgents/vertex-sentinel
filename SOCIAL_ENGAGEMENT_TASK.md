@@ -62,21 +62,22 @@ The hackathon has explicit categories:
 
 ## Post Templates (From ACTION_PLAN.md) - UPDATED WITH TASK 1 ACHIEVEMENTS
 
-### Post 1: Live Trading Success 🎯
+### Post 1: Live Trading with PnL Success 🎯
 ```
-⚡ LIVE: Vertex Sentinel just executed 4 real BTC/USD trades on Kraken!
+⚡ LIVE: Vertex Sentinel just executed 8 real trades on Kraken - BUY & SELL!
 
-✅ 4/4 trades successful (100% success rate)
+✅ 8/8 trades successful (100% success rate)
+✅ 0.00050 BTC total volume traded
+✅ Full trading lifecycle demonstrated (buy → sell)
+✅ Real PnL calculation from live market data
 ✅ EIP-712 cryptographic signatures on every decision
-✅ Fail-closed architecture verified end-to-end
-✅ Full audit trail with non-repudiation
 
 Score expected: 8.3/10 → 9.5/10 🚀
 
 GitHub: https://github.com/TheVertexAgents/vertex-sentinel
 Dashboard: [link]
 
-Big thanks to @kamran for the world-class frontend and dashboard! 🙌
+Big thanks to @kamran for the incredible frontend that visualizes all of this! 🙌
 
 #AITrading #Kraken #ERC8004 #BuildInPublic @krakenfx @lablabai @Surgexyz_
 ```
@@ -120,23 +121,34 @@ Repo: https://github.com/TheVertexAgents/vertex-sentinel
 #BuildInPublic #ERC8004 @lablabai
 ```
 
-### Post 3: Performance Update - Real Results 📊
+### Post 3: PnL Results - Complete Trading Cycle 📊
 ```
-LIVE TRADING EXECUTION COMPLETE ✅
+LIVE TRADING WITH PnL - COMPLETE CYCLE EXECUTED ✅
 
-Vertex Sentinel Results (Today):
-- 4 BTC/USD trades executed
+Vertex Sentinel Results (Complete Buy-Sell Trades):
+- 8 BTC/USD trades executed (4 BUY + 4 SELL)
 - 0.00050 BTC total volume
-- $67,347 average price
-- 40 second execution time
-- 4/4 successful (100%)
-- 4 EIP-712 signatures generated
+- Real market prices from Kraken API
+- ~60 second execution time
+- 8/8 successful (100%)
+- 8 EIP-712 signatures generated
+- Full portfolio lifecycle demonstrated
+
+Example Trade Pair:
+- Buy 0.00011 BTC @ $67,340.10 → Sell @ $67,340.10
+- Buy 0.00012 BTC @ $67,348.50 → Sell @ $67,319.70
+- Buy 0.00013 BTC @ $67,285.70 → Sell @ $67,272.80
+- Buy 0.00014 BTC @ $67,285.90 → Sell @ $67,293.30
+
+This demonstrates:
+✅ Full trade lifecycle (entry & exit)
+✅ Real market execution
+✅ Portfolio rebalancing capability
+✅ Verifiable bid-ask spreads
 
 Every decision cryptographically signed.
 Every trade auditable.
 Every guardrail enforced.
-
-This is verifiable AI trading.
 
 Dashboard: [link]
 Proof: https://github.com/TheVertexAgents/vertex-sentinel
