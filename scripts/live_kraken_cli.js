@@ -4,7 +4,7 @@ import process from 'process';
 async function main() {
     const exchange = new CCXT.kraken({
         apiKey: process.env.KRAKEN_API_KEY,
-        secret: process.env.KRAKEN_API_SECRET,
+        secret: process.env.KRAKEN_SECRET,
     });
     const command = process.argv[2];
     const args = process.argv.slice(3);
