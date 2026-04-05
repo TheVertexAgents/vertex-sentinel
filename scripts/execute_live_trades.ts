@@ -1,6 +1,6 @@
-import ExecutionProxy from '../src/execution/proxy.js';
-import { KrakenMcpServer } from '../src/mcp/kraken/index.js';
-import { loadAgentMetadata } from '../src/logic/config.js';
+import ExecutionProxy from '../src/execution/proxy.ts';
+import { KrakenMcpServer } from '../src/mcp/kraken/index.ts';
+import { loadAgentMetadata } from '../src/logic/config.ts';
 import type { Hex } from 'viem';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -37,7 +37,7 @@ async function main() {
         console.log(`\n--- EXECUTING TRADE ${i + 1} / ${trades.length} ---`);
         const trade = trades[i];
         const decision = { action: 'BUY' as const, pair: trade.pair, amountUsdScaled: trade.usdValue, riskScore: 0.95, confidence: 0.95, reasoning: "Live Market Execution for Kraken Challenge Proof of Work. Verifying Sentinel Layer guardrails." };
-        const { createSignedCheckpoint } = await import('../src/utils/checkpoint.js');
+        const { createSignedCheckpoint } = await import('../src/utils/checkpoint.ts');
         await createSignedCheckpoint(agentMetadata, decision, pk, 11155111);
         await proxy.processAuthorizedTrade(trade.pair, BigInt(Math.floor(trade.amount * 10**18)), `hackathon-live-${i}-${Date.now()}`);
         console.log(`TRADE ${i + 1} SUCCESSFUL`);
