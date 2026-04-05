@@ -1,0 +1,87 @@
+◇ injecting env (7) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injecting env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injecting env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injecting env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+--- STARTING LIVE TRADING WITH PnL EXECUTION ---
+{"level":"INFO","module":"ExecutionProxy","message":"Execution Layer Proxy Initialized","network":"sepolia","contractAddress":"0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC","agentAddress":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9","chainId":11155111,"timestamp":"2026-04-05T16:07:52.584Z"}
+
+--- EXECUTING TRADE 1 / 8 (BUY) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-0-1775405272642","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T16:07:52.642Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-0-1775405272642","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T16:07:52.643Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00011},"timestamp":"2026-04-05T16:07:52.649Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-0-1775405272642","result":{"txid":["LIVE-CX0FIJYV"],"descr":{"order":"buy 0.00011 BTC/USD @ market (Live Data Execution)"},"price":67340.1},"timestamp":"2026-04-05T16:08:03.987Z"}
+TRADE 1 SUCCESSFUL
+
+--- EXECUTING TRADE 2 / 8 (SELL) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-1-1775405286012","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T16:08:06.012Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-1-1775405286012","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T16:08:06.013Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00011},"timestamp":"2026-04-05T16:08:06.014Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-1-1775405286012","result":{"txid":["LIVE-DN7BGYGM"],"descr":{"order":"buy 0.00011 BTC/USD @ market (Live Data Execution)"},"price":67340.1},"timestamp":"2026-04-05T16:08:14.195Z"}
+TRADE 2 SUCCESSFUL
+
+--- EXECUTING TRADE 3 / 8 (BUY) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-2-1775405296223","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T16:08:16.223Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-2-1775405296223","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T16:08:16.223Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00012},"timestamp":"2026-04-05T16:08:16.225Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-2-1775405296223","result":{"txid":["LIVE-JU03F0IJ"],"descr":{"order":"buy 0.00012 BTC/USD @ market (Live Data Execution)"},"price":67348.5},"timestamp":"2026-04-05T16:08:32.419Z"}
+TRADE 3 SUCCESSFUL
+
+--- EXECUTING TRADE 4 / 8 (SELL) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-3-1775405314513","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T16:08:34.513Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-3-1775405314513","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T16:08:34.524Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00012},"timestamp":"2026-04-05T16:08:34.527Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-3-1775405314513","result":{"txid":["LIVE-7XG78WDQ"],"descr":{"order":"buy 0.00012 BTC/USD @ market (Live Data Execution)"},"price":67319.7},"timestamp":"2026-04-05T16:08:55.654Z"}
+TRADE 4 SUCCESSFUL
+
+--- EXECUTING TRADE 5 / 8 (BUY) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-4-1775405337775","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T16:08:57.775Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-4-1775405337775","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T16:08:57.776Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000129999999999999},"timestamp":"2026-04-05T16:08:57.778Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-4-1775405337775","result":{"txid":["LIVE-34N8SO85"],"descr":{"order":"buy 0.000129999999999999 BTC/USD @ market (Live Data Execution)"},"price":67285.7},"timestamp":"2026-04-05T16:09:10.425Z"}
+TRADE 5 SUCCESSFUL
+
+--- EXECUTING TRADE 6 / 8 (SELL) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-5-1775405356851","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T16:09:16.852Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-5-1775405356851","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T16:09:16.852Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000129999999999999},"timestamp":"2026-04-05T16:09:16.856Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-5-1775405356851","result":{"txid":["LIVE-E5FUXXVE"],"descr":{"order":"buy 0.000129999999999999 BTC/USD @ market (Live Data Execution)"},"price":67272.8},"timestamp":"2026-04-05T16:09:30.271Z"}
+TRADE 6 SUCCESSFUL
+
+--- EXECUTING TRADE 7 / 8 (BUY) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-6-1775405372313","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T16:09:32.314Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-6-1775405372313","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T16:09:32.314Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000139999999999999},"timestamp":"2026-04-05T16:09:32.326Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-6-1775405372313","result":{"txid":["LIVE-ROSB9NLY"],"descr":{"order":"buy 0.000139999999999999 BTC/USD @ market (Live Data Execution)"},"price":67285.9},"timestamp":"2026-04-05T16:09:47.768Z"}
+TRADE 7 SUCCESSFUL
+
+--- EXECUTING TRADE 8 / 8 (SELL) ---
+{"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-pnl-7-1775405390292","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T16:09:50.292Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-pnl-7-1775405390292","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T16:09:50.293Z"}
+{"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000139999999999999},"timestamp":"2026-04-05T16:09:50.294Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-pnl-7-1775405390292","result":{"txid":["LIVE-AXNV3W3K"],"descr":{"order":"buy 0.000139999999999999 BTC/USD @ market (Live Data Execution)"},"price":67293.3},"timestamp":"2026-04-05T16:10:04.632Z"}
+TRADE 8 SUCCESSFUL
+
+--- PnL CALCULATION ---
+Pair 1: BTC/USD
+  Buy:  0.00011 BTC @ 66818181.82 (USD value: $7350)
+  Sell: 0.00011 BTC @ 66818181.82 (USD value: $7350)
+  PnL: +$0.00
+Pair 2: BTC/USD
+  Buy:  0.00012 BTC @ 66833333.33 (USD value: $8020)
+  Sell: 0.00012 BTC @ 66833333.33 (USD value: $8020)
+  PnL: +$0.00
+Pair 3: BTC/USD
+  Buy:  0.00013 BTC @ 66846153.85 (USD value: $8690)
+  Sell: 0.00013 BTC @ 66846153.85 (USD value: $8690)
+  PnL: +$0.00
+Pair 4: BTC/USD
+  Buy:  0.00014 BTC @ 66857142.86 (USD value: $9360)
+  Sell: 0.00014 BTC @ 66857142.86 (USD value: $9360)
+  PnL: +$0.00
+
+--- TOTAL RESULTS ---
+Total Trades: 8
+Total Volume: 0.00050000 BTC
+Total PnL: +$0.00
+
+--- LIVE TRADING WITH PnL EXECUTION COMPLETE ---

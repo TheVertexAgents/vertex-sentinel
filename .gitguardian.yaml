@@ -1,0 +1,22 @@
+# GitGuardian Configuration for Vertex Sentinel
+# Comprehensive secret detection to prevent accidental credential commits
+
+# Scan settings
+scan:
+  # Raise incidents on the following severities
+  incident_severity_level: MEDIUM
+  
+  # Enable verbose output for debugging
+  verbose: false
+
+# Ignore patterns (to avoid false positives)
+ignore:
+  paths:
+    # Don't scan these paths
+    - .git
+    - node_modules
+    - dist
+    - build
+    - coverage
+    - .next
+
