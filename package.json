@@ -30,6 +30,7 @@
     "genkit": "^1.31.0",
     "serve": "^14.2.6",
     "sinon": "^21.0.3",
+    "ccxt": "^4.5.46",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.2"
   },
@@ -46,6 +47,7 @@
     "@nomicfoundation/hardhat-verify": "^2.1.3",
     "@nomicfoundation/hardhat-viem": "^2.1.3",
     "@nomicfoundation/ignition-core": "^0.15.15",
+    "@playwright/test": "^1.59.1",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.20",
