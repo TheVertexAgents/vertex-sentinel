@@ -7,11 +7,18 @@
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity&logoColor=white)](https://soliditylang.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![EIP-712](https://img.shields.io/badge/EIP--712-Typed%20Data%20Signing-6f42c1)](https://eips.ethereum.org/EIPS/eip-712)
-[![Viem](https://img.shields.io/badge/Viem-2.x-fbbf24)](https://viem---
+[![Viem](https://img.shields.io/badge/Viem-2.x-fbbf24)](https://viem.sh)
+
+*Last Updated: April 2026*
 
 ## 🏗️ Hardened & Verified Architecture
 
-The Vertex Sentinel is now a **production-hardened infrastructure** with 5/5 passing security tests.
+The Vertex Sentinel is a **production-ready risk layer** following the strict **Constitution v2.0.0** standards. It has achieved a 5/5 pass rate on core security tests.
+
+### 🛡️ Security Pillars
+- **Fail-Closed Execution**: Critical failures or risk breaches trigger an immediate halt (CriticalSecurityException).
+- **Strict Type Safety**: Built with TypeScript 5.x and Zod; zero use of `any` types.
+- **Audit-Ready**: Machine-readable JSONL logging (`stderr`) for all signature and risk assessment steps.
 
 ```
 ┌─────────────────┐     EIP-712 Signed      ┌──────────────────────┐     TradeAuthorized      ┌─────────────────┐
@@ -119,36 +126,17 @@ The on-chain "bouncer" — intercepts `TradeIntent` structs and enforces:
 | Signing / Web3 | Viem 2.x (EIP-712 `signTypedData`) |
 | AI Layer | **Google Genkit** (risk scoring flows) |
 | Runtime | **TypeScript 5.x**, Node.js 20+ (ESM mandated) |
+| Security | Zod (I/O validation), Fail-Closed Architecture |
+| Exchange | Kraken CLI (Modular MCP integration) |
 
 ---
 
 ## Roadmap
 
-- [x] EIP-712 TradeIntent signing (Intent Layer)
-- [x] On-chain RiskRouter with circuit breakers (Sentinel Layer)
-- [x] ExecutionProxy event routing (Execution Layer)
-- [x] Spec-first YAML architecture
-- [x] **Genkit risk-scoring flow** wired into signing path
-- [x] **ERC-8004 agent registry** integration
-- [x] **Full security test suite** (5/5 passing)
-- [ ] Deploy RiskRouter to testnet (Sepolia)
-it (risk scoring flows) |
-| Runtime | TypeScript 5.x, Node.js ESM |
-| Standard | EIP-712 (Typed Structured Data Signing) |
-| Agent Registry | ERC-8004 (referenced) |
-
----
-
-## Roadmap
-
-- [x] EIP-712 TradeIntent signing (Intent Layer)
-- [x] On-chain RiskRouter with circuit breakers (Sentinel Layer)
-- [x] ExecutionProxy event routing (Execution Layer)
-- [x] Spec-first YAML architecture
-- [ ] Deploy RiskRouter to testnet (Sepolia)
-- [ ] Genkit risk-scoring flow wired into signing path
-- [ ] ERC-8004 agent registry integration
-- [ ] Full test suite
+- [x] **Phase 1: Foundation** (EIP-712 TradeIntent, RiskRouter, ExecutionProxy)
+- [x] **Phase 2: Security & Identity** (ERC-8004 Agent Registry, 5/5 Security Suite)
+- [x] **Phase 3: Integration & Deployment** (Genkit Risk-Scoring, Kraken MCP, Sepolia Testnet)
+- [ ] **Phase 4: Optimization** (Multi-agent orchestration, gas-efficient batching)
 
 ---
 
