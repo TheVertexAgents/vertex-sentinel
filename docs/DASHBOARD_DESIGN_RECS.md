@@ -1,73 +1,69 @@
-# 📊 Vertex Sentinel: Dashboard Design Recommendations
+# 📊 Vertex Sentinel: Modern Dashboard Design Recommendations
 
 **Target Audience:** Operators & Users monitoring active trades.
-**Objective:** Provide a bias-free, functional, and verifiable execution interface that balances deep security audit trails with high-level operational visibility.
+**Objective:** Provide a robust, neutral, and verifiable execution interface that balances deep security audit trails with high-level operational visibility.
 
 ---
 
-## 1. Information Architecture & Layout
+## 1. Information Architecture & Layout (Modernized)
 
-### A. The "Sentinel Status" Header (Top Bar)
-- **Agent Identity:** Display `name` and `version` from `agent-id.json`. Include a copyable `Agent Wallet Address`.
-- **System Health:** A "Heartbeat" indicator showing the connection status of the Execution Proxy and Kraken MCP.
-- **Fail-Closed Toggle:** A clear, read-only status (e.g., "🛡️ FAIL-CLOSED ARMED") to reassure the operator that risk guardrails are active.
-- **Global Actions:** An "Emergency Stop" button (Big Red Button) that triggers a local process kill or a "circuit breaker" on-chain.
+Based on our repository analysis and analysis of existing templates, the dashboard should adopt a **"Modular Card-and-Grid"** layout to improve information density without cluttering the UI.
 
-### B. The "Command Center" Stats (Top Row)
-- **Total Trade Volume:** Real-time aggregate of `amountUsdScaled` for the current session.
-- **Session PnL:** (Derived) Calculated by matching BUY/SELL orders from `audit.json` with execution prices.
-- **Confidence Trend:** A small sparkline showing the average confidence of the last 10 decisions.
-- **Risk Rejections:** A counter of "TradeRejected" events captured from the on-chain logs.
+### A. Global Monitoring Header (The "Control Bar")
+- **Agent Identity & Version:** Clearly display the Agent Name (e.g., "Vertex Sentinel Alpha") and version from `agent-id.json`.
+- **System Heartbeat:** A pulsing indicator (e.g., Emerald for Online, Crimson for Offline) connected to the Kraken MCP and RiskRouter health.
+- **Fail-Closed Status Badge:** A "Glassmorphism" badge stating "🛡️ FAIL-CLOSED ACTIVE" to confirm safety guardrails.
+- **Global Actions:**
+    - **SYNC:** Manual refresh of the `audit.json` feed.
+    - **EMERGENCY STOP:** A high-contrast action to halt all trading activity immediately.
 
-### C. The "Audit Feed" (Central Component)
-- **Interleaved View:** Combine the "Decision Checkpoint" (the 'Why') with the "Execution Receipt" (the 'How') into a single logical "Trade Block."
-- **Human-Readable Focus:** The primary text should be the `reasoning` string from `explainability.ts`.
-- **Integrity Badges:** Every trade should have a "Verified" badge. Clicking it reveals the EIP-712 signature and reasoning hash for deep-dive audits.
+### B. KPI & Performance Metrics (Top Row Cards)
+- **Total Checkpoints:** Aggregate count of all trade intents logged in `audit.json`.
+- **Signed Attestations:** Count of unique EIP-712 signatures, providing confidence in execution integrity.
+- **Session Profit/Loss:** A dynamic ticker showing PnL calculated from matched BUY/SELL execution prices.
+- **Confidence Trend:** A small sparkline visualization of the `confidenceScaled` field across recent trades.
+
+### C. The "Live Execution Grid" (New: Visibility Layer)
+*Inspired by the `LIVE_EXECUTION_DASHBOARD.html` template.*
+- **Recent Activity Cards:** A horizontally scrolling or grid-based view showing the last 3-5 trades with high-level details:
+    - **Pair & Action Badge** (e.g., `BUY BTC/USD`)
+    - **Amount & Confidence Percentage**
+    - **Integrity Status** (e.g., "✅ EIP-712 Signed")
+- **Progressive Disclosure:** Clicking a card should expand to reveal the `signature` hex string and the `reasoningHash`.
+
+### D. Deep-Dive Execution History (Bottom Table)
+- **Interleaved Data:** Merge the "Trade Intent" (checkpoint) with its corresponding "Execution Result" (order result) in a single row.
+- **Human-Readable Explanation:** Use the full `reasoning` string as the primary detail, with a "Deep-Dive" icon to view the raw JSON trace.
+- **Audit Traceability:** Provide direct links to the on-chain `txHash` and the `intentHash` for external verification on Sepolia Explorer.
 
 ---
 
 ## 2. Visual Design & Aesthetic (Functional Neutrality)
 
-### A. Color Palette
-- **Base:** Deep Slate / Charcoal (#1A202C) - reduces eye strain for long-term monitoring.
+### A. Theme: "Sentinel Obsidian" (Glassmorphism)
+To maintain neutrality while achieving a modern feel, use a "Glassmorphism" approach:
+- **Base:** Deep Obsidian (#0B0E14) or Charcoal (#1A202C).
+- **Cards:** Semi-transparent white (5-10% opacity) with a `backdrop-filter: blur(12px)`.
 - **Accents:**
-  - **Success (Authorized):** Emerald (#10B981) instead of bright "Electric Cyan."
-  - **Warning (Rejected):** Amber (#F59E0B) for "HOLD" or "REJECTED" states.
-  - **Critical (Exception):** Crimson (#EF4444) for "Fail-Closed" triggers or system errors.
-- **Typography:** Monospace (e.g., JetBrains Mono) for values and hashes; clean Sans-Serif (Inter) for labels and reasoning.
+  - **Authorized:** Emerald (#10B981) - standard for success.
+  - **Rejected/Hold:** Amber (#F59E0B) - standard for caution.
+  - **Exception:** Crimson (#EF4444) - standard for critical errors.
 
-### B. UI Components
-- **Data Tables:** Use fixed headers and paginated/virtualized scrolling for large audit logs.
-- **Modals:** Use "Slide-overs" or "Modals" for detailed cryptographic data to keep the main view uncluttered.
-- **Progressive Disclosure:** Hide raw hex strings (Signatures, TxHashes) behind "Info" icons or expandable rows.
-
----
-
-## 3. Interaction Patterns (Control & Feedback)
-
-### A. Manual Overrides
-- **Authorization Queue:** For trades with confidence scores between 0.70 and 0.80, implement a "Manual Authorization" UI where the user can sign the intent themselves.
-- **Parameter Tuning:** A "Settings" panel to adjust risk thresholds (e.g., "Confidence Threshold") which then updates the `.env` or a local config file (requiring an agent restart).
-
-### B. Audit Deep-Dives
-- **Traceability:** Click a `traceId` to highlight all logs (Brain, Strategy, On-Chain, Execution) related to that specific trade intent.
-- **On-Chain Verification:** Direct links to Etherscan/Sepolia Explorer for every `txHash` and `RiskRouter` event.
+### B. Typography & Accessibility
+- **Fonts:** Clean Sans-Serif (Inter) for headers and reasoning; Monospace (JetBrains Mono) for hashes, addresses, and volume values.
+- **Color-Blind Support:** Never rely on color alone; use icons (✅, ❌, 🛡️) for status.
+- **Contrast:** Ensure all text passes WCAG AA contrast standards against the semi-transparent cards.
 
 ---
 
-## 4. Accessibility & Usability
+## 3. Interaction Patterns (Advanced Control)
 
-- **Color-Blind Friendly:** Use icons (✅, ❌, ⚠️) in addition to colors for status indicators.
-- **High-Contrast Mode:** Ensure a minimum contrast ratio of 4.5:1 for all text.
-- **Keyboard Navigation:** Support `Ctrl+S` for Sync and `Esc` to close modals.
+### A. Manual Risk Thresholding
+- **Threshold Slider:** A UI element to dynamically adjust the "Confidence Threshold" (currently 0.80). Changes should generate a local config update and restart the agent's monitoring loop.
+- **Authorization Queue:** An "Inbox" style view for trade intents that fall just below the confidence threshold, allowing an operator to manually authorize via a browser-based wallet.
 
----
-
-## 5. Strategic Roadmap Items (Issues to Create)
-
-1. **WebSocket Migration:** Replace the 5s polling with a real-time event stream from the Execution Proxy.
-2. **PnL Engine:** Implement a backend service to calculate real-time PnL by parsing the audit logs.
-3. **Multi-Network Support:** Allow the dashboard to toggle between "Local (Hardhat)" and "Sepolia" views.
+### B. WebSocket Migration (Roadmap)
+- **Zero-Latency Feed:** Transition from 5s polling to a WebSocket stream from the Execution Proxy for instant event visualization (as per `ISSUE_MIGRATION_WEBSOCKET.md`).
 
 ---
-*Prepared by Jules (Sentinel Engineer) | Project Constitution v2.0.0 Compliant*
+*Prepared by Jules (Sentinel Engineer) | Project Constitution v2.0.0 | Verifiable Execution Protocol*
