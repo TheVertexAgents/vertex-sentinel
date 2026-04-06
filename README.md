@@ -96,3 +96,27 @@ The on-chain 'bouncer' — intercepts `TradeIntent` structs and enforces:
 
 ## License
 MIT © VertexAgents
+
+---
+
+## 🛠️ Dashboard Setup & Troubleshooting
+
+If you need to verify or fix the dashboard connection, follow these steps:
+
+1. **Serve the Root Directory**: Ensure the `dashboard` script in `package.json` serves the root directory (`serve .`) so that the dashboard can reach the `logs/` folder.
+   ```json
+   "dashboard": "serve . -p 3000"
+   ```
+
+2. **Populate Audit Logs**: The dashboard reads from `logs/audit.json`. Ensure this file exists and contains valid JSONL trade records.
+
+3. **Run the Dashboard**:
+   ```bash
+   npm run dashboard
+   ```
+
+4. **Verify Connectivity**:
+   - Access the dashboard at: http://localhost:3000/dashboard/index.html
+   - Check if logs are reachable at: http://localhost:3000/logs/audit.json
+
+5. **Manual Sync**: If the dashboard doesn't update immediately, click the **"Sync Audit Trace"** button in the top right corner.
