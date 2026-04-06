@@ -34,12 +34,12 @@ async function getMcpClient() {
   // Paths are relative to the final compiled location or ts-node context
   const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
   const transport = new StdioClientTransport({
-    command: 'node',
-    args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
+    command: 'npx',
+    args: ['tsx', serverPath],
     env: {
       ...process.env,
       NODE_ENV: process.env.NODE_ENV || 'development',
-      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
+      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || path.join(process.cwd(), 'scripts/mock_kraken.sh')
     } as Record<string, string>
   });
 
@@ -48,7 +48,12 @@ async function getMcpClient() {
     { capabilities: {} }
   );
 
-  await mcpClient.connect(transport);
+  // Set timeout to avoid hanging indefinitely if MCP server fails to respond
+  await Promise.race([
+    mcpClient.connect(transport),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 10000))
+  ]);
+
   return mcpClient;
 }
 
@@ -84,7 +89,7 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     // Weights: Spread (50%), Volatility (30%), Volume (20%)
     const spreadPenalty = Math.min(0.5, (spread / 0.02) * 0.5);
     const volatilityPenalty = Math.min(0.3, (volatility / 0.1) * 0.3);
-    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / 100000) * 0.2); // $1000 limit for demo volume penalty
+    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / 100000) * 0.2); // 000 limit for demo volume penalty
 
     const totalPenalty = spreadPenalty + volatilityPenalty + volumePenalty;
     const confidence = Math.max(0, 1.0 - totalPenalty);
@@ -115,6 +120,19 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
 
   } catch (error) {
     if (error instanceof CriticalSecurityException) throw error;
+
+    // In local/demo mode, use a safe default if MCP is failing
+    if (process.env.NETWORK !== 'sepolia') {
+      console.warn(`[risk_assessment] Risk assessment failed in local mode (${error instanceof Error ? error.message : String(error)}), using default HOLD strategy`);
+      return {
+        action: 'HOLD',
+        pair,
+        amountUsdScaled: 0n,
+        confidence: 0,
+        reasoning: 'Fallback: Risk assessment tool unavailable in local mode'
+      };
+    }
+
     throw new CriticalSecurityException(`Risk assessment failed due to external error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

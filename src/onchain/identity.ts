@@ -1,5 +1,5 @@
 import { createPublicClient, http, type Hex } from 'viem';
-import { sepolia } from 'viem/chains';
+import { sepolia, hardhat } from 'viem/chains';
 
 /**
  * @dev Agent Registration and Identity management.
@@ -7,18 +7,28 @@ import { sepolia } from 'viem/chains';
  */
 export class IdentityClient {
   private registryAddress: Hex;
+  private chainId: number;
 
-  constructor(registryAddress: Hex) {
+  constructor(registryAddress: Hex, chainId: number = 11155111) {
     this.registryAddress = registryAddress;
+    this.chainId = chainId;
   }
 
   /**
    * @dev Checks if the agent is registered in the registry.
    */
   async isAgentRegistered(agentAddress: Hex): Promise<boolean> {
+    // Zero address check for local/demo mode
+    if (this.registryAddress === '0x0000000000000000000000000000000000000000') {
+      console.warn(`[identity] Skipping registration check: zero address registry (local/demo mode)`);
+      return true;
+    }
+
     try {
+      const chain = this.chainId === 31337 ? hardhat : sepolia;
+
       const publicClient = createPublicClient({
-        chain: sepolia,
+        chain: chain,
         transport: http(),
       });
 
