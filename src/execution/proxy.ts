@@ -39,7 +39,7 @@ class ExecutionProxy {
   private contractAddress: `0x${string}`;
   private mcpClient: Client | null = null;
   private agentAddress: `0x${string}`;
-  private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+  private auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
 
   constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia') {
     // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia

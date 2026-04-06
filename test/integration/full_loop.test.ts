@@ -101,7 +101,7 @@ describe("Sentinel Full Loop Integration", function () {
   });
 
   it("Should assessment, sign, authorize on-chain, and execute on Kraken", async function () {
-    const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+    const auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
     if (fs.existsSync(auditLogPath)) fs.unlinkSync(auditLogPath);
 
     // 1. Brain: Create and Sign Intent

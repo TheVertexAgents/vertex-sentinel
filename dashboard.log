@@ -1,0 +1,17 @@
+
+> vertexagents-the-sentinel-layer@1.0.0 dashboard
+> serve . -p 3000
+
+ INFO  Accepting connections at http://localhost:3000
+ HTTP  4/6/2026 3:36:11 PM ::1 GET /dashboard/index.html
+ HTTP  4/6/2026 3:36:11 PM ::1 Returned 301 in 22 ms
+ HTTP  4/6/2026 3:36:11 PM ::1 GET /dashboard/index
+ HTTP  4/6/2026 3:36:11 PM ::1 Returned 301 in 1 ms
+ HTTP  4/6/2026 3:36:11 PM ::1 GET /dashboard
+ HTTP  4/6/2026 3:36:11 PM ::1 Returned 200 in 7 ms
+ HTTP  4/6/2026 3:36:12 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 3:36:12 PM ::1 Returned 200 in 5 ms
+ HTTP  4/6/2026 3:36:14 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 3:36:14 PM ::1 Returned 304 in 3 ms
+ HTTP  4/6/2026 3:36:17 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 3:36:17 PM ::1 Returned 304 in 2 ms

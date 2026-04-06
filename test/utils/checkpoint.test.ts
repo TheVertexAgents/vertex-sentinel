@@ -32,7 +32,7 @@ describe('Checkpoint Utility Unit Tests', function () {
   });
 
   it('Should persist the checkpoint to logs/audit.json', async function () {
-    const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+    const auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
     if (fs.existsSync(auditLogPath)) fs.unlinkSync(auditLogPath);
 
     await createSignedCheckpoint(agent, decision, testPk, 31337);

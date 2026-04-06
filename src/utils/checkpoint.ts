@@ -89,7 +89,7 @@ export async function createSignedCheckpoint(
     };
 
     // Save to audit log
-    const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+    const auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
     if (!fs.existsSync(path.dirname(auditLogPath))) {
       fs.mkdirSync(path.dirname(auditLogPath), { recursive: true });
     }

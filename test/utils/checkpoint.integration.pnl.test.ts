@@ -6,7 +6,7 @@ import { createSignedCheckpoint } from '../../src/utils/checkpoint.js';
 
 describe('Checkpoint PnL Integration', () => {
   beforeEach(() => {
-    const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+    const auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
     if (fs.existsSync(auditLogPath)) fs.unlinkSync(auditLogPath);
   });
 
@@ -33,7 +33,7 @@ describe('Checkpoint PnL Integration', () => {
 
     expect(checkpoint.pnl).to.deep.equal(pnlMetrics);
 
-    const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+    const auditLogPath = process.env.AUDIT_LOG_PATH || path.join(process.cwd(), 'logs/audit.json');
     const lines = fs.readFileSync(auditLogPath, 'utf8').trim().split('\n');
     const lastEntry = JSON.parse(lines[lines.length - 1]);
 
