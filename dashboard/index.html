@@ -6,157 +6,263 @@
     <title>Sentinel Live Monitor | Verifiable Execution</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
         :root {
             --cyan: #00E5FF;
             --purple: #7C3AED;
             --obsidian: #0B0E14;
+            --emerald: #10B981;
+            --crimson: #EF4444;
+            --amber: #F59E0B;
         }
+
         body {
             background-color: var(--obsidian);
             color: #E2E8F0;
             font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.05) 0%, transparent 40%);
+            min-height: 100vh;
         }
+
         .glass {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
+            transition: all 0.3s ease;
         }
-        .text-cyan { color: var(--cyan); }
-        .bg-cyan { background-color: var(--cyan); }
-        .border-cyan { border-color: var(--cyan); }
-        .text-purple { color: var(--purple); }
-        .glow-cyan { text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
 
-        @keyframes pulse-cyan {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .glass:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
         }
-        .animate-pulse-cyan {
-            animation: pulse-cyan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+        .text-cyan { color: var(--cyan); }
+        .text-emerald { color: var(--emerald); }
+        .text-crimson { color: var(--crimson); }
+        .text-amber { color: var(--amber); }
+
+        .glow-cyan { text-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+
+        @keyframes pulse-emerald {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+        .animate-pulse-emerald {
+            animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .truncate-custom {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <header class="flex justify-between items-center mb-10">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
             <div>
-                <h1 class="text-3xl font-bold text-cyan glow-cyan tracking-tight flex items-center gap-3">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h1 class="text-4xl font-bold text-cyan glow-cyan tracking-tight flex items-center gap-4">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                     </svg>
                     SENTINEL MONITOR
                 </h1>
-                <p class="text-gray-400 mt-1">Verifiable On-Chain Execution Loop</p>
+                <p class="text-gray-400 mt-2 font-medium tracking-wide">VERIFIABLE ON-CHAIN EXECUTION LOOP</p>
             </div>
-            <div class="flex gap-4">
-                <div class="flex items-center gap-2 glass px-4 py-2 text-xs font-medium uppercase tracking-wider">
-                    <span class="w-2 h-2 rounded-full bg-cyan animate-pulse-cyan"></span>
-                    Fail-Closed Active
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center gap-3 glass px-5 py-2.5 text-xs font-semibold uppercase tracking-widest border-emerald/20">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald animate-pulse-emerald"></span>
+                    <span class="text-emerald">Fail-Closed Active</span>
                 </div>
-                <button id="sync-btn" class="glass px-6 py-2 hover:bg-white/5 transition-colors font-semibold flex items-center gap-2 border-cyan/50">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    SYNC
+                <button id="sync-btn" class="glass px-8 py-2.5 hover:bg-white/10 transition-all font-bold flex items-center gap-3 border-cyan/30 text-cyan active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    REFRESH
                 </button>
             </div>
         </header>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="glass p-6">
-                <p class="text-gray-400 text-sm mb-1 uppercase tracking-widest">Total Checkpoints</p>
-                <p id="stat-total" class="text-4xl font-bold">0</p>
+        <!-- Stats Section -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Total Checkpoints</p>
+                <p id="stat-total" class="text-5xl font-bold tracking-tight">0</p>
             </div>
-            <div class="glass p-6">
-                <p class="text-gray-400 text-sm mb-1 uppercase tracking-widest">Signed Attestations</p>
-                <p id="stat-signed" class="text-4xl font-bold text-cyan">0</p>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Signed Attestations</p>
+                <div class="flex items-baseline gap-3">
+                    <p id="stat-signed" class="text-5xl font-bold text-cyan tracking-tight">0</p>
+                    <span class="text-cyan/40 text-xs font-bold uppercase">Verified</span>
+                </div>
             </div>
-            <div class="glass p-6">
-                <p class="text-gray-400 text-sm mb-1 uppercase tracking-widest">Status</p>
-                <p class="text-4xl font-bold flex items-center gap-2">
-                    <span class="text-green-400">Online</span>
-                </p>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Risk Rejections</p>
+                <p id="stat-rejections" class="text-5xl font-bold text-amber tracking-tight">0</p>
             </div>
-        </div>
-
-        <!-- Log Table -->
-        <div class="glass overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="border-b border-white/10 text-gray-400 text-xs uppercase tracking-widest">
-                            <th class="px-6 py-4">Timestamp</th>
-                            <th class="px-6 py-4">Action</th>
-                            <th class="px-6 py-4">Pair</th>
-                            <th class="px-6 py-4">Amount</th>
-                            <th class="px-6 py-4">Confidence</th>
-                            <th class="px-6 py-4">EIP-712 Sign</th>
-                            <th class="px-6 py-4">Explanation</th>
-                        </tr>
-                    </thead>
-                    <tbody id="log-body">
-                        <!-- Rows injected here -->
-                    </tbody>
-                </table>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">System Status</p>
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald"></span>
+                    <p class="text-3xl font-bold text-emerald uppercase tracking-tight">Online</p>
+                </div>
             </div>
         </div>
 
-        <footer class="mt-12 text-center text-gray-500 text-sm">
-            Sentinel Layer v1.0.0 | Verifiable Execution Protocol
+        <!-- Recent Activity Grid -->
+        <div class="mb-12">
+            <h2 class="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                <span class="w-8 h-px bg-gray-800"></span>
+                Recent Execution Cards
+            </h2>
+            <div id="records-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Cards injected here -->
+                <div class="glass p-8 col-span-full text-center text-gray-500 italic">Awaiting execution data...</div>
+            </div>
+        </div>
+
+        <!-- Execution History Table -->
+        <div>
+            <h2 class="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                <span class="w-8 h-px bg-gray-800"></span>
+                Detailed Audit History
+            </h2>
+            <div class="glass overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/5 text-gray-500 text-[10px] uppercase tracking-[0.2em]">
+                                <th class="px-8 py-5 font-bold">Timestamp</th>
+                                <th class="px-8 py-5 font-bold">Action</th>
+                                <th class="px-8 py-5 font-bold">Trading Pair</th>
+                                <th class="px-8 py-5 font-bold text-right">Amount</th>
+                                <th class="px-8 py-5 font-bold text-right">Confidence</th>
+                                <th class="px-8 py-5 font-bold text-center">Integrity</th>
+                                <th class="px-8 py-5 font-bold">Reasoning</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-body" class="text-sm">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-16 pb-8 flex justify-between items-center text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
+            <span>Sentinel Layer v1.0.0</span>
+            <span class="text-cyan/30">Verifiable Execution Protocol</span>
+            <span>Est. 2026</span>
         </footer>
     </div>
 
     <script>
         async function fetchLogs() {
             try {
-                // In local development with 'serve', this works if audit.json is accessible
-                // We fetch the audit.json from the logs directory
                 const response = await fetch('../logs/audit.json');
                 const text = await response.text();
                 const lines = text.trim().split('\n').filter(l => l.length > 0);
 
                 const logBody = document.getElementById('log-body');
+                const recordsGrid = document.getElementById('records-grid');
                 logBody.innerHTML = '';
+                recordsGrid.innerHTML = '';
 
                 let signedCount = 0;
+                let rejectionCount = 0;
 
-                lines.reverse().forEach(line => {
-                    const entry = JSON.parse(line);
-                    const msg = entry.message;
+                // Group entries by traceId if they are execution receipts,
+                // or keep them separate if they are checkpoints
+                const entries = lines.map(l => JSON.parse(l)).reverse();
+                const checkpoints = entries.filter(e => e.message && e.signature);
+                const executions = entries.filter(e => e.traceId);
 
+                // Update Stats
+                document.getElementById('stat-total').textContent = checkpoints.length;
+                document.getElementById('stat-signed').textContent = checkpoints.length; // Every checkpoint in audit.json is signed
+                document.getElementById('stat-rejections').textContent = entries.filter(e => e.action === 'HOLD' || e.krakenStatus === 'failed').length;
+
+                // Render Grid (Top 3)
+                checkpoints.slice(0, 3).forEach((check, idx) => {
+                    const msg = check.message;
+                    const date = new Date(parseInt(msg.timestamp) * 1000).toLocaleTimeString();
+                    const amount = (parseFloat(msg.amountUsdScaled) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                    const confidence = (parseInt(msg.confidenceScaled) / 10).toFixed(1) + '%';
+                    const actionColor = msg.action === 'BUY' ? 'text-emerald' : msg.action === 'SELL' ? 'text-crimson' : 'text-amber';
+
+                    const card = document.createElement('div');
+                    card.className = "glass p-8 relative overflow-hidden group";
+                    card.innerHTML = `
+                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                             <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div class="flex justify-between items-start mb-6">
+                            <span class="bg-white/5 px-3 py-1 rounded text-[10px] font-bold text-gray-400 uppercase tracking-tighter">#${checkpoints.length - idx}</span>
+                            <span class="flex items-center gap-1.5 text-[10px] font-bold text-cyan uppercase tracking-widest">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                                Verified
+                            </span>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Trade Intent</p>
+                                <p class="text-2xl font-bold ${actionColor} tracking-tight">${msg.action} ${msg.pair}</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                                <div>
+                                    <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Volume</p>
+                                    <p class="font-bold text-sm mono">${amount}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Confidence</p>
+                                    <p class="font-bold text-sm mono text-cyan">${confidence}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    recordsGrid.appendChild(card);
+                });
+
+                // Render Table
+                checkpoints.forEach(check => {
+                    const msg = check.message;
                     const date = new Date(parseInt(msg.timestamp) * 1000).toLocaleString();
                     const amount = (parseFloat(msg.amountUsdScaled) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
                     const confidence = (parseInt(msg.confidenceScaled) / 10).toFixed(1) + '%';
+                    const actionClass = msg.action === 'BUY' ? 'text-emerald' : msg.action === 'SELL' ? 'text-crimson' : 'text-amber';
 
                     const row = document.createElement('tr');
-                    row.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
-
-                    const actionClass = msg.action === 'BUY' ? 'text-green-400' : msg.action === 'SELL' ? 'text-red-400' : 'text-yellow-400';
-
-                    if (entry.signature) signedCount++;
+                    row.className = "border-b border-white/5 hover:bg-white/5 transition-colors group";
 
                     row.innerHTML = `
-                        <td class="px-6 py-4 text-xs font-mono text-gray-400">${date}</td>
-                        <td class="px-6 py-4 font-bold ${actionClass}">${msg.action}</td>
-                        <td class="px-6 py-4 font-mono">${msg.pair}</td>
-                        <td class="px-6 py-4">${amount}</td>
-                        <td class="px-6 py-4 font-mono">${confidence}</td>
-                        <td class="px-6 py-4">
-                            <span class="flex items-center gap-1 text-cyan text-xs">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                SIGNED
+                        <td class="px-8 py-5 text-gray-500 mono text-xs">${date}</td>
+                        <td class="px-8 py-5 font-bold ${actionClass} uppercase tracking-tighter">${msg.action}</td>
+                        <td class="px-8 py-5 font-medium mono text-gray-300">${msg.pair}</td>
+                        <td class="px-8 py-5 text-right font-bold mono">${amount}</td>
+                        <td class="px-8 py-5 text-right font-bold mono text-cyan">${confidence}</td>
+                        <td class="px-8 py-5 text-center">
+                            <span class="inline-flex items-center px-2 py-1 rounded bg-cyan/10 text-cyan text-[10px] font-bold tracking-widest">
+                                EIP-712
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate" title="${entry.reasoning}">
-                            ${entry.reasoning}
+                        <td class="px-8 py-5 text-gray-400 font-medium max-w-xs truncate" title="${check.reasoning}">
+                            ${check.reasoning}
                         </td>
                     `;
                     logBody.appendChild(row);
                 });
-
-                document.getElementById('stat-total').textContent = lines.length;
-                document.getElementById('stat-signed').textContent = signedCount;
 
             } catch (error) {
                 console.error('Failed to fetch logs:', error);
@@ -164,11 +270,7 @@
         }
 
         document.getElementById('sync-btn').addEventListener('click', fetchLogs);
-
-        // Auto-poll every 5 seconds
         setInterval(fetchLogs, 5000);
-
-        // Initial load
         fetchLogs();
     </script>
 </body>
