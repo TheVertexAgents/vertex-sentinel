@@ -13,6 +13,7 @@ import { IdentityClient } from '../onchain/identity.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { PnLTracker } from './pnl/tracker.js';
 
 dotenv.config();
 
@@ -30,6 +31,17 @@ function getAgentMetadata() {
     _agentMetadata = loadAgentMetadata();
   }
   return _agentMetadata;
+}
+
+/**
+ * @dev Lazily loaded PnL tracker for current session.
+ */
+let _pnlTracker: PnLTracker | null = null;
+function getPnLTracker() {
+  if (!_pnlTracker) {
+    _pnlTracker = new PnLTracker();
+  }
+  return _pnlTracker;
 }
 
 /**
@@ -106,10 +118,33 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // 2. Run Strategic Risk Assessment (Refactored)
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
-    // 3. Create and Sign Audit Checkpoint (Verifiable Execution)
-    await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId);
+    // 3. Update PnL Tracker before checkpoint
+    const tracker = getPnLTracker();
+    // Assuming entry price is current market price for demo purposes
+    // In a real flow, the order result should be used to record the actual execution price
+    const mockPrice = 67000; // Placeholder until integrated with real execution callback
+    tracker.recordTrade({
+      id: traceId,
+      pair: intent.pair,
+      side: intent.action as 'BUY' | 'SELL',
+      price: mockPrice,
+      amount: Number(intent.amountUsdScaled) / 100 / mockPrice, // Simple conversion for demo
+      timestamp: new Date().toISOString()
+    });
 
-    // 4. Log Human-Readable Explanation (UX Alignment)
+    const currentPnL = tracker.getMetrics();
+
+    // 4. Create and Sign Audit Checkpoint (Verifiable Execution)
+    await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
+
+    // 5. Persist PnL to logs/pnl.json
+    const pnlLogPath = path.join(process.cwd(), 'logs/pnl.json');
+    if (!fs.existsSync(path.dirname(pnlLogPath))) {
+        fs.mkdirSync(path.dirname(pnlLogPath), { recursive: true });
+    }
+    fs.writeFileSync(pnlLogPath, JSON.stringify(tracker.getSummary(), null, 2));
+
+    // 6. Log Human-Readable Explanation (UX Alignment)
     console.log(`\n${formatExplanation(decision)}\n`);
 
     console.error(JSON.stringify({
@@ -135,7 +170,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       timestamp: new Date().toISOString()
     }));
 
-    // 4. Sign the intent using EIP-712 via RiskRouterClient
+    // Sign the intent using EIP-712 via RiskRouterClient
     const signature = await riskRouterClient.signIntent(intent, privateKey);
 
     return { isAllowed: true, reason: decision.reasoning, signature };
@@ -174,6 +209,11 @@ async function main() {
   console.log("--- AUTHORIZATION ARTIFACT ---");
   console.log(JSON.stringify(auth, null, 2));
   console.log("--- END ---");
+
+  // Output PnL summary on completion
+  const summary = getPnLTracker().getSummary();
+  console.log("\n--- FINAL PnL SUMMARY ---");
+  console.log(JSON.stringify(summary.summary, null, 2));
 }
 
 /**

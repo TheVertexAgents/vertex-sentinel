@@ -33,6 +33,7 @@ export interface SignedCheckpoint {
   message: any;
   signature: string;
   reasoning: string;
+  pnl?: any;
 }
 
 /**
@@ -43,7 +44,8 @@ export async function createSignedCheckpoint(
   agent: AgentMetadata,
   decision: TradeDecision,
   privateKey: `0x${string}`,
-  chainId: number = 11155111
+  chainId: number = 11155111,
+  pnl?: any
 ): Promise<SignedCheckpoint> {
   try {
     const timestamp = BigInt(Math.floor(Date.now() / 1000));
@@ -83,6 +85,7 @@ export async function createSignedCheckpoint(
       },
       signature,
       reasoning: decision.reasoning,
+      pnl: pnl
     };
 
     // Save to audit log
