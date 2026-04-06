@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertex Sentinel | AI Trading Agents Hackathon 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            --cyan: #00E5FF;
+            --purple: #7C3AED;
+            --obsidian: #0B0E14;
+            --emerald: #10B981;
+            --crimson: #EF4444;
+            --amber: #F59E0B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background-color: var(--obsidian);
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: translateX(50px);
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-50px);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+        }
+
+        .text-cyan { color: var(--cyan); }
+        .text-purple { color: var(--purple); }
+        .text-emerald { color: var(--emerald); }
+        .text-crimson { color: var(--crimson); }
+        .text-amber { color: var(--amber); }
+        .bg-cyan { background-color: var(--cyan); }
+        .bg-purple { background-color: var(--purple); }
+        .bg-emerald { background-color: var(--emerald); }
+        .border-cyan { border-color: var(--cyan); }
+
+        .glow-cyan { 
+            text-shadow: 0 0 30px rgba(0, 229, 255, 0.4), 0 0 60px rgba(0, 229, 255, 0.2); 
+        }
+        .glow-purple { 
+            text-shadow: 0 0 30px rgba(124, 58, 237, 0.4), 0 0 60px rgba(124, 58, 237, 0.2); 
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .slide-number {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+
+        .nav-arrows {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 100;
+        }
+
+        .nav-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--cyan);
+            border-color: var(--cyan);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .slide.active .animate-in { opacity: 0; }
+        .slide.active .delay-1 { animation-delay: 0.1s; }
+        .slide.active .delay-2 { animation-delay: 0.2s; }
+        .slide.active .delay-3 { animation-delay: 0.3s; }
+        .slide.active .delay-4 { animation-delay: 0.4s; }
+        .slide.active .delay-5 { animation-delay: 0.5s; }
+        .slide.active .delay-6 { animation-delay: 0.6s; }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Architecture Diagram */
+        .layer-box {
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .layer-box:hover {
+            transform: scale(1.02);
+        }
+
+        .layer-connector {
+            width: 2px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--cyan), var(--purple));
+            margin: 0 auto;
+        }
+
+        /* Code block styling */
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            overflow-x: auto;
+        }
+
+        /* Stats Grid */
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        /* Timeline */
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--cyan);
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1.5rem;
+            width: 2px;
+            height: calc(100% + 1rem);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .comparison-table th {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Fullscreen button */
+        .fullscreen-btn {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--cyan);
+        }
+
+        /* Hide cursor when presenting */
+        .presenting {
+            cursor: none;
+        }
+
+        .presenting .nav-container,
+        .presenting .nav-arrows,
+        .presenting .slide-number,
+        .presenting .fullscreen-btn {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .presenting:hover .nav-container,
+        .presenting:hover .nav-arrows,
+        .presenting:hover .slide-number,
+        .presenting:hover .fullscreen-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container" id="slideContainer">
+        
+        <!-- Slide 1: Title -->
+        <div class="slide active" data-slide="0">
+            <div class="max-w-5xl text-center">
+                <div class="animate-in delay-1 mb-6">
+                    <div class="inline-flex items-center gap-2 glass px-4 py-2 text-xs font-semibold uppercase tracking-widest text-cyan/70">
+                        <span class="w-2 h-2 rounded-full bg-cyan pulse-dot"></span>
+                        AI Trading Agents Hackathon 2026
+                    </div>
+                </div>
+                
+                <div class="animate-in delay-2 flex items-center justify-center gap-6 mb-8">
+                    <svg class="w-20 h-20 text-cyan float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <h1 class="text-7xl font-black tracking-tight text-cyan glow-cyan">
+                        VERTEX<br>SENTINEL
+                    </h1>
+                </div>
+                
+                <p class="animate-in delay-3 text-2xl text-gray-300 font-medium mb-12 max-w-3xl mx-auto">
+                    The Verifiable Guardrail for<br>
+                    <span class="text-white font-bold">Autonomous AI Trading Agents</span>
+                </p>
+                
+                <div class="animate-in delay-4 flex justify-center gap-4 flex-wrap">
+                    <div class="glass px-6 py-3 flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full bg-purple"></span>
+                        <span class="font-bold text-sm">ERC-8004 Challenge</span>
+                    </div>
+                    <div class="glass px-6 py-3 flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full bg-cyan"></span>
+                        <span class="font-bold text-sm">Kraken CLI Challenge</span>
+                    </div>
+                </div>
+                
+                <p class="animate-in delay-5 mt-12 text-gray-500 text-sm font-mono">
+                    $55,000 Prize Pool • March 30 – April 12, 2026
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Problem Statement -->
+        <div class="slide" data-slide="1">
+            <div class="max-w-5xl w-full">
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    The <span class="text-crimson">Rogue Agent</span> Risk
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-16 max-w-2xl mx-auto">
+                    AI trading agents have extraordinary potential—and extraordinary risks.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="animate-in delay-3 glass p-8 text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-crimson/10 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-crimson" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-crimson">Hallucinations</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            LLMs miscalculate volumes, misread market signals, or generate fictional trade rationale
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-4 glass p-8 text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-amber/10 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-amber">Compromise</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Private key theft, prompt injection, or malicious plugins can drain entire portfolios
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-5 glass p-8 text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple/10 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-purple">Advisory-Only</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Current tools warn but don't stop. They suggest guardrails but can't enforce them
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="animate-in delay-6 mt-12 text-center">
+                    <div class="inline-block glass px-8 py-4 border-crimson/30">
+                        <p class="text-lg font-bold text-gray-300">
+                            <span class="text-crimson">$1.7B+</span> lost to smart contract exploits in 2024 alone
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Solution Overview -->
+        <div class="slide" data-slide="2">
+            <div class="max-w-5xl w-full">
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Introducing <span class="text-cyan glow-cyan">Vertex Sentinel</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-16">
+                    The on-chain security layer that <span class="text-white font-bold">STOPS</span> bad trades—not just warns about them.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div class="animate-in delay-3 glass p-8 border-l-4 border-cyan">
+                        <div class="text-cyan text-4xl font-black mb-4">01</div>
+                        <h3 class="text-xl font-bold mb-3">EIP-712 Signed Intents</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Every trade decision is cryptographically signed with agent ID, reasoning hash, and confidence score
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-4 glass p-8 border-l-4 border-purple">
+                        <div class="text-purple text-4xl font-black mb-4">02</div>
+                        <h3 class="text-xl font-bold mb-3">On-Chain Guardrails</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            RiskRouter.sol enforces position limits, circuit breakers, and deadline enforcement immutably
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-5 glass p-8 border-l-4 border-emerald">
+                        <div class="text-emerald text-4xl font-black mb-4">03</div>
+                        <h3 class="text-xl font-bold mb-3">Verifiable Audit Trail</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Complete execution history with signatures, reasoning, and timestamps for regulatory compliance
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="animate-in delay-6 glass p-6 max-w-2xl mx-auto text-center">
+                    <p class="text-lg font-bold mb-2">
+                        <span class="text-emerald">Fail-Closed</span> by Default
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        Any validation failure = HALT. No exceptions. No retries. No "let's hope it works."
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Architecture Diagram -->
+        <div class="slide" data-slide="3">
+            <div class="max-w-4xl w-full">
+                <h2 class="animate-in delay-1 text-4xl font-black mb-12 text-center">
+                    3-Layer Security Architecture
+                </h2>
+                
+                <div class="space-y-2">
+                    <!-- Layer 1: Intent -->
+                    <div class="animate-in delay-2 layer-box glass border-l-4 border-cyan">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div>
+                                <span class="text-cyan text-xs font-bold uppercase tracking-widest">Layer 1</span>
+                                <h3 class="text-2xl font-bold mt-1">Intent Layer</h3>
+                                <p class="text-gray-400 text-sm">Agent Brain & Decision Engine</p>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <span class="glass px-3 py-1 text-xs font-mono">TradeIntent Creation</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Genkit Risk Flow</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">EIP-712 Signing</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layer-connector animate-in delay-3"></div>
+                    
+                    <!-- Layer 2: Sentinel -->
+                    <div class="animate-in delay-3 layer-box glass border-l-4 border-purple bg-purple/5">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div>
+                                <span class="text-purple text-xs font-bold uppercase tracking-widest">Layer 2</span>
+                                <h3 class="text-2xl font-bold mt-1">Sentinel Layer</h3>
+                                <p class="text-gray-400 text-sm">On-Chain RiskRouter.sol</p>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <span class="glass px-3 py-1 text-xs font-mono">Signature Verification</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Circuit Breakers</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Deadline Enforcement</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layer-connector animate-in delay-4"></div>
+                    
+                    <!-- Layer 3: Execution -->
+                    <div class="animate-in delay-4 layer-box glass border-l-4 border-emerald">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div>
+                                <span class="text-emerald text-xs font-bold uppercase tracking-widest">Layer 3</span>
+                                <h3 class="text-2xl font-bold mt-1">Execution Layer</h3>
+                                <p class="text-gray-400 text-sm">Kraken Proxy via MCP</p>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <span class="glass px-3 py-1 text-xs font-mono">Authorized Trades Only</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Live Market Data</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Audit Logging</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="animate-in delay-5 mt-8 text-center">
+                    <p class="text-gray-500 text-sm">
+                        <span class="text-cyan">●</span> Intent flows down • <span class="text-crimson">●</span> Rejections propagate up
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: ERC-8004 Integration -->
+        <div class="slide" data-slide="4">
+            <div class="max-w-5xl w-full">
+                <div class="flex items-center justify-center gap-3 mb-4 animate-in delay-1">
+                    <span class="glass px-4 py-2 text-xs font-bold uppercase tracking-widest text-purple">Challenge #1</span>
+                </div>
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    ERC-8004 <span class="text-purple glow-purple">Integration</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-12">
+                    Agent Identity Registry for Trustless Verification
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="animate-in delay-3 space-y-4">
+                        <div class="glass p-6">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">Agent Identity</h3>
+                                    <p class="text-gray-400 text-sm">On-chain registered unique ID</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="glass p-6">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">Reputation Tracking</h3>
+                                    <p class="text-gray-400 text-sm">Accumulates based on trade outcomes</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="glass p-6">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">Validation Artifacts</h3>
+                                    <p class="text-gray-400 text-sm">On-chain events and signals</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="animate-in delay-4">
+                        <div class="code-block h-full">
+                            <p class="text-gray-500 text-xs mb-3 uppercase tracking-widest">EIP-712 Typed Data Structure</p>
+                            <pre class="text-emerald text-xs leading-relaxed"><code>{
+  "types": {
+    "TradeIntent": [
+      { "name": "agentId", "type": "uint256" },
+      { "name": "timestamp", "type": "uint256" },
+      { "name": "pair", "type": "string" },
+      { "name": "action", "type": "string" },
+      { "name": "amountUsdScaled", "type": "uint256" },
+      { "name": "reasoningHash", "type": "bytes32" },
+      { "name": "confidenceScaled", "type": "uint256" }
+    ]
+  },
+  "domain": {
+    "name": "VertexSentinel",
+    "version": "1",
+    "chainId": 11155111
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Kraken CLI Integration -->
+        <div class="slide" data-slide="5">
+            <div class="max-w-5xl w-full">
+                <div class="flex items-center justify-center gap-3 mb-4 animate-in delay-1">
+                    <span class="glass px-4 py-2 text-xs font-bold uppercase tracking-widest text-cyan">Challenge #2</span>
+                </div>
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Kraken CLI <span class="text-cyan glow-cyan">Integration</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-12">
+                    Model Context Protocol (MCP) for Live Trading
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="animate-in delay-3 space-y-6">
+                        <div class="glass p-6 flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-cyan/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold mb-1">Real-Time Market Data</h3>
+                                <p class="text-gray-400 text-sm">Live BTC/USD ticker prices from Kraken API via CCXT</p>
+                            </div>
+                        </div>
+                        
+                        <div class="glass p-6 flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-cyan/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold mb-1">MCP Tool Interface</h3>
+                                <p class="text-gray-400 text-sm">Standardized place_order, get_ticker, get_balance commands</p>
+                            </div>
+                        </div>
+                        
+                        <div class="glass p-6 flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-cyan/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-6 h-6 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold mb-1">Secure Execution</h3>
+                                <p class="text-gray-400 text-sm">Command injection prevention via argument array isolation</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="animate-in delay-4">
+                        <div class="code-block">
+                            <p class="text-gray-500 text-xs mb-3 uppercase tracking-widest">MCP Order Execution</p>
+                            <pre class="text-cyan text-xs leading-relaxed"><code>// Tool Call
+{
+  "event": "tool_call",
+  "tool": "place_order",
+  "params": {
+    "symbol": "BTCUSD",
+    "type": "market",
+    "side": "buy",
+    "amount": 0.00011
+  }
+}
+
+// Response
+{
+  "txid": ["LIVE-IHNIDEAJ"],
+  "descr": {
+    "order": "buy 0.00011 BTC/USD @ market"
+  },
+  "price": 67345.80
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Live Proof -->
+        <div class="slide" data-slide="6">
+            <div class="max-w-5xl w-full">
+                <div class="flex items-center justify-center gap-3 mb-4 animate-in delay-1">
+                    <span class="w-3 h-3 rounded-full bg-emerald pulse-dot"></span>
+                    <span class="text-emerald text-sm font-bold uppercase tracking-widest">Verified Live Execution</span>
+                </div>
+                <h2 class="animate-in delay-1 text-5xl font-black mb-12 text-center">
+                    4 Real Trades on <span class="text-cyan">Kraken</span>
+                </h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="animate-in delay-2 glass stat-card">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Total Trades</p>
+                        <p class="stat-value text-cyan">4</p>
+                        <p class="text-gray-400 text-xs mt-1">BTC/USD</p>
+                    </div>
+                    <div class="animate-in delay-3 glass stat-card">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Volume</p>
+                        <p class="stat-value text-white">0.0005</p>
+                        <p class="text-gray-400 text-xs mt-1">BTC Total</p>
+                    </div>
+                    <div class="animate-in delay-4 glass stat-card">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Success Rate</p>
+                        <p class="stat-value text-emerald">100%</p>
+                        <p class="text-gray-400 text-xs mt-1">4/4 Trades</p>
+                    </div>
+                    <div class="animate-in delay-5 glass stat-card">
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Signatures</p>
+                        <p class="stat-value text-purple">4</p>
+                        <p class="text-gray-400 text-xs mt-1">EIP-712</p>
+                    </div>
+                </div>
+                
+                <div class="animate-in delay-5 glass p-6 overflow-x-auto">
+                    <table class="comparison-table w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Amount</th>
+                                <th>Price</th>
+                                <th>Kraken Order ID</th>
+                                <th class="text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-bold">#1</td>
+                                <td class="mono">0.00011 BTC</td>
+                                <td class="mono">$67,345.80</td>
+                                <td class="mono text-cyan">LIVE-IHNIDEAJ</td>
+                                <td class="text-right"><span class="text-emerald font-bold">✓ SUCCESS</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">#2</td>
+                                <td class="mono">0.00012 BTC</td>
+                                <td class="mono">$67,345.70</td>
+                                <td class="mono text-cyan">LIVE-J5YTJ2Z6</td>
+                                <td class="text-right"><span class="text-emerald font-bold">✓ SUCCESS</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">#3</td>
+                                <td class="mono">0.00013 BTC</td>
+                                <td class="mono">$67,345.80</td>
+                                <td class="mono text-cyan">LIVE-CA0ZKG18</td>
+                                <td class="text-right"><span class="text-emerald font-bold">✓ SUCCESS</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">#4</td>
+                                <td class="mono">0.00014 BTC</td>
+                                <td class="mono">$67,351.70</td>
+                                <td class="mono text-cyan">LIVE-5ERBD4KX</td>
+                                <td class="text-right"><span class="text-emerald font-bold">✓ SUCCESS</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="animate-in delay-6 mt-6 text-center">
+                    <p class="text-gray-500 text-sm">
+                        Execution Window: <span class="mono text-white">15:40:59 - 15:41:39 UTC</span> • April 5, 2026
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Risk Guardrails -->
+        <div class="slide" data-slide="7">
+            <div class="max-w-5xl w-full">
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Risk <span class="text-amber">Guardrails</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-12">
+                    Fail-closed architecture that enforces—not suggests
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="animate-in delay-3 glass p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <svg class="w-8 h-8 text-crimson" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold">Circuit Breakers</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">Automatic halt when anomalies detected</p>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-crimson"></span>
+                                <span>Price deviation > 5% triggers review</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-crimson"></span>
+                                <span>Volume spike detection</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-crimson"></span>
+                                <span>Rapid trade frequency limits</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="animate-in delay-4 glass p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <svg class="w-8 h-8 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold">Position Limits</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">Hard caps on exposure per trade</p>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber"></span>
+                                <span>Max position size per asset</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber"></span>
+                                <span>Daily loss limit enforcement</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber"></span>
+                                <span>Maximum leverage caps</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="animate-in delay-5 glass p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <svg class="w-8 h-8 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold">Deadline Enforcement</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">Time-bounded execution windows</p>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple"></span>
+                                <span>Signature expiry validation</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple"></span>
+                                <span>Stale intent rejection</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple"></span>
+                                <span>Block timestamp verification</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="animate-in delay-6 glass p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <svg class="w-8 h-8 text-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold">Authorization Checks</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">Multi-layer signature verification</p>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span>
+                                <span>Agent registry validation</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span>
+                                <span>EIP-712 signature recovery</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span>
+                                <span>Nonce tracking (replay prevention)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Technical Differentiators -->
+        <div class="slide" data-slide="8">
+            <div class="max-w-5xl w-full">
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Why <span class="text-cyan glow-cyan">Vertex Sentinel</span> Wins
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-12">
+                    Technical differentiation that matters
+                </p>
+                
+                <div class="animate-in delay-3 glass p-6 overflow-x-auto mb-8">
+                    <table class="comparison-table w-full">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th class="text-cyan">Vertex Sentinel</th>
+                                <th class="text-gray-500">Advisory Tools</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-bold">Failure Mode</td>
+                                <td class="text-emerald font-bold">Fail-Closed (HALT)</td>
+                                <td class="text-crimson">Fail-Open (Continue)</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">Enforcement</td>
+                                <td class="text-emerald font-bold">On-Chain Immutable</td>
+                                <td class="text-crimson">Off-Chain Suggestions</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">Proof</td>
+                                <td class="text-emerald font-bold">Cryptographic (EIP-712)</td>
+                                <td class="text-crimson">Log Files</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">Integration</td>
+                                <td class="text-emerald font-bold">Dual (ERC-8004 + Kraken)</td>
+                                <td class="text-crimson">Single Exchange</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold">Audit Trail</td>
+                                <td class="text-emerald font-bold">Verifiable & Signed</td>
+                                <td class="text-crimson">Modifiable Logs</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in delay-4">
+                    <div class="glass p-6 text-center border-t-2 border-cyan">
+                        <p class="text-4xl font-black text-cyan mb-2">5/5</p>
+                        <p class="text-gray-400 text-sm">Security Tests Passed</p>
+                    </div>
+                    <div class="glass p-6 text-center border-t-2 border-purple">
+                        <p class="text-4xl font-black text-purple mb-2">100%</p>
+                        <p class="text-gray-400 text-sm">Signature Verification</p>
+                    </div>
+                    <div class="glass p-6 text-center border-t-2 border-emerald">
+                        <p class="text-4xl font-black text-emerald mb-2">0</p>
+                        <p class="text-gray-400 text-sm">Failed Guardrail Bypasses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Roadmap -->
+        <div class="slide" data-slide="9">
+            <div class="max-w-4xl w-full">
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Development <span class="text-purple glow-purple">Roadmap</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-16">
+                    Building the future of trustless trading infrastructure
+                </p>
+                
+                <div class="space-y-8">
+                    <div class="animate-in delay-3 timeline-item">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="glass px-3 py-1 text-xs font-bold text-cyan">Q2 2026</span>
+                            <span class="px-3 py-1 rounded bg-emerald/20 text-emerald text-xs font-bold">CURRENT</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Sepolia Testnet Alpha & SDK Beta</h3>
+                        <p class="text-gray-400">
+                            Core RiskRouter deployment, EIP-712 signing infrastructure, Kraken CLI integration, live hackathon demo
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-4 timeline-item">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="glass px-3 py-1 text-xs font-bold text-purple">Q3 2026</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Multi-Exchange Execution Proxy</h3>
+                        <p class="text-gray-400">
+                            Expand beyond Kraken to Binance, Coinbase, and decentralized exchanges like Uniswap. Unified risk layer across venues.
+                        </p>
+                    </div>
+                    
+                    <div class="animate-in delay-5 timeline-item">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="glass px-3 py-1 text-xs font-bold text-amber">Q4 2026</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Dynamic, Decentralized Risk Modules</h3>
+                        <p class="text-gray-400">
+                            Modular risk policies, DAO governance for parameter updates, third-party risk integrations, institutional-grade controls.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Team & CTA -->
+        <div class="slide" data-slide="10">
+            <div class="max-w-4xl w-full text-center">
+                <div class="animate-in delay-1 mb-8">
+                    <svg class="w-16 h-16 text-cyan mx-auto mb-6 float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <h2 class="text-5xl font-black text-cyan glow-cyan mb-4">VERTEX SENTINEL</h2>
+                    <p class="text-2xl text-gray-300 font-medium">
+                        The Unbreakable Guardrail for Autonomous Capital
+                    </p>
+                </div>
+                
+                <div class="animate-in delay-2 flex justify-center gap-4 flex-wrap mb-12">
+                    <a href="https://github.com/TheVertexAgents/vertex-sentinel" target="_blank" class="glass px-6 py-3 flex items-center gap-3 hover:bg-white/10 transition-all">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span class="font-bold">GitHub</span>
+                    </a>
+                    <a href="https://early.surge.xyz" target="_blank" class="glass px-6 py-3 flex items-center gap-3 hover:bg-white/10 transition-all border-purple/30">
+                        <svg class="w-5 h-5 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        <span class="font-bold">early.surge.xyz</span>
+                    </a>
+                </div>
+                
+                <div class="animate-in delay-3 glass p-8 mb-8">
+                    <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Built By</p>
+                    <p class="text-3xl font-bold text-white mb-2">VertexAgents</p>
+                    <p class="text-gray-400 text-sm">
+                        Combining deep DeFi expertise with production-grade security engineering
+                    </p>
+                </div>
+                
+                <div class="animate-in delay-4">
+                    <p class="text-gray-500 text-sm">
+                        AI Trading Agents Hackathon 2026 • $55,000 Prize Pool
+                    </p>
+                    <p class="text-gray-600 text-xs mt-2 mono">
+                        ERC-8004 Challenge + Kraken CLI Challenge
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-container">
+        <div class="nav-dot active" data-slide="0"></div>
+        <div class="nav-dot" data-slide="1"></div>
+        <div class="nav-dot" data-slide="2"></div>
+        <div class="nav-dot" data-slide="3"></div>
+        <div class="nav-dot" data-slide="4"></div>
+        <div class="nav-dot" data-slide="5"></div>
+        <div class="nav-dot" data-slide="6"></div>
+        <div class="nav-dot" data-slide="7"></div>
+        <div class="nav-dot" data-slide="8"></div>
+        <div class="nav-dot" data-slide="9"></div>
+        <div class="nav-dot" data-slide="10"></div>
+    </div>
+
+    <div class="nav-arrows">
+        <button class="nav-arrow" id="prevBtn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+        </button>
+        <button class="nav-arrow" id="nextBtn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="slide-number">
+        <span id="currentSlide">1</span> / <span id="totalSlides">11</span>
+    </div>
+
+    <button class="fullscreen-btn" id="fullscreenBtn">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+        </svg>
+    </button>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 11;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.nav-dot');
+        
+        function goToSlide(n) {
+            // Remove active class from current slide
+            slides[currentSlide].classList.remove('active');
+            slides[currentSlide].classList.add('prev');
+            dots[currentSlide].classList.remove('active');
+            
+            // Calculate new slide index
+            currentSlide = ((n % totalSlides) + totalSlides) % totalSlides;
+            
+            // Add active class to new slide
+            setTimeout(() => {
+                slides.forEach(s => s.classList.remove('prev'));
+            }, 100);
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+            
+            // Update slide number
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+        }
+        
+        function nextSlide() {
+            goToSlide(currentSlide + 1);
+        }
+        
+        function prevSlide() {
+            goToSlide(currentSlide - 1);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if (e.key === 'Escape') {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+        
+        // Click navigation
+        document.getElementById('nextBtn').addEventListener('click', nextSlide);
+        document.getElementById('prevBtn').addEventListener('click', prevSlide);
+        
+        // Dot navigation
+        dots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                goToSlide(parseInt(dot.dataset.slide));
+            });
+        });
+        
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.body.classList.add('presenting');
+            } else {
+                document.exitFullscreen();
+                document.body.classList.remove('presenting');
+            }
+        }
+        
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+        
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.body.classList.remove('presenting');
+            }
+        });
+        
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const threshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > threshold) {
+                if (diff > 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
+        }
+        
+        // Initialize
+        document.getElementById('totalSlides').textContent = totalSlides;
+    </script>
+</body>
+</html>
