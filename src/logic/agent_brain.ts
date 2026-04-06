@@ -126,7 +126,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     tracker.recordTrade({
       id: traceId,
       pair: intent.pair,
-      side: intent.action,
+      side: intent.action as 'BUY' | 'SELL',
       price: mockPrice,
       amount: Number(intent.amountUsdScaled) / 100 / mockPrice, // Simple conversion for demo
       timestamp: new Date().toISOString()
