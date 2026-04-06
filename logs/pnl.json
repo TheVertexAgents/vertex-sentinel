@@ -1,34 +1,34 @@
 {
-  "timestamp": "2026-04-06T06:48:55.120Z",
-  "sessionId": "session-8shq45h5",
+  "timestamp": "2026-04-06T16:25:12.019Z",
+  "sessionId": "session-538v9uf8",
   "summary": {
     "totalTrades": 1,
     "winRate": 0,
     "realizedPnL": 0,
-    "unrealizedPnL": -31.2,
-    "totalPnL": -31.2,
+    "unrealizedPnL": -0.52,
+    "totalPnL": -0.52,
     "roiPercent": -0.5186515060841811
   },
   "positions": {
-    "BTC/USD": {
-      "pair": "BTC/USD",
+    "BTC/USDC": {
+      "pair": "BTC/USDC",
       "open": true,
-      "entryPrice": 60000,
-      "currentPrice": 60000,
-      "amount": 0.1,
-      "unrealizedPnL": -31.2,
-      "entryTime": "2026-04-06T06:48:55.120Z"
+      "entryPrice": 67000,
+      "currentPrice": 67000,
+      "amount": 0.0014925373134328358,
+      "unrealizedPnL": -0.52,
+      "entryTime": "2026-04-06T16:25:11.999Z"
     }
   },
   "trades": [
     {
-      "id": "test",
-      "pair": "BTC/USD",
+      "id": "zbzv4zv8jr",
+      "pair": "BTC/USDC",
       "side": "BUY",
-      "price": 60000,
-      "amount": 0.1,
-      "timestamp": "2026-04-06T06:48:55.120Z",
-      "fee": 15.6
+      "price": 67000,
+      "amount": 0.0014925373134328358,
+      "timestamp": "2026-04-06T16:25:11.999Z",
+      "fee": 0.26
     }
   ]
 }

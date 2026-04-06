@@ -15,3 +15,25 @@
  HTTP  4/6/2026 3:36:14 PM ::1 Returned 304 in 3 ms
  HTTP  4/6/2026 3:36:17 PM ::1 GET /logs/audit.json
  HTTP  4/6/2026 3:36:17 PM ::1 Returned 304 in 2 ms
+ HTTP  4/6/2026 4:26:38 PM ::1 GET /dashboard/index.html
+ HTTP  4/6/2026 4:26:38 PM ::1 Returned 301 in 52 ms
+ HTTP  4/6/2026 4:26:38 PM ::1 GET /dashboard/index
+ HTTP  4/6/2026 4:26:38 PM ::1 Returned 301 in 2 ms
+ HTTP  4/6/2026 4:26:38 PM ::1 GET /dashboard
+ HTTP  4/6/2026 4:26:38 PM ::1 Returned 200 in 29 ms
+ HTTP  4/6/2026 4:26:39 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:39 PM ::1 Returned 200 in 7 ms
+ HTTP  4/6/2026 4:26:44 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:44 PM ::1 Returned 304 in 2 ms
+ HTTP  4/6/2026 4:26:49 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:49 PM ::1 Returned 304 in 2 ms
+ HTTP  4/6/2026 4:26:49 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:49 PM ::1 Returned 304 in 10 ms
+ HTTP  4/6/2026 4:26:54 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:54 PM ::1 Returned 304 in 3 ms
+ HTTP  4/6/2026 4:26:55 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:55 PM ::1 Returned 304 in 3 ms
+ HTTP  4/6/2026 4:26:59 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:26:59 PM ::1 Returned 304 in 2 ms
+ HTTP  4/6/2026 4:27:01 PM ::1 GET /logs/audit.json
+ HTTP  4/6/2026 4:27:01 PM ::1 Returned 304 in 1 ms

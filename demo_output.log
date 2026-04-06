@@ -1,0 +1,50 @@
+
+> vertexagents-the-sentinel-layer@1.0.0 demo
+> NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/demo_flow.ts --network hardhat
+
+◇ injecting env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injecting env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injecting env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injecting env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+
+╔══════════════════════════════════════════════════════════════╗
+║         ⚡ VERTEX SENTINEL — FULL DEMO FLOW ⚡               ║
+║         Brain → Sentinel (On-Chain) → Execution              ║
+║         (Protocol v2.0.0 — Viem Implementation)              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+[Step 1] Deploying MockRegistry via Viem...
+  ✅ MockRegistry deployed at: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+
+[Step 2] Deploying RiskRouter (Sentinel Layer) via Viem...
+  ✅ RiskRouter (Sentinel) deployed at: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+
+[Step 3] Authorizing demo agent in Sentinel...
+  ✅ Agent 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 authorized.
+
+[Step 4] Agent Brain: Building and signing TradeIntent (EIP-712)...
+  ✅ Intent signed via Viem. Sig: 0x87366dfdb7cd9a3bba...
+
+[Step 5] Submitting intent to on-chain Sentinel (RiskRouter)...
+  [Gas] Estimating gas for authorizeTrade...
+  [Gas] Estimated: 40149 units.
+  ✅ SENTINEL VERDICT: TRADE AUTHORIZED (tx: 0x23df75d894d79961e73fe0ffdb51c65b0614683b09e3900e653e65e71b1a7eb9)
+
+[Step 6] Execution Proxy: Processing authorized trade...
+[Execution Layer] Proxy Initialized. Monitoring: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+
+[KRAKEN] 📤 Submitting order...
+[KRAKEN]   Action : BUY
+[KRAKEN]   Pair   : BTC/USDC
+[KRAKEN]   Amount : $100.00
+[KRAKEN]   Status : ✅ Accepted
+[KRAKEN]   Order  : K-74167
+
+[Step 7] 🚫 REJECTED PATH DEMO: Attempting high-volume trade...
+  ✅ Rejection path complete (check on-chain status if needed).
+
+╔══════════════════════════════════════════════════════════════╗
+║  🏁 DEMO COMPLETE — Vertex Sentinel is fully operational!    ║
+║  (Viem Compliance Verified)                                  ║
+╚══════════════════════════════════════════════════════════════╝
