@@ -95,7 +95,32 @@
             </div>
         </header>
 
-        <!-- Stats Section -->
+        <!-- Stats Section (Hero PnL) -->
+        <h2 class="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+            <span class="w-8 h-px bg-gray-800"></span>
+            Live PnL Metrics
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px] border-cyan/20">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Total PnL</p>
+                <div class="flex items-baseline gap-2">
+                    <p id="stat-total-pnl" class="text-5xl font-bold tracking-tight">+-bash.00</p>
+                </div>
+            </div>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Realized PnL</p>
+                <p id="stat-realized-pnl" class="text-5xl font-bold tracking-tight text-white">+-bash.00</p>
+            </div>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Unrealized PnL</p>
+                <p id="stat-unrealized-pnl" class="text-5xl font-bold tracking-tight text-white">+-bash.00</p>
+            </div>
+            <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
+                <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">ROI Percentage</p>
+                <p id="stat-roi" class="text-5xl font-bold text-cyan tracking-tight">0.00%</p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
                 <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">Total Checkpoints</p>
@@ -148,7 +173,7 @@
                                 <th class="px-8 py-5 font-bold">Action</th>
                                 <th class="px-8 py-5 font-bold">Trading Pair</th>
                                 <th class="px-8 py-5 font-bold text-right">Amount</th>
-                                <th class="px-8 py-5 font-bold text-right">Confidence</th>
+                                <th class="px-8 py-5 font-bold text-right">PnL Contribution</th>
                                 <th class="px-8 py-5 font-bold text-center">Integrity</th>
                                 <th class="px-8 py-5 font-bold">Reasoning</th>
                             </tr>
@@ -180,19 +205,24 @@
                 logBody.innerHTML = '';
                 recordsGrid.innerHTML = '';
 
-                let signedCount = 0;
-                let rejectionCount = 0;
-
                 // Group entries by traceId if they are execution receipts,
                 // or keep them separate if they are checkpoints
                 const entries = lines.map(l => JSON.parse(l)).reverse();
                 const checkpoints = entries.filter(e => e.message && e.signature);
-                const executions = entries.filter(e => e.traceId);
+
+                // Latest PnL Metrics
+                if (checkpoints.length > 0 && checkpoints[0].pnl) {
+                    const pnl = checkpoints[0].pnl;
+                    updatePnLStat('stat-total-pnl', pnl.totalPnL);
+                    updatePnLStat('stat-realized-pnl', pnl.realizedPnL);
+                    updatePnLStat('stat-unrealized-pnl', pnl.unrealizedPnL);
+                    document.getElementById('stat-roi').textContent = pnl.roiPercent.toFixed(2) + '%';
+                }
 
                 // Update Stats
                 document.getElementById('stat-total').textContent = checkpoints.length;
                 document.getElementById('stat-signed').textContent = checkpoints.length; // Every checkpoint in audit.json is signed
-                document.getElementById('stat-rejections').textContent = entries.filter(e => e.action === 'HOLD' || e.krakenStatus === 'failed').length;
+                document.getElementById('stat-rejections').textContent = entries.filter(e => e.action === 'HOLD' || (e.message && e.message.action === 'HOLD')).length;
 
                 // Render Grid (Top 3)
                 checkpoints.slice(0, 3).forEach((check, idx) => {
@@ -240,8 +270,12 @@
                     const msg = check.message;
                     const date = new Date(parseInt(msg.timestamp) * 1000).toLocaleString();
                     const amount = (parseFloat(msg.amountUsdScaled) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-                    const confidence = (parseInt(msg.confidenceScaled) / 10).toFixed(1) + '%';
                     const actionClass = msg.action === 'BUY' ? 'text-emerald' : msg.action === 'SELL' ? 'text-crimson' : 'text-amber';
+
+                    let pnlContribution = '---';
+                    if (check.pnl) {
+                        pnlContribution = (check.pnl.totalPnL >= 0 ? '+' : '') + '$' + check.pnl.totalPnL.toFixed(2);
+                    }
 
                     const row = document.createElement('tr');
                     row.className = "border-b border-white/5 hover:bg-white/5 transition-colors group";
@@ -251,7 +285,7 @@
                         <td class="px-8 py-5 font-bold ${actionClass} uppercase tracking-tighter">${msg.action}</td>
                         <td class="px-8 py-5 font-medium mono text-gray-300">${msg.pair}</td>
                         <td class="px-8 py-5 text-right font-bold mono">${amount}</td>
-                        <td class="px-8 py-5 text-right font-bold mono text-cyan">${confidence}</td>
+                        <td class="px-8 py-5 text-right font-bold mono ${check.pnl && check.pnl.totalPnL >= 0 ? 'text-emerald' : 'text-crimson'}">${pnlContribution}</td>
                         <td class="px-8 py-5 text-center">
                             <span class="inline-flex items-center px-2 py-1 rounded bg-cyan/10 text-cyan text-[10px] font-bold tracking-widest">
                                 EIP-712
@@ -266,6 +300,22 @@
 
             } catch (error) {
                 console.error('Failed to fetch logs:', error);
+            }
+        }
+
+        function updatePnLStat(id, value) {
+            const el = document.getElementById(id);
+            const prefix = value >= 0 ? '+' : '';
+            el.textContent = prefix + '$' + value.toFixed(2);
+            if (value > 0) {
+                el.classList.add('text-emerald');
+                el.classList.remove('text-crimson', 'text-white');
+            } else if (value < 0) {
+                el.classList.add('text-crimson');
+                el.classList.remove('text-emerald', 'text-white');
+            } else {
+                el.classList.add('text-white');
+                el.classList.remove('text-emerald', 'text-crimson');
             }
         }
 
