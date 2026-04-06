@@ -64,4 +64,21 @@ describe('Risk Assessment Strategy Unit Tests', function () {
     expect(decision.reasoning).to.contain('High spread');
     expect(decision.confidence).to.be.lessThanOrEqual(0.8);
   });
+
+  it('Should return HOLD and use fallback in local mode when MCP fails', async function () {
+    // Force a connection failure
+    sandbox.stub(Client.prototype, 'connect').rejects(new Error('Connection closed'));
+
+    // Ensure we are in local mode for this test
+    const oldNetwork = process.env.NETWORK;
+    process.env.NETWORK = 'development';
+
+    try {
+      const decision = await analyzeRisk('BTC/USD', 10000n);
+      expect(decision.action).to.equal('HOLD');
+      expect(decision.reasoning).to.contain('Fallback');
+    } finally {
+      process.env.NETWORK = oldNetwork;
+    }
+  });
 });
