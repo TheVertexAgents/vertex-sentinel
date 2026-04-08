@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, keccak256, encodeAbiParameters, parseAbiParameters, parseAbi } from 'viem';
+import { createWalletClient, http, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
@@ -11,8 +11,6 @@ import type { TradeIntent } from '../logic/types.js';
 export class RiskRouterClient {
   private routerAddress: `0x${string}`;
   private chainId: number;
-  private walletClient: ReturnType<typeof createWalletClient> | null = null;
-  private publicClient: ReturnType<typeof createPublicClient> | null = null;
 
   constructor(routerAddress: `0x${string}`, chainId: number = 11155111) {
     this.routerAddress = routerAddress;
@@ -176,7 +174,7 @@ export class RiskRouterClient {
         args: [
           {
             agentId: BigInt(intent.agentId),
-            agentWallet: intent.agentWallet,
+            agentWallet: intent.agentWallet as `0x${string}`,
             pair: intent.pair,
             action: intent.action,
             amountUsdScaled: BigInt(intent.amountUsdScaled),
