@@ -104,15 +104,15 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const account = privateKeyToAccount(privateKey);
 
     // 1. Check Identity (ERC-8004 Alignment)
-    const isRegistered = await identityClient.isAgentRegistered(account.address);
-    if (!isRegistered) {
-       if (process.env.NETWORK === 'sepolia') {
-         // Sepolia: strict — agent MUST be registered
-         throw new CriticalSecurityException(`Fail-Closed: Agent ${account.address} is not registered in AgentRegistry.`);
-       } else {
-         // Local/Demo: lenient — log but continue
-         console.warn(`[agent_brain] Registration check failed in local mode (non-critical), proceeding anyway...`);
-       }
+    // Note: RiskRouter.authorizeTrade() will be the source of truth for authorization
+    // Pre-check is informational only; RiskRouter validation is required
+    try {
+      const isRegistered = await identityClient.isAgentRegistered(account.address);
+      if (!isRegistered) {
+        console.warn(`[agent_brain] Agent not found in AgentRegistry (non-critical). RiskRouter will perform final authorization...`);
+      }
+    } catch (error) {
+      console.warn(`[agent_brain] AgentRegistry check failed (non-critical): ${error instanceof Error ? error.message : String(error)}. Proceeding with RiskRouter authorization...`);
     }
 
     // 2. Run Strategic Risk Assessment (Refactored)
@@ -172,6 +172,70 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
     // Sign the intent using EIP-712 via RiskRouterClient
     const signature = await riskRouterClient.signIntent(intent, privateKey);
+
+    // ✅ NEW: Submit signed intent to RiskRouter for on-chain validation
+    console.error(JSON.stringify({
+      level: "INFO",
+      step: "SUBMITTING_TO_RISKROUTER",
+      TRACE_ID: traceId,
+      contractAddress: config.riskRouter,
+      timestamp: new Date().toISOString()
+    }));
+
+    const authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
+
+    if (!authResult.success) {
+      console.error(JSON.stringify({
+        level: "ERROR",
+        step: "RISKROUTER_AUTHORIZATION_FAILED",
+        TRACE_ID: traceId,
+        error: authResult.error,
+        timestamp: new Date().toISOString()
+      }));
+      return { 
+        isAllowed: false, 
+        reason: `RiskRouter validation failed: ${authResult.error}`, 
+        signature: '0x' 
+      };
+    }
+
+    // Wait for transaction confirmation and TradeAuthorized event
+    if (authResult.transactionHash) {
+      console.error(JSON.stringify({
+        level: "INFO",
+        step: "WAITING_FOR_RISKROUTER_CONFIRMATION",
+        TRACE_ID: traceId,
+        txHash: authResult.transactionHash,
+        timestamp: new Date().toISOString()
+      }));
+
+      const confirmation = await riskRouterClient.waitForTradeAuthorization(authResult.transactionHash);
+
+      if (!confirmation.authorized) {
+        console.error(JSON.stringify({
+          level: "ERROR",
+          step: "RISKROUTER_CONFIRMATION_FAILED",
+          TRACE_ID: traceId,
+          reason: confirmation.reason,
+          timestamp: new Date().toISOString()
+        }));
+        return { 
+          isAllowed: false, 
+          reason: `RiskRouter did not authorize trade: ${confirmation.reason}`, 
+          signature: '0x' 
+        };
+      }
+    }
+
+    console.error(JSON.stringify({
+      level: "INFO",
+      step: "RISKROUTER_AUTHORIZED",
+      TRACE_ID: traceId,
+      txHash: authResult.transactionHash,
+      pair: intent.pair,
+      amount: intent.amountUsdScaled.toString(),
+      timestamp: new Date().toISOString()
+    }));
 
     return { isAllowed: true, reason: decision.reasoning, signature };
   } catch (error) {
