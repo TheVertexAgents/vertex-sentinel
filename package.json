@@ -16,7 +16,7 @@
     "dashboard": "serve dashboard -p 3000",
     "register": "NODE_OPTIONS=\"--import tsx --no-warnings\" npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "run-agent": "npm start",
-    "deploy": "npx hardhat run scripts/deploy.ts --network sepolia"
+    "deploy": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia"
   },
   "keywords": [],
   "author": "",
