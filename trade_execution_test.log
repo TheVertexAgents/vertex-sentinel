@@ -1,0 +1,11 @@
+
+> vertexagents-the-sentinel-layer@1.0.0 start
+> npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts
+
+
+> vertexagents-the-sentinel-layer@1.0.0 generate:types
+> node scripts/generate_types.js
+
+✅ Generated types in src/logic/generated_types.ts
+◇ injecting env (8) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+{"level":"CRITICAL","exception":"CriticalSecurityException","message":"Agent metadata validation failed: name: Required, version: Required","stack":"CriticalSecurityException: Agent metadata validation failed: name: Required, version: Required\n    at loadAgentMetadata (file:///home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/src/logic/config.ts:1:951)\n    at getAgentMetadata (file:///home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/src/logic/agent_brain.ts:1:861)\n    at main (file:///home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/src/logic/agent_brain.ts:3:2250)\n    at file:///home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/src/logic/agent_brain.ts:3:3276\n    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)\n    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)"}

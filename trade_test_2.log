@@ -1,0 +1,52 @@
+
+> vertexagents-the-sentinel-layer@1.0.0 start
+> npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts
+
+
+> vertexagents-the-sentinel-layer@1.0.0 generate:types
+> node scripts/generate_types.js
+
+✅ Generated types in src/logic/generated_types.ts
+◇ injecting env (8) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+{"level":"INFO","message":"VertexAgents Sentinel Brain Initialization for Vertex Sentinel Layer v1.0.0..."}
+[identity] Registration check failed (non-fatal): The contract function "isRegisteredAgent" reverted.
+
+Contract Call:
+  address:   0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3
+  function:  isRegisteredAgent(address agent)
+  args:                       (0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9)
+
+Docs: https://viem.sh/docs/contract/readContract
+Details: execution reverted
+Version: viem@2.47.6
+[agent_brain] Agent not found in AgentRegistry (non-critical). RiskRouter will perform final authorization...
+{"event":"server_start","message":"Kraken MCP server running on stdio (CLI mode)","timestamp":"2026-04-08T18:18:28.871Z"}
+{"event":"tool_call","tool":"get_ticker","symbol":"BTC/USDC","timestamp":"2026-04-08T18:18:28.920Z"}
+
+[2026-04-08T18:18:28.951Z] 🟢 BUY BTC/USDC — $100.00
+  Confidence: 97% | Risk Score: 3%
+  Reasoning:  Standard trade parameters
+  Context:    Spread=0.0400% | Volatility=0.04%
+
+{"level":"INFO","step":"RISK_ASSESSMENT","TRACE_ID":"8pypg0cahso","pair":"BTC/USDC","score":0.03119824044792962,"reason":"Standard trade parameters","timestamp":"2026-04-08T18:18:28.979Z"}
+{"level":"INFO","step":"SIGNING_INTENT","TRACE_ID":"8pypg0cahso","pair":"BTC/USDC","agentId":"1","timestamp":"2026-04-08T18:18:28.980Z"}
+{"level":"INFO","step":"SUBMITTING_TO_RISKROUTER","TRACE_ID":"8pypg0cahso","contractAddress":"0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC","timestamp":"2026-04-08T18:18:28.985Z"}
+{"level":"INFO","step":"WAITING_FOR_RISKROUTER_CONFIRMATION","TRACE_ID":"8pypg0cahso","txHash":"0x1b9813f96b32bedc65c2b1953c515ba7713185f3d2cccde6ce642f0700aeea9f","timestamp":"2026-04-08T18:18:33.297Z"}
+{"level":"INFO","step":"RISKROUTER_AUTHORIZED","TRACE_ID":"8pypg0cahso","txHash":"0x1b9813f96b32bedc65c2b1953c515ba7713185f3d2cccde6ce642f0700aeea9f","pair":"BTC/USDC","amount":"10000","timestamp":"2026-04-08T18:18:38.388Z"}
+--- AUTHORIZATION ARTIFACT ---
+{
+  "isAllowed": true,
+  "reason": "Standard trade parameters",
+  "signature": "0x173b62b27bb87d4d70804ff0dc0d8fd695faf1cdbd420f9e62cb66ca6d7f26681af56ebc2c3b1109cd79744eddb53a36ac99622cc058b87b75638f7ff26e21bf1b"
+}
+--- END ---
+
+--- FINAL PnL SUMMARY ---
+{
+  "totalTrades": 1,
+  "winRate": 0,
+  "realizedPnL": 0,
+  "unrealizedPnL": -0.52,
+  "totalPnL": -0.52,
+  "roiPercent": -0.5186515060841811
+}

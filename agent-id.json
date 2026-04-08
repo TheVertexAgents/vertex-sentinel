@@ -1,8 +1,9 @@
 {
+  "name": "Vertex Sentinel Layer",
+  "version": "1.0.0",
   "agentId": 1,
   "agentAddress": "0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9",
   "txHash": "0xc74ad2f9995ad4ae3a11d8b9263874c8debe84bcbb536339cc0b8d7ce89f196e",
   "projectName": "ai-trading-agent-tutorial",
-  "agentName": "Sentinel-Verification-Agent",
   "registeredAt": "2026-04-08T17:15:42.169Z"
 }
