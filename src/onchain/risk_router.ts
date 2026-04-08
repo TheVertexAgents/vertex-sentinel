@@ -1,4 +1,4 @@
-import { createWalletClient, http, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { createWalletClient, createPublicClient, http, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
