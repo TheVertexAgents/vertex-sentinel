@@ -19,8 +19,8 @@ export class IdentityClient {
    */
   async isAgentRegistered(agentAddress: Hex): Promise<boolean> {
     // Zero address check for local/demo mode
-    if (this.registryAddress === '0x0000000000000000000000000000000000000000') {
-      console.warn(`[identity] Skipping registration check: zero address registry (local/demo mode)`);
+    if (this.registryAddress === '0x0000000000000000000000000000000000000000' || process.env.DEMO_MODE === 'true') {
+      console.warn(`[identity] Skipping registration check (DEMO_MODE=true or zero address)`);
       return true;
     }
 
@@ -39,7 +39,7 @@ export class IdentityClient {
             name: 'isRegisteredAgent',
             type: 'function',
             stateMutability: 'view',
-            inputs: [{ name: 'agent', type: 'address' }],
+            inputs: [{ name: 'agentWallet', type: 'address' }],
             outputs: [{ type: 'boolean' }],
           },
         ],
@@ -49,17 +49,8 @@ export class IdentityClient {
 
       return isRegistered as boolean;
     } catch (error) {
-      // In demo mode with mock registry, failure can be non-fatal but should be logged.
       console.warn(`[identity] Registration check failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
-  }
-
-  /**
-   * @dev Placeholder for future on-chain registration logic.
-   * Currently, we rely on `deploy_sepolia.ts` or manual onboarding.
-   */
-  async registerAgent(agentId: bigint) {
-     console.log(`[identity] Automated registration for Agent ID ${agentId} is not yet implemented.`);
   }
 }
