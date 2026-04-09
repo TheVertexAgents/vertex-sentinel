@@ -1,4 +1,4 @@
-import { createWalletClient, http, keccak256, stringToBytes } from 'viem';
+import { createWalletClient, http, keccak256, stringToBytes, hashTypedData } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
@@ -32,6 +32,7 @@ const TYPES = {
 export interface SignedCheckpoint {
   message: any;
   signature: string;
+  checkpointHash: string;
   reasoning: string;
   pnl?: any;
 }
@@ -43,7 +44,7 @@ export interface SignedCheckpoint {
 export async function createSignedCheckpoint(
   agent: AgentMetadata,
   decision: TradeDecision,
-  privateKey: `0x${string}`,
+  privateKey: string,
   chainId: number = 11155111,
   pnl?: any
 ): Promise<SignedCheckpoint> {
@@ -51,7 +52,7 @@ export async function createSignedCheckpoint(
     const timestamp = BigInt(Math.floor(Date.now() / 1000));
     const reasoningHash = keccak256(stringToBytes(decision.reasoning));
 
-    const account = privateKeyToAccount(privateKey);
+    const account = privateKeyToAccount(privateKey as `0x${string}`);
     const client = createWalletClient({
       account,
       chain: sepolia,
@@ -67,6 +68,13 @@ export async function createSignedCheckpoint(
       reasoningHash,
       confidenceScaled: BigInt(Math.round(decision.confidence * 1000)),
     };
+
+    const checkpointHash = hashTypedData({
+      domain: getDomain(chainId),
+      types: TYPES,
+      primaryType: "TradeCheckpoint",
+      message,
+    });
 
     const signature = await client.signTypedData({
       domain: getDomain(chainId),
@@ -84,6 +92,7 @@ export async function createSignedCheckpoint(
         confidenceScaled: message.confidenceScaled.toString(),
       },
       signature,
+      checkpointHash,
       reasoning: decision.reasoning,
       pnl: pnl
     };
@@ -97,8 +106,8 @@ export async function createSignedCheckpoint(
 
     return checkpoint;
 
-  } catch (error) {
+  } catch (error: any) {
     // Fail-Closed: We don't trade without a signed reason.
-    throw new CriticalSecurityException(`Fail-Closed: Checkpoint generation or signing failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new CriticalSecurityException(`Fail-Closed: Checkpoint generation or signing failed: ${error.message}`);
   }
 }
