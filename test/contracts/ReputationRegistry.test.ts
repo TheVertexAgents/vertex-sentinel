@@ -1,6 +1,9 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
 import hre from "hardhat";
 import { getAddress, keccak256, toBytes } from "viem";
+
+use(chaiAsPromised);
 
 describe("ReputationRegistry", function () {
   let reputationRegistry: any;

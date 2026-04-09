@@ -1,6 +1,9 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
 import hre from "hardhat";
 import { getAddress, parseEther } from "viem";
+
+use(chaiAsPromised);
 
 describe("HackathonVault", function () {
   let vault: any;

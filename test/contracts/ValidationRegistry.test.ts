@@ -1,19 +1,21 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
 import hre from "hardhat";
 import { getAddress, keccak256, toBytes } from "viem";
+
+use(chaiAsPromised);
 
 describe("ValidationRegistry", function () {
   let validationRegistry: any;
   let agentRegistry: any;
   let walletClients: any[];
-  let owner: any;
   let agentWallet: any;
   let validator: any;
 
   beforeEach(async function () {
     const viem = (hre as any).viem;
     walletClients = await viem.getWalletClients();
-    [owner, agentWallet, validator] = walletClients;
+    [, agentWallet, validator] = walletClients;
 
     agentRegistry = await viem.deployContract("AgentRegistry");
     validationRegistry = await viem.deployContract("ValidationRegistry", [getAddress(agentRegistry.address), false]);

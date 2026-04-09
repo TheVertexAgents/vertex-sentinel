@@ -1,6 +1,9 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
 import hre from "hardhat";
 import { getAddress, keccak256, toBytes } from "viem";
+
+use(chaiAsPromised);
 
 describe("AgentRegistry", function () {
   let agentRegistry: any;
@@ -39,7 +42,6 @@ describe("AgentRegistry", function () {
     expect(agent[0].toLowerCase()).to.equal(owner.account.address.toLowerCase()); // operatorWallet
     expect(agent[1].toLowerCase()).to.equal(agentWallet.account.address.toLowerCase()); // agentWallet
     expect(agent[2]).to.equal(name);
-    // expect(agent[6]).to.equal(true); // active - let's see if this index is correct or use named fields if possible
 
     expect(await agentRegistry.read.ownerOf([agentId])).to.equal(getAddress(owner.account.address));
     expect(await agentRegistry.read.tokenURI([agentId])).to.equal(agentURI);

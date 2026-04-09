@@ -1,14 +1,16 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
 import hre from "hardhat";
 import { getAddress } from "viem";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
+
+use(chaiAsPromised);
 
 describe("RiskRouter (Strengthened)", function () {
   let riskRouter: any;
   let agentRegistry: any;
   let publicClient: any;
   let walletClients: any[];
-  let owner: any;
   let agentWallet: any;
   let otherAccount: any;
 
@@ -19,7 +21,7 @@ describe("RiskRouter (Strengthened)", function () {
     const viem = (hre as any).viem;
     walletClients = await viem.getWalletClients();
     publicClient = await viem.getPublicClient();
-    [owner, agentWallet, otherAccount] = walletClients;
+    [, agentWallet, otherAccount] = walletClients;
 
     // Deploy AgentRegistry
     agentRegistry = await viem.deployContract("AgentRegistry");
