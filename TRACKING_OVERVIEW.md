@@ -63,13 +63,13 @@ Phases:
 ## 🚀 Implementation Checklist
 
 ### Phase 1: Foundation ⏳
-- [ ] Create `src/contracts/AgentRegistry.sol`
+- [ ] Create `contracts/AgentRegistry.sol`
   - [ ] ERC-721 minting logic
   - [ ] EIP-712 domain separator
   - [ ] Agent registration functions
   - [ ] Hot wallet management
   - [ ] Signing nonce tracking
-- [ ] Update `src/contracts/RiskRouter.sol`
+- [ ] Update `contracts/RiskRouter.sol`
   - [ ] Remove mock registry checks
   - [ ] Integrate real AgentRegistry
   - [ ] Align nonce tracking
@@ -80,7 +80,7 @@ Phases:
   - `compile-verify`
 
 ### Phase 2: Reputation System ⏳
-- [ ] Create `src/contracts/ReputationRegistry.sol`
+- [ ] Create `contracts/ReputationRegistry.sol`
   - [ ] Feedback submission API
   - [ ] Anti-sybil protections
   - [ ] Outcome reference hashing
@@ -91,7 +91,7 @@ Phases:
   - Depends on: `phase1-agent-registry`
 
 ### Phase 3: Validation System ⏳
-- [ ] Create `src/contracts/ValidationRegistry.sol`
+- [ ] Create `contracts/ValidationRegistry.sol`
   - [ ] Validator attestation posting
   - [ ] Proof type support (EIP712, TEE, ZKML)
   - [ ] Checkpoint hash verification
@@ -102,7 +102,7 @@ Phases:
   - Depends on: `phase1-agent-registry`
 
 ### Phase 4: Capital Vault (Optional) ⏳
-- [ ] Create `src/contracts/HackathonVault.sol`
+- [ ] Create `contracts/HackathonVault.sol`
   - [ ] Self-serve claim mechanism
   - [ ] Per-team allocation tracking
   - [ ] Underfunding guards
@@ -141,7 +141,7 @@ Phases:
 | HackathonVault.sol | 152 | Capital allocation |
 | RiskRouter.sol | 286 | Trade intent validation |
 
-**Implementation Location:** `/home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/src/contracts/`
+**Implementation Location:** `/home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/contracts/`
 
 ---
 
@@ -220,7 +220,7 @@ gh issue comment 76 --body "Phase 1 implementation complete"
 repo/
 ├── SMART_CONTRACT_STRENGTHENING.md  ← Detailed deliverables
 ├── TRACKING_OVERVIEW.md             ← This file
-├── src/contracts/
+├── contracts/
 │   ├── RiskRouter.sol               ← Update integration
 │   ├── AgentRegistry.sol            ← NEW
 │   ├── ReputationRegistry.sol       ← NEW

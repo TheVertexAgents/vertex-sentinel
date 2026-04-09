@@ -23,20 +23,20 @@ Strengthen Solidity contracts to improve leaderboard reputation and validation s
 ## 🔧 Deliverables Checklist
 
 ### Phase 1: Foundation (AgentRegistry)
-- [ ] Create `src/contracts/AgentRegistry.sol` (ERC-721 + EIP-712)
+- [ ] Create `contracts/AgentRegistry.sol` (ERC-721 + EIP-712)
   - ERC-721 agent identity minting
   - Agent metadata registration
   - Hot wallet management
   - Signing nonce tracking
   - Domain separator support
-- [ ] Update `src/contracts/RiskRouter.sol` to integrate with AgentRegistry
+- [ ] Update `contracts/RiskRouter.sol` to integrate with AgentRegistry
   - Replace hardcoded mock checks
   - Proper signature verification
   - Nonce alignment
 - [ ] Compile and verify no errors
 
 ### Phase 2: Reputation System (ReputationRegistry)
-- [ ] Create `src/contracts/ReputationRegistry.sol`
+- [ ] Create `contracts/ReputationRegistry.sol`
   - Feedback submission (`submitFeedback()`)
   - Anti-sybil protections (no self-rating)
   - Outcome reference hashing
@@ -47,7 +47,7 @@ Strengthen Solidity contracts to improve leaderboard reputation and validation s
 - [ ] Verify deployment path
 
 ### Phase 3: Validation System (ValidationRegistry)
-- [ ] Create `src/contracts/ValidationRegistry.sol`
+- [ ] Create `contracts/ValidationRegistry.sol`
   - Validator attestation posting
   - ProofType support (NONE, EIP712, TEE, ZKML)
   - Checkpoint hash verification
@@ -58,7 +58,7 @@ Strengthen Solidity contracts to improve leaderboard reputation and validation s
 - [ ] Verify deployment path
 
 ### Phase 4: Capital & Vault (HackathonVault) [Optional]
-- [ ] Create `src/contracts/HackathonVault.sol`
+- [ ] Create `contracts/HackathonVault.sol`
   - Self-serve capital claim per agent
   - Per-team allocation tracking
   - Underfunding guards
@@ -99,11 +99,11 @@ Strengthen Solidity contracts to improve leaderboard reputation and validation s
 - **HackathonVault.sol** - 152 LOC (reference)
 
 ### Key Files to Update
-- `src/contracts/RiskRouter.sol` - Enhance integration
-- `src/contracts/AgentRegistry.sol` - NEW
-- `src/contracts/ReputationRegistry.sol` - NEW
-- `src/contracts/ValidationRegistry.sol` - NEW
-- `src/contracts/HackathonVault.sol` - NEW
+- `contracts/RiskRouter.sol` - Enhance integration
+- `contracts/AgentRegistry.sol` - NEW
+- `contracts/ReputationRegistry.sol` - NEW
+- `contracts/ValidationRegistry.sol` - NEW
+- `contracts/HackathonVault.sol` - NEW
 - `hardhat.config.cjs` - Compilation config
 - `scripts/deploy-registries.ts` - NEW deployment script
 - `test/contracts/` - NEW test files

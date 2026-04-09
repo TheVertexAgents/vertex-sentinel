@@ -19,7 +19,7 @@ Vertex Sentinel is a verifiable risk management layer for autonomous AI trading 
 - `dashboard/index.html` - Live monitoring UI
 - `LIVE_EXECUTION_PROOF.md` - Evidence of 4 real Kraken trades
 - `docs/LITEPAPER.md` - Technical whitepaper
-- `src/contracts/RiskRouter.sol` - On-chain guardrails contract
+- `contracts/RiskRouter.sol` - On-chain guardrails contract
 
 ## Build & Run
 ```bash
@@ -42,7 +42,7 @@ python3 -m http.server 12000
 - **All EIP-712 signatures verified**
 
 ## Repository Structure
-- `/src/contracts` - Solidity contracts (RiskRouter.sol)
+- `/contracts` - Solidity contracts (RiskRouter.sol)
 - `/src/execution` - Trade execution proxy
 - `/src/logic` - Risk assessment flows
 - `/src/mcp` - Model Context Protocol integration
