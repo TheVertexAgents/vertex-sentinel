@@ -4,99 +4,105 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-
-/**
- * @title IAgentRegistry
- * @dev Interface for ERC-8004 compatible Agent Registry.
- */
-interface IAgentRegistry {
-    function isRegisteredAgent(address agent) external view returns (bool);
-}
+import "./AgentRegistry.sol";
 
 /**
  * @title RiskRouter
- * @dev The "Bouncer" for VertexAgents Sentinel Layer.
- * Intercepts Trade Intents and validates them against risk guardrails and Agent identity.
+ * @dev On-chain risk validation and intent submission.
  */
 contract RiskRouter is EIP712 {
-    using ECDSA for bytes32;
-
-    bytes32 private constant TRADE_INTENT_TYPEHASH = keccak256(
-        "TradeIntent(uint256 agentId,address agentWallet,string pair,string action,uint256 amountUsdScaled,uint256 maxSlippageBps,uint256 nonce,uint256 deadline)"
-    );
-
     struct TradeIntent {
         uint256 agentId;
         address agentWallet;
-        string pair;
-        string action;
+        string  pair;
+        string  action;
         uint256 amountUsdScaled;
         uint256 maxSlippageBps;
         uint256 nonce;
         uint256 deadline;
     }
 
-    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent, string pair, uint256 amountUsdScaled);
-    event TradeRejected(bytes32 indexed intentHash, string reason);
-
-    address public agentRegistry;
-    mapping(address => bool) public authorizedAgents;
-
-    constructor(address _registry) EIP712("VertexAgents-Sentinel", "1") {
-        agentRegistry = _registry;
-        // Keep msg.sender authorized for fallback/demo
-        authorizedAgents[msg.sender] = true;
+    struct RiskParams {
+        uint256 maxPositionUsdScaled;
+        uint256 maxDrawdownBps;
+        uint256 maxTradesPerHour;
+        bool    active;
     }
 
-    /**
-     * @dev Reconstructs the hash of a TradeIntent.
-     */
-    function hashTradeIntent(TradeIntent memory intent) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(
-            TRADE_INTENT_TYPEHASH,
-            intent.agentId,
-            intent.agentWallet,
-            keccak256(bytes(intent.pair)),
-            keccak256(bytes(intent.action)),
-            intent.amountUsdScaled,
-            intent.maxSlippageBps,
-            intent.nonce,
-            intent.deadline
-        )));
+    struct TradeRecord {
+        uint256 count;
+        uint256 windowStart;
     }
 
-    /**
-     * @dev Validates a trade intent and its signature.
-     */
-    function authorizeTrade(
-        TradeIntent memory intent,
-        bytes memory signature
-    ) public returns (bool) {
-        bytes32 digest = hashTradeIntent(intent);
-        address signer = digest.recover(signature);
+    bytes32 public constant TRADE_INTENT_TYPEHASH = keccak256(
+        "TradeIntent(uint256 agentId,address agentWallet,string pair,string action,uint256 amountUsdScaled,uint256 maxSlippageBps,uint256 nonce,uint256 deadline)"
+    );
 
-        if (!authorizedAgents[signer] && (agentRegistry == address(0) || !IAgentRegistry(agentRegistry).isRegisteredAgent(signer))) {
-            emit TradeRejected(digest, "Unauthorized or Unregistered Agent");
-            return false;
-        }
+    address public owner;
+    AgentRegistry public immutable agentRegistry;
 
+    mapping(uint256 => RiskParams)  public riskParams;
+    mapping(uint256 => TradeRecord) private _tradeRecords;
+    mapping(uint256 => uint256)     private _intentNonces;
+
+    event TradeApproved(uint256 indexed agentId, bytes32 indexed intentHash, uint256 amountUsdScaled);
+    event TradeRejected(uint256 indexed agentId, bytes32 indexed intentHash, string reason);
+
+    constructor(address agentRegistryAddress)
+        EIP712("RiskRouter", "1")
+    {
+        owner = msg.sender;
+        agentRegistry = AgentRegistry(agentRegistryAddress);
+    }
+
+    function setRiskParams(
+        uint256 agentId,
+        uint256 maxPositionUsdScaled,
+        uint256 maxDrawdownBps,
+        uint256 maxTradesPerHour
+    ) external {
+        riskParams[agentId] = RiskParams({
+            maxPositionUsdScaled: maxPositionUsdScaled,
+            maxDrawdownBps: maxDrawdownBps,
+            maxTradesPerHour: maxTradesPerHour,
+            active: true
+        });
+    }
+
+    function submitTradeIntent(
+        TradeIntent calldata intent,
+        bytes calldata signature
+    ) external returns (bool approved, string memory reason) {
         if (block.timestamp > intent.deadline) {
-            emit TradeRejected(digest, "Intent Expired");
-            return false;
+            return (false, "Intent expired");
         }
 
-        // Circuit Breaker: Example logic for volume limit ($100,000 demo cap)
-        if (intent.amountUsdScaled > 10000000) { 
-             emit TradeRejected(digest, "Circuit Breaker: Amount Exceeded");
-             return false;
+        AgentRegistry.AgentRegistration memory reg = agentRegistry.getAgent(intent.agentId);
+        require(intent.agentWallet == reg.agentWallet, "RiskRouter: agentWallet mismatch");
+
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(abi.encode(
+                TRADE_INTENT_TYPEHASH,
+                intent.agentId,
+                intent.agentWallet,
+                keccak256(bytes(intent.pair)),
+                keccak256(bytes(intent.action)),
+                intent.amountUsdScaled,
+                intent.maxSlippageBps,
+                intent.nonce,
+                intent.deadline
+            ))
+        );
+        address recovered = ECDSA.recover(digest, signature);
+        require(recovered == reg.agentWallet, "RiskRouter: invalid signature");
+
+        RiskParams storage params = riskParams[intent.agentId];
+        if (params.active && intent.amountUsdScaled > params.maxPositionUsdScaled) {
+            emit TradeRejected(intent.agentId, digest, "Exceeds maxPositionSize");
+            return (false, "Exceeds maxPositionSize");
         }
 
-        emit TradeAuthorized(digest, signer, intent.pair, intent.amountUsdScaled);
-        return true;
-    }
-
-    function addAgent(address agent) external {
-        // Simplified auth for demo
-        authorizedAgents[agent] = true;
+        emit TradeApproved(intent.agentId, digest, intent.amountUsdScaled);
+        return (true, "");
     }
 }

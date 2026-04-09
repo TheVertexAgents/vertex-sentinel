@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-04-09T07:54:56.176Z",
-  "sessionId": "session-d6s4st26",
+  "timestamp": "2026-04-09T08:31:08.543Z",
+  "sessionId": "session-j3zm6oif",
   "summary": {
     "totalTrades": 1,
     "winRate": 0,
@@ -17,7 +17,7 @@
       "currentPrice": 60000,
       "amount": 0.1,
       "unrealizedPnL": -31.2,
-      "entryTime": "2026-04-09T07:54:56.176Z"
+      "entryTime": "2026-04-09T08:31:08.543Z"
     }
   },
   "trades": [
@@ -27,7 +27,7 @@
       "side": "BUY",
       "price": 60000,
       "amount": 0.1,
-      "timestamp": "2026-04-09T07:54:56.176Z",
+      "timestamp": "2026-04-09T08:31:08.543Z",
       "fee": 15.6
     }
   ]

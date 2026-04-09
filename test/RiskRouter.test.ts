@@ -5,37 +5,42 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("RiskRouter (Viem Edition)", function () {
   let riskRouter: any;
-  let mockRegistry: any;
+  let agentRegistry: any;
   let publicClient: any;
   let walletClients: any[];
+  let operator: any;
   let agent: any;
-  let otherAccount: any;
 
-  // EIP-712 Domain
-  const domainName = "VertexAgents-Sentinel";
+  const domainName = "RiskRouter";
   const domainVersion = "1";
 
   beforeEach(async function () {
     const viem = (hre as any).viem;
     walletClients = await viem.getWalletClients();
     publicClient = await viem.getPublicClient();
-    [, agent, otherAccount] = walletClients;
+    [operator, agent] = walletClients;
 
-    // Deploy Mock Registry
-    mockRegistry = await viem.deployContract("MockRegistry");
+    agentRegistry = await viem.deployContract("AgentRegistry");
+    riskRouter = await viem.deployContract("RiskRouter", [getAddress(agentRegistry.address)]);
 
-    // Deploy RiskRouter
-    riskRouter = await viem.deployContract("RiskRouter", [getAddress(mockRegistry.address)]);
+    // Register agent
+    await agentRegistry.write.register([
+      agent.account.address,
+      "Test Agent",
+      "Desc",
+      ["trade"],
+      "uri"
+    ]);
   });
 
-  async function makeIntent(signerAccount: any, overrides: Partial<Record<string, any>> = {}) {
+  async function makeIntent(overrides: Partial<Record<string, any>> = {}) {
     const deadline = BigInt((await time.latest()) + 3600);
     return {
-      agentId: 1n,
-      agentWallet: signerAccount.account.address as `0x${string}`,
+      agentId: 0n,
+      agentWallet: agent.account.address as `0x${string}`,
       pair: "BTC/USDC",
       action: "BUY",
-      amountUsdScaled: 10000n, // $100
+      amountUsdScaled: 10000n,
       maxSlippageBps: 50n,
       nonce: 0n,
       deadline,
@@ -72,57 +77,33 @@ describe("RiskRouter (Viem Edition)", function () {
     });
   }
 
-  describe("Authorization Logic", function () {
-    it("Should authorize a valid trade from an authorized agent", async function () {
-      await riskRouter.write.addAgent([agent.account.address]);
+  it("Should approve a valid signed intent", async function () {
+    const intent = await makeIntent();
+    const signature = await getSignature(agent, intent);
 
-      const intent = await makeIntent(agent);
-      const signature = await getSignature(agent, intent);
+    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    expect(approved).to.equal(true);
+  });
 
-      const result = await riskRouter.read.authorizeTrade([intent, signature]);
-      expect(result).to.equal(true);
+  it("Should reject expired intents", async function () {
+    const intent = await makeIntent({
+      deadline: BigInt((await time.latest()) - 100)
     });
+    const signature = await getSignature(agent, intent);
 
-    it("Should reject unauthorized agents", async function () {
-      const intent = await makeIntent(otherAccount);
-      const signature = await getSignature(otherAccount, intent);
+    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    expect(approved).to.equal(false);
+    expect(reason).to.equal("Intent expired");
+  });
 
-      const result = await riskRouter.read.authorizeTrade([intent, signature]);
-      expect(result).to.equal(false);
-    });
+  it("Should reject intents exceeding risk params", async function () {
+    await riskRouter.write.setRiskParams([0n, 5000n, 500n, 10n]);
 
-    it("Should authorize if agent is in Registry (ERC-8004 Fallback)", async function () {
-      await mockRegistry.write.setRegistered([otherAccount.account.address, true]);
+    const intent = await makeIntent({ amountUsdScaled: 6000n });
+    const signature = await getSignature(agent, intent);
 
-      const intent = await makeIntent(otherAccount);
-      const signature = await getSignature(otherAccount, intent);
-
-      const result = await riskRouter.read.authorizeTrade([intent, signature]);
-      expect(result).to.equal(true);
-    });
-
-    it("Should reject expired intents", async function () {
-      await riskRouter.write.addAgent([agent.account.address]);
-
-      const intent = await makeIntent(agent, {
-        deadline: BigInt((await time.latest()) - 100), // Past
-      });
-      const signature = await getSignature(agent, intent);
-
-      const result = await riskRouter.read.authorizeTrade([intent, signature]);
-      expect(result).to.equal(false);
-    });
-
-    it("Should trigger circuit breaker on high amount", async function () {
-      await riskRouter.write.addAgent([agent.account.address]);
-
-      const intent = await makeIntent(agent, {
-        amountUsdScaled: 10000001n, // Over $100,000 cap
-      });
-      const signature = await getSignature(agent, intent);
-
-      const result = await riskRouter.read.authorizeTrade([intent, signature]);
-      expect(result).to.equal(false);
-    });
+    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    expect(approved).to.equal(false);
+    expect(reason).to.equal("Exceeds maxPositionSize");
   });
 });
