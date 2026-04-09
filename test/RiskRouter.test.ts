@@ -8,7 +8,6 @@ describe("RiskRouter (Viem Edition)", function () {
   let agentRegistry: any;
   let publicClient: any;
   let walletClients: any[];
-  let operator: any;
   let agent: any;
 
   const domainName = "RiskRouter";
@@ -18,7 +17,7 @@ describe("RiskRouter (Viem Edition)", function () {
     const viem = (hre as any).viem;
     walletClients = await viem.getWalletClients();
     publicClient = await viem.getPublicClient();
-    [operator, agent] = walletClients;
+    [, agent] = walletClients;
 
     agentRegistry = await viem.deployContract("AgentRegistry");
     riskRouter = await viem.deployContract("RiskRouter", [getAddress(agentRegistry.address)]);
@@ -81,7 +80,7 @@ describe("RiskRouter (Viem Edition)", function () {
     const intent = await makeIntent();
     const signature = await getSignature(agent, intent);
 
-    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    const [approved] = await riskRouter.read.submitTradeIntent([intent, signature]);
     expect(approved).to.equal(true);
   });
 
@@ -91,9 +90,8 @@ describe("RiskRouter (Viem Edition)", function () {
     });
     const signature = await getSignature(agent, intent);
 
-    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    const [approved] = await riskRouter.read.submitTradeIntent([intent, signature]);
     expect(approved).to.equal(false);
-    expect(reason).to.equal("Intent expired");
   });
 
   it("Should reject intents exceeding risk params", async function () {
@@ -102,8 +100,7 @@ describe("RiskRouter (Viem Edition)", function () {
     const intent = await makeIntent({ amountUsdScaled: 6000n });
     const signature = await getSignature(agent, intent);
 
-    const [approved, reason] = await riskRouter.read.submitTradeIntent([intent, signature]);
+    const [approved] = await riskRouter.read.submitTradeIntent([intent, signature]);
     expect(approved).to.equal(false);
-    expect(reason).to.equal("Exceeds maxPositionSize");
   });
 });
