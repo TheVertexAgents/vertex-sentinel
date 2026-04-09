@@ -22,8 +22,19 @@ describe('Checkpoint Utility Unit Tests', function () {
     riskScore: 0.1
   };
 
+  const intentHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+  const registryAddress = '0x0000000000000000000000000000000000000000';
+
   it('Should generate a valid EIP-712 signed checkpoint', async function () {
-    const checkpoint = await createSignedCheckpoint(agent, decision, testPk, 31337);
+    const checkpoint = await createSignedCheckpoint(
+        agent,
+        decision,
+        intentHash,
+        50000,
+        registryAddress,
+        testPk,
+        31337
+    );
 
     expect(checkpoint.signature).to.match(/^0x[a-fA-F0-9]{130}$/);
     expect(checkpoint.reasoning).to.equal(decision.reasoning);
@@ -35,7 +46,15 @@ describe('Checkpoint Utility Unit Tests', function () {
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
     if (fs.existsSync(auditLogPath)) fs.unlinkSync(auditLogPath);
 
-    await createSignedCheckpoint(agent, decision, testPk, 31337);
+    await createSignedCheckpoint(
+        agent,
+        decision,
+        intentHash,
+        50000,
+        registryAddress,
+        testPk,
+        31337
+    );
 
     expect(fs.existsSync(auditLogPath)).to.be.true;
     const content = fs.readFileSync(auditLogPath, 'utf8');

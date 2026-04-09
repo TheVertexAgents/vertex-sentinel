@@ -11,7 +11,7 @@ describe('Checkpoint PnL Integration', () => {
   });
 
   it('should include PnL metrics in signed checkpoints and persist to logs/audit.json', async () => {
-    const agent = { name: 'Test Agent', version: '1.0.0', agentId: '1', agentAddress: '0x0123456789abcdef0123456789abcdef0123456789abcdef' };
+    const agent = { name: 'Test Agent', version: '1.0.0', agentId: 1 };
     const decision = {
       action: 'BUY' as const,
       pair: 'BTC/USD',
@@ -20,6 +20,8 @@ describe('Checkpoint PnL Integration', () => {
       reasoning: 'Test reasoning'
     };
     const pk = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+    const intentHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    const registryAddress = '0x0000000000000000000000000000000000000000';
 
     // PnL metrics that should be included
     const pnlMetrics = {
@@ -29,7 +31,16 @@ describe('Checkpoint PnL Integration', () => {
         roiPercent: 1.23
     };
 
-    const checkpoint = await createSignedCheckpoint(agent as any, decision, pk as `0x${string}`, 11155111, pnlMetrics);
+    const checkpoint = await createSignedCheckpoint(
+        agent as any,
+        decision as any,
+        intentHash as any,
+        50000,
+        registryAddress,
+        pk as `0x${string}`,
+        11155111,
+        pnlMetrics
+    );
 
     expect(checkpoint.pnl).to.deep.equal(pnlMetrics);
 

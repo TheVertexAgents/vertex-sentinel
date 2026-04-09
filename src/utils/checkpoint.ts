@@ -9,23 +9,27 @@ import path from 'path';
 
 /**
  * @dev EIP-712 Domain definition for checkpoints.
- * These are local verifiable audit artifacts, not on-chain state changes.
+ * Aligned with template: name changed to 'AITradingAgent'
  */
-const getDomain = (chainId: number) => ({
-  name: 'Vertex-Sentinel-Audit',
+const getDomain = (registryAddress: string, chainId: number) => ({
+  name: 'AITradingAgent',
   version: '1',
   chainId,
+  verifyingContract: registryAddress as `0x${string}`,
 } as const);
 
-const TYPES = {
+export const CHECKPOINT_TYPES = {
   TradeCheckpoint: [
-    { name: 'agentId', type: 'uint256' },
-    { name: 'timestamp', type: 'uint256' },
-    { name: 'pair', type: 'string' },
-    { name: 'action', type: 'string' },
-    { name: 'amountUsdScaled', type: 'uint256' },
-    { name: 'reasoningHash', type: 'bytes32' },
-    { name: 'confidenceScaled', type: 'uint256' },
+    { name: 'agentId',           type: 'uint256' },
+    { name: 'timestamp',         type: 'uint256' },
+    { name: 'action',            type: 'string'  },
+    { name: 'asset',             type: 'string'  },
+    { name: 'pair',              type: 'string'  },
+    { name: 'amountUsdScaled',   type: 'uint256' },
+    { name: 'priceUsdScaled',    type: 'uint256' },
+    { name: 'reasoningHash',     type: 'bytes32' },
+    { name: 'confidenceScaled',  type: 'uint256' },
+    { name: 'intentHash',        type: 'bytes32' },
   ],
 } as const;
 
@@ -34,15 +38,19 @@ export interface SignedCheckpoint {
   signature: string;
   reasoning: string;
   pnl?: any;
+  checkpointHash: string;
 }
 
 /**
  * @dev Creates a cryptographically signed checkpoint of a trade decision.
- * Mandated by Project Review for "Verifiable Execution".
+ * Fully aligned with the official template for Leaderboard validation.
  */
 export async function createSignedCheckpoint(
   agent: AgentMetadata,
   decision: TradeDecision,
+  intentHash: `0x${string}`,
+  priceUsd: number,
+  registryAddress: string,
   privateKey: `0x${string}`,
   chainId: number = 11155111,
   pnl?: any
@@ -58,21 +66,37 @@ export async function createSignedCheckpoint(
       transport: http(),
     });
 
+    // Derive asset from pair (e.g., BTC/USDC -> BTC)
+    const asset = decision.pair.split('/')[0] || decision.pair;
+
     const message = {
       agentId: BigInt(agent.agentId),
       timestamp,
-      pair: decision.pair,
       action: decision.action,
+      asset,
+      pair: decision.pair,
       amountUsdScaled: decision.amountUsdScaled,
+      priceUsdScaled: BigInt(Math.round(priceUsd * 100)),
       reasoningHash,
       confidenceScaled: BigInt(Math.round(decision.confidence * 1000)),
+      intentHash,
     };
 
     const signature = await client.signTypedData({
-      domain: getDomain(chainId),
-      types: TYPES,
+      domain: getDomain(registryAddress, chainId),
+      types: CHECKPOINT_TYPES,
       primaryType: 'TradeCheckpoint',
       message,
+    });
+
+    // To post to ValidationRegistry, we need the EIP-712 hash
+    // In Viem, we can use hashTypedData
+    const { hashTypedData } = await import('viem');
+    const checkpointHash = hashTypedData({
+        domain: getDomain(registryAddress, chainId),
+        types: CHECKPOINT_TYPES,
+        primaryType: 'TradeCheckpoint',
+        message
     });
 
     const checkpoint: SignedCheckpoint = {
@@ -81,11 +105,13 @@ export async function createSignedCheckpoint(
         agentId: message.agentId.toString(),
         timestamp: message.timestamp.toString(),
         amountUsdScaled: message.amountUsdScaled.toString(),
+        priceUsdScaled: message.priceUsdScaled.toString(),
         confidenceScaled: message.confidenceScaled.toString(),
       },
       signature,
       reasoning: decision.reasoning,
-      pnl: pnl
+      pnl: pnl,
+      checkpointHash
     };
 
     // Save to audit log
@@ -98,7 +124,6 @@ export async function createSignedCheckpoint(
     return checkpoint;
 
   } catch (error) {
-    // Fail-Closed: We don't trade without a signed reason.
     throw new CriticalSecurityException(`Fail-Closed: Checkpoint generation or signing failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
