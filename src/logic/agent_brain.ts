@@ -253,7 +253,7 @@ async function main() {
   };
 
   const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-  const auth = await signIntent(demoIntent, pk);
+  await signIntent(demoIntent, pk);
 }
 
 const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
@@ -263,7 +263,7 @@ const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
                ));
 
 if (isMain && process.env.NODE_ENV !== 'test') {
-  main().catch((error) => {
+  main().catch(( ) => {
     process.exit(1);
   });
 }
