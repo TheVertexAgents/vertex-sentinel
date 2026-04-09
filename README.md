@@ -73,6 +73,17 @@ cp .env.example .env
 
 ---
 
+## 🛡️ Smart Contract Strengthening (Issue #76)
+
+The Sentinel has been upgraded with a robust suite of on-chain registries aligned with ERC-8004 and EIP-712 standards.
+
+### 🔗 Registry Ecosystem
+- **AgentRegistry**: ERC-721 based identity registry (ERC-8004).
+- **RiskRouter**: Advanced trade authorization with per-agent risk limits.
+- **ReputationRegistry**: On-chain feedback and anti-sybil scoring.
+- **ValidationRegistry**: Cryptographic attestations for trade checkpoints.
+- **HackathonVault**: Self-serve capital allocation for registered agents.
+
 ## Key Contracts
 
 ### `RiskRouter.sol`

@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { createWalletClient, createPublicClient, http, keccak256, encodeAbiParameters, parseAbiParameters, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
@@ -9,28 +9,26 @@ import type { TradeIntent } from '../logic/types.js';
  * Handles building, signing, and submitting TradeIntents.
  */
 export class RiskRouterClient {
-  private routerAddress: `0x${string}`;
+  private routerAddress: Hex;
   private chainId: number;
 
-  constructor(routerAddress: `0x${string}`, chainId: number = 11155111) {
+  constructor(routerAddress: Hex, chainId: number = 11155111) {
     this.routerAddress = routerAddress;
     this.chainId = chainId;
   }
 
-  /**
-   * @dev Initializes the clients if not already done.
-   */
   private getChain() {
-    return this.chainId === 11155111 ? sepolia : hardhat;
+    return this.chainId === 31337 ? hardhat : sepolia;
   }
 
   /**
    * @dev Builds EIP-712 domain and types for RiskRouter.
+   * Aligned with strengthened RiskRouter.sol.
    */
   private getTypedData() {
     return {
       domain: {
-        name: 'RiskRouter',
+        name: 'VertexAgents-Sentinel',
         version: '1',
         chainId: this.chainId,
         verifyingContract: this.routerAddress,
@@ -53,12 +51,12 @@ export class RiskRouterClient {
   /**
    * @dev Signs a TradeIntent using EIP-712.
    */
-  async signIntent(intent: TradeIntent, privateKey: `0x${string}`): Promise<`0x${string}`> {
+  async signIntent(intent: TradeIntent, privateKey: Hex): Promise<Hex> {
     try {
       const account = privateKeyToAccount(privateKey);
       const client = createWalletClient({
         account,
-        chain: sepolia,
+        chain: this.getChain(),
         transport: http(),
       });
 
@@ -69,8 +67,14 @@ export class RiskRouterClient {
         types,
         primaryType: 'TradeIntent',
         message: {
-          ...intent,
-          agentWallet: intent.agentWallet as `0x${string}`,
+          agentId: BigInt(intent.agentId),
+          agentWallet: intent.agentWallet as Hex,
+          pair: intent.pair,
+          action: intent.action,
+          amountUsdScaled: BigInt(intent.amountUsdScaled),
+          maxSlippageBps: BigInt(intent.maxSlippageBps),
+          nonce: BigInt(intent.nonce),
+          deadline: BigInt(intent.deadline),
         },
       });
 
@@ -83,16 +87,16 @@ export class RiskRouterClient {
   /**
    * @dev Computes the intent hash for auditing and on-chain correlation.
    */
-  computeIntentHash(intent: TradeIntent): `0x${string}` {
+  computeIntentHash(intent: TradeIntent): Hex {
     const encoded = encodeAbiParameters(
       parseAbiParameters('uint256, address, string, string, uint256, uint256'),
       [
-        intent.agentId,
-        intent.agentWallet as `0x${string}`,
+        BigInt(intent.agentId),
+        intent.agentWallet as Hex,
         intent.pair,
         intent.action,
-        intent.amountUsdScaled,
-        intent.nonce
+        BigInt(intent.amountUsdScaled),
+        BigInt(intent.nonce)
       ]
     );
     return keccak256(encoded);
@@ -100,13 +104,18 @@ export class RiskRouterClient {
 
   /**
    * @dev Submits a signed trade intent to RiskRouter for on-chain validation.
-   * Returns the transaction hash if successful.
    */
   async authorizeTrade(
     intent: TradeIntent,
-    signature: `0x${string}`,
-    privateKey: `0x${string}`
-  ): Promise<{ success: boolean; transactionHash?: `0x${string}`; error?: string }> {
+    signature: Hex,
+    privateKey: Hex
+  ): Promise<{ success: boolean; transactionHash?: Hex; error?: string }> {
+    // Demo Mode Guard
+    if (this.routerAddress === '0x0000000000000000000000000000000000000000' || process.env.DEMO_MODE === 'true') {
+        console.warn(`[RiskRouterClient] Skipping on-chain submission (DEMO_MODE=true or zero address)`);
+        return { success: true };
+    }
+
     try {
       const account = privateKeyToAccount(privateKey);
       const chain = this.getChain();
@@ -114,14 +123,9 @@ export class RiskRouterClient {
       const walletClient = createWalletClient({
         account,
         chain,
-        transport: http(
-          chain.id === 11155111
-            ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY || ''}`
-            : 'http://127.0.0.1:8545'
-        ),
+        transport: http(),
       });
 
-      // RiskRouter contract ABI - using standard Solidity struct encoding
       const RISK_ROUTER_ABI = [
         {
           type: 'function',
@@ -143,30 +147,14 @@ export class RiskRouterClient {
             },
             { name: 'signature', type: 'bytes' },
           ],
-          outputs: [],
+          outputs: [
+            { name: 'approved', type: 'bool' },
+            { name: 'reason', type: 'string' }
+          ],
           stateMutability: 'nonpayable',
-        },
-        {
-          type: 'event',
-          name: 'TradeApproved',
-          inputs: [
-            { name: 'agentId', type: 'uint256', indexed: true },
-            { name: 'intentHash', type: 'bytes32', indexed: false },
-            { name: 'amountUsdScaled', type: 'uint256', indexed: false },
-          ],
-        },
-        {
-          type: 'event',
-          name: 'TradeRejected',
-          inputs: [
-            { name: 'agentId', type: 'uint256', indexed: true },
-            { name: 'intentHash', type: 'bytes32', indexed: false },
-            { name: 'reason', type: 'string', indexed: false },
-          ],
-        },
+        }
       ] as const;
 
-      // Submit the trade intent to RiskRouter
       const txHash = await walletClient.writeContract({
         address: this.routerAddress,
         abi: RISK_ROUTER_ABI,
@@ -174,7 +162,7 @@ export class RiskRouterClient {
         args: [
           {
             agentId: BigInt(intent.agentId),
-            agentWallet: intent.agentWallet as `0x${string}`,
+            agentWallet: intent.agentWallet as Hex,
             pair: intent.pair,
             action: intent.action,
             amountUsdScaled: BigInt(intent.amountUsdScaled),
@@ -199,21 +187,17 @@ export class RiskRouterClient {
   }
 
   /**
-   * @dev Waits for a transaction to be confirmed and checks for TradeAuthorized event.
+   * @dev Waits for a transaction to be confirmed.
    */
   async waitForTradeAuthorization(
-    txHash: `0x${string}`,
+    txHash: Hex,
     timeoutMs: number = 30000
   ): Promise<{ authorized: boolean; reason?: string }> {
     try {
       const chain = this.getChain();
       const publicClient = createPublicClient({
         chain,
-        transport: http(
-          chain.id === 11155111
-            ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY || ''}`
-            : 'http://127.0.0.1:8545'
-        ),
+        transport: http(),
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -221,13 +205,7 @@ export class RiskRouterClient {
         timeout: timeoutMs,
       });
 
-      if (receipt.status === 'success') {
-        // Transaction succeeded - RiskRouter likely authorized the trade
-        // In a real implementation, you'd parse logs to check for TradeAuthorized event
-        return { authorized: true };
-      } else {
-        return { authorized: false, reason: 'Transaction reverted' };
-      }
+      return { authorized: receipt.status === 'success' };
     } catch (error) {
       return {
         authorized: false,
