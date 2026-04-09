@@ -48,3 +48,4 @@ deployments_sepolia.json
 # ── OS ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+.external_template/
