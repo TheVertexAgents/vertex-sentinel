@@ -1,55 +1,55 @@
-# 🌐 Vertex Sentinel: On-Chain Audit Report (Sepolia)
+# 🌐 On-Chain Agent Audit Report (Sepolia)
 
-This report provides a comprehensive overview of the agentic ecosystem on the Sepolia testnet, specifically focusing on the **Agent Registry**, **Reputation Registry**, and **Validation Registry** shared infrastructure.
-
-## 🛡️ Vertex Sentinel Alpha (Our Agent)
-
-| Metric | Value |
-|--------|-------|
-| **Agent ID** | 1 |
-| **Wallet Address** | `0x5367f88e7b24bfa34a453cf24f7be741cf3276c9` |
-| **Reputation Score** | 30 |
-| **Avg Validation Score** | 15.5 |
-| **Total Attestations** | 108 |
-
----
-
-## 📊 Ecosystem Summary
-
-A total of **51 agents** are currently registered in the `AgentRegistry`. Below is the status of active agents with validation history or significant reputation.
-
-### Active Agents Audit Trail
-
-| ID | Wallet Address | Reputation | Avg Validation | Attestations |
-|----|----------------|------------|----------------|--------------|
-| 0 | `0xe55d7936e7bd88d2de63c11a93ae94cc2225dffb` | 95 | 87.9 | 3092 |
-| 1 | `0x5367f88e7b24bfa34a453cf24f7be741cf3276c9` | 30 | 15.5 | 108 |
-| 2 | `0x349515467f82c3cbe0940fe614fc8038dca98b7c` | 89 | 79.3 | 38 |
-| 4 | `0xe15c358c468e9ea52e3695071dc7d9111dc83a0a` | 93 | 86.8 | 100 |
-| 5 | `0x982e92b3ef679e00ef933148e27cca62bbe7c1ef` | 80 | 61.2 | 679 |
-| 6 | `0xed4c3a2508ade21cd431f7eb8f3d2e7c42f1b307` | 76 | 52.2 | 254 |
-| 11 | `0x6b8d4fa82d4bdf70ca0d676bd933b1150705ed9b` | 90 | 81.2 | 416 |
-| 17 | `0x95c8b49c2a6124c436ea1a3f378991313f6f1c0a` | 99 | 98.9 | 461 |
-| 18 | `0xe8684cfba08541c607898e55bab58302204ddcd7` | 99 | 99.0 | 2146 |
-| 31 | `0xbb78252f4a1f03c1b82eefe21eee2d56b5278650` | 98 | 97.8 | 348 |
-| 37 | `0x7a2f2e58b93ac448ff7d0e81c2756a3efc7a15e0` | 100 | 100.0 | 613 |
-| 39 | `0x0858e4883e88393a5734af2b3f05f4ccdf25c328` | 99 | 100.0 | 65 |
-
----
-
-## 🔍 Methodology
-
-Data was gathered using JSON-RPC calls via `curl` to a public Sepolia RPC endpoint (`https://ethereum-sepolia-rpc.publicnode.com`).
-
-### Contract Addresses
-- **AgentRegistry**: `0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3`
-- **ReputationRegistry**: `0x423a9904e39537a9997fbaF0f220d79D7d545763`
-- **ValidationRegistry**: `0x92bF63E5C7Ac6980f237a7164Ab413BE226187F1`
-
-### Data Extraction
-- **Identity**: Parsed `AgentRegistered` events from the `AgentRegistry`.
-- **Validation**: Aggregated `AttestationPosted` events from the `ValidationRegistry`.
-- **Reputation**: Parsed reputation update logs from the `ReputationRegistry`.
-
----
-*Report Generated: April 2026*
+| ID | Wallet Address | Reputation | Avg Validation | Attestations | Intents |
+|---|---|---|---|---|---|
+| 0 | `0xe55d7936e7bd88d2de63c11a93ae94cc2225dffb` | 95 | 87.9 | 3092 | 209 |
+| 1 | `0x5367f88e7b24bfa34a453cf24f7be741cf3276c9` | 30 | 15.5 | 108 | 6 |
+| 2 | `0x349515467f82c3cbe0940fe614fc8038dca98b7c` | 89 | 79.3 | 38 | 116 |
+| 3 | `0x59971f491ad5482003851ec1f96a6abecd1d4d13` | 31 | N/A | 0 | 20 |
+| 4 | `0xe15c358c468e9ea52e3695071dc7d9111dc83a0a` | 93 | 86.8 | 100 | 84 |
+| 5 | `0x982e92b3ef679e00ef933148e27cca62bbe7c1ef` | 80 | 61.2 | 679 | 45 |
+| 6 | `0xed4c3a2508ade21cd431f7eb8f3d2e7c42f1b307` | 76 | 52.2 | 254 | 19 |
+| 7 | `0x109d8072b1762263ed094bc05c5110895adc65cf` | 22 | N/A | 0 | 4 |
+| 8 | `0x40b4da046ac5e6e6a25108a9a3f0c93e2fbfe4ca` | 10 | N/A | 0 | 0 |
+| 9 | `0x98420e435d40912e3d4e9b31437b3f02e54c9e6f` | 10 | N/A | 0 | 0 |
+| 10 | `0x54b42f761b8e99685a9e47a4f822caa2ae51a101` | 10 | N/A | 0 | 0 |
+| 11 | `0x6b8d4fa82d4bdf70ca0d676bd933b1150705ed9b` | 90 | 81.2 | 416 | 378 |
+| 12 | `0x6c8019b971d600916ac39cc96a830e68a034df47` | 91 | 83.4 | 34 | 218 |
+| 13 | `0x13ef924eb7408e90278b86b659960afb00ddae61` | 69 | 80.0 | 2 | 3 |
+| 14 | `0x13ef924eb7408e90278b86b659960afb00ddae61` | 64 | 82.0 | 1 | 1 |
+| 15 | `0x13ef924eb7408e90278b86b659960afb00ddae61` | 69 | 92.3 | 4 | 1 |
+| 16 | `0x13ef924eb7408e90278b86b659960afb00ddae61` | 63 | 80.0 | 1 | 1 |
+| 17 | `0x95c8b49c2a6124c436ea1a3f378991313f6f1c0a` | 99 | 98.9 | 461 | 76 |
+| 18 | `0xe8684cfba08541c607898e55bab58302204ddcd7` | 99 | 99.0 | 2146 | 154 |
+| 19 | `0x0f38ec46e5eb7a57cf5371cb259546de0f896c0a` | 71 | 85.0 | 42 | 5 |
+| 20 | `0x193f4ab496d240edba161c080fa500b7aed742f4` | 10 | N/A | 0 | 0 |
+| 21 | `0xcfb497ab0f071e52d248c047e187c217fc0b1abf` | 86 | 93.5 | 25 | 30 |
+| 22 | `0xcdf7bd4d16e0bde5570ad0052aad2dc02b5c51d3` | 10 | N/A | 0 | 0 |
+| 23 | `0xb94d6b191d3c7bb2a63b13a7f0698f7b3a2999a2` | 10 | N/A | 0 | 0 |
+| 24 | `0x075dc84ca3fac21be7c2eea1901a04417f0dc6c6` | 88 | 77.4 | 507 | 449 |
+| 25 | `0x2012485a5bfa96e945e6212bfc096ca33feb6ba9` | 77 | 55.7 | 73 | 152 |
+| 26 | `0x909375ec03d6a001a95bcf20e2260d671a84140b` | 93 | 87.9 | 12 | 194 |
+| 27 | `0xcadf0b2c86db02176553d246dc7d9ad0b878159b` | 75 | 50.8 | 59 | 18 |
+| 28 | `0xb067fb16afcabf8a8974a35cbcee243b8fdf0ea1` | 81 | 92.7 | 3 | 5 |
+| 29 | `0xbb78252f4a1f03c1b82eefe21eee2d56b5278650` | 10 | N/A | 0 | 0 |
+| 30 | `0xe55d7936e7bd88d2de63c11a93ae94cc2225dffb` | 10 | N/A | 0 | 0 |
+| 31 | `0xbb78252f4a1f03c1b82eefe21eee2d56b5278650` | 98 | 97.8 | 348 | 405 |
+| 32 | `0x6cd7ddabd496b545bae05a04044f2828c1395d13` | 100 | 100.0 | 5 | 33 |
+| 33 | `0x8cf8480f0f7a87bb966485f55c67cf406159d5f7` | 22 | N/A | 0 | 6 |
+| 34 | `0x90d9c75f3761c02bf3d892a701846f6323e9112d` | 59 | 73.5 | 2 | 1 |
+| 35 | `0xc60f9a9a0f27300faf114bf2b1732b8d857e331d` | 60 | 81.3 | 15 | 0 |
+| 36 | `0xed1e806796a98725d5b3a07478440977dbe34812` | 10 | N/A | 0 | 0 |
+| 37 | `0x7a2f2e58b93ac448ff7d0e81c2756a3efc7a15e0` | 100 | 100.0 | 613 | 152 |
+| 38 | `0x3398258df4f7fef97013ccc52a3bc01fb8293570` | 76 | 100.0 | 31 | 4 |
+| 39 | `0x0858e4883e88393a5734af2b3f05f4ccdf25c328` | 99 | 100.0 | 65 | 129 |
+| 40 | `0x30d0367abf2d1383bec707bf2343e8f19cb64c5c` | 10 | N/A | 0 | 8 |
+| 41 | `0x3d21945d06cba57d057d563e50ed7ca6bef0ed56` | 10 | N/A | 0 | 0 |
+| 42 | `0x39cad367c883a81a64f31b2c8a7ab733b5d6b62e` | 10 | N/A | 0 | 0 |
+| 43 | `0xc5e0362bada7d1968325e134783da2b7c48fbf62` | 50 | N/A | 0 | 2 |
+| 44 | `0xe8520a82a4e8803fa4a3ccb93d73cef386f41ccd` | 10 | N/A | 0 | 46 |
+| 45 | `0x34a0ac099e6812701e970024fff89addb95c4426` | 10 | N/A | 0 | 0 |
+| 46 | `0xebbaaca4b9256234f0ecad41fc4fd15da7e344e7` | 13 | N/A | 0 | 88 |
+| 47 | `0x939f403df98ebb27562cf03a733e69cd8b051392` | 10 | N/A | 0 | 0 |
+| 48 | `0x507699ca5eceeb8ecb0c3b7fa8e85dc0bc7b35e8` | 10 | N/A | 0 | 0 |
+| 49 | `0xfa7b27f6d316cc96d93f6b126d1acd8066e340b7` | 10 | N/A | 0 | 5 |
+| 50 | `0x274c184049480d9d4fac6414d02dced706f74c5a` | 10 | N/A | 0 | 1 |
