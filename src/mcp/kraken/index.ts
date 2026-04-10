@@ -12,6 +12,7 @@ import {
   BalanceSchema,
   OrderParamsSchema,
   OrderResultSchema,
+  TradeHistorySchema,
 } from './types.js';
 import { validateEnv } from '../../logic/env.js';
 import { CriticalSecurityException } from '../../logic/errors.js';
@@ -136,6 +137,14 @@ export class KrakenMcpServer {
           },
         },
         {
+          name: 'get_trade_history',
+          description: 'Fetch recent trade history',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        {
           name: 'place_order',
           description: 'Place a market or limit order on Kraken',
           inputSchema: {
@@ -193,6 +202,17 @@ export class KrakenMcpServer {
             
             const result = this.executeKrakenCli('balance', []);
             const validated = BalanceSchema.parse(result);
+
+            return {
+              content: [{ type: 'text', text: JSON.stringify(validated) }],
+            };
+          }
+
+          case 'get_trade_history': {
+            this.log('tool_call', { tool: toolName });
+
+            const result = this.executeKrakenCli('trades', []);
+            const validated = TradeHistorySchema.parse(result);
 
             return {
               content: [{ type: 'text', text: JSON.stringify(validated) }],
