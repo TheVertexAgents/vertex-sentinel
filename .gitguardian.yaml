@@ -1,14 +1,10 @@
 version: 2
-
-# GitGuardian Configuration for Vertex Sentinel
-# Comprehensive secret detection to prevent accidental credential commits
-
 secret:
-  # Ignore patterns (to avoid false positives)
   ignore-paths:
-    - .git
-    - node_modules
-    - dist
-    - build
-    - coverage
-    - .next
+    - "logs/"
+    - "checkpoints.jsonl"
+    - "node_modules/"
+    - "dist/"
+    - "build/"
+    - "coverage/"
+    - ".next/"
