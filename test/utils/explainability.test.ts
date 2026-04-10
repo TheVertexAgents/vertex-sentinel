@@ -12,6 +12,13 @@ describe('Explainability Utility Unit Tests', () => {
             confidence: 0.9,
             riskScore: 0.1,
             reasoning: 'Stable market conditions',
+            breakdown: {
+                marketRisk: 0.05,
+                portfolioRisk: 0.02,
+                sentimentRisk: 0.03,
+                manualPenalty: 0.05,
+                aiScore: 0.1
+            },
             marketData: {
                 spread: 0.002,
                 volatility: 0.05
@@ -23,6 +30,7 @@ describe('Explainability Utility Unit Tests', () => {
         expect(result).to.contain('Confidence: 90%');
         expect(result).to.contain('Stable market conditions');
         expect(result).to.contain('Spread=0.2000%');
+        expect(result).to.contain('Market: 5%');
     });
 
     it('should format a HOLD decision correctly with color markers', () => {
@@ -33,6 +41,13 @@ describe('Explainability Utility Unit Tests', () => {
             confidence: 0.2,
             riskScore: 0.8,
             reasoning: 'High volatility detected',
+            breakdown: {
+                marketRisk: 0.4,
+                portfolioRisk: 0.2,
+                sentimentRisk: 0.2,
+                manualPenalty: 0.4,
+                aiScore: 0.8
+            },
             marketData: {
                 spread: 0.01,
                 volatility: 0.5
@@ -43,5 +58,6 @@ describe('Explainability Utility Unit Tests', () => {
         expect(result).to.contain('🟡 HOLD');
         expect(result).to.contain('Confidence: 20%');
         expect(result).to.contain('High volatility detected');
+        expect(result).to.contain('Total Risk Score: 80%');
     });
 });
