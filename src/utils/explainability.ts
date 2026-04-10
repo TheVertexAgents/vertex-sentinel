@@ -2,7 +2,7 @@ import type { TradeDecision } from '../logic/strategy/risk_assessment.js';
 
 /**
  * @dev Human-readable trade explanation formatter.
- * Inspired by the reference template to provide clear "Why did we trade?" summaries.
+ * Enhanced for Milestone 2 to show multi-dimensional risk breakdown.
  */
 export function formatExplanation(decision: TradeDecision): string {
   const time = new Date().toISOString();
@@ -14,7 +14,10 @@ export function formatExplanation(decision: TradeDecision): string {
   });
 
   const confidencePct = (decision.confidence * 100).toFixed(0);
-  const riskScore = decision.riskScore ? (decision.riskScore * 100).toFixed(0) : 'N/A';
+  const riskScore = (decision.riskScore * 100).toFixed(0);
+
+  const b = decision.breakdown;
+  const breakdownStr = `Market: ${(b.marketRisk * 100).toFixed(0)}% | Portfolio: ${(b.portfolioRisk * 100).toFixed(0)}% | Sentiment: ${(b.sentimentRisk * 100).toFixed(0)}% | AI-Score: ${(b.aiScore * 100).toFixed(0)}% | Bootstrap: ${(b.manualPenalty * 100).toFixed(0)}%`;
 
   let summary = `[${time}] ${actionEmoji} ${decision.action} ${decision.pair}`;
 
@@ -24,8 +27,9 @@ export function formatExplanation(decision: TradeDecision): string {
 
   return (
     `${summary}\n` +
-    `  Confidence: ${confidencePct}% | Risk Score: ${riskScore}%\n` +
-    `  Reasoning:  ${decision.reasoning}\n` +
-    `  ${decision.marketData ? `Context:    Spread=${(decision.marketData.spread * 100).toFixed(4)}% | Volatility=${(decision.marketData.volatility * 100).toFixed(2)}%` : ''}`
+    `  Total Risk Score: ${riskScore}% (Confidence: ${confidencePct}%)\n` +
+    `  Risk Breakdown:   ${breakdownStr}\n` +
+    `  Reasoning:        ${decision.reasoning}\n` +
+    `  ${decision.marketData ? `Market Context:   Spread=${(decision.marketData.spread * 100).toFixed(4)}% | Volatility=${(decision.marketData.volatility * 100).toFixed(2)}%` : ''}`
   );
 }

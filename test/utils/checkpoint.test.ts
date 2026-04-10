@@ -18,8 +18,15 @@ describe('Checkpoint Utility Unit Tests', function () {
     pair: 'BTC/USD',
     amountUsdScaled: 10000n,
     confidence: 0.85,
+    riskScore: 0.15,
     reasoning: "Test reasoning",
-    riskScore: 0.1
+    breakdown: {
+      marketRisk: 0.05,
+      portfolioRisk: 0.02,
+      sentimentRisk: 0.03,
+      manualPenalty: 0.1,
+      aiScore: 0.15
+    }
   };
 
   it('Should generate a valid EIP-712 signed checkpoint', async function () {

@@ -26,6 +26,31 @@ export const BalanceSchema = z.record(z.string(), z.string().or(z.number()));
 export type Balance = z.infer<typeof BalanceSchema>;
 
 /**
+ * @dev Zod schema for individual trade history item.
+ */
+export const TradeItemSchema = z.object({
+  ordertxid: z.string(),
+  pair: z.string(),
+  time: z.number(),
+  type: z.enum(['buy', 'sell']),
+  ordertype: z.string(),
+  price: z.string(),
+  cost: z.string(),
+  fee: z.string(),
+  vol: z.string(),
+}).passthrough();
+
+/**
+ * @dev Zod schema for trade history.
+ */
+export const TradeHistorySchema = z.object({
+  trades: z.record(z.string(), TradeItemSchema),
+  count: z.number(),
+}).passthrough();
+
+export type TradeHistory = z.infer<typeof TradeHistorySchema>;
+
+/**
  * @dev Zod schema for order placement parameters.
  */
 export const OrderParamsSchema = z.object({
