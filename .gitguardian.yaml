@@ -1,10 +1,5 @@
 version: 2
 secret:
   ignore-paths:
-    - "logs/"
+    - "logs/*"
     - "checkpoints.jsonl"
-    - "node_modules/"
-    - "dist/"
-    - "build/"
-    - "coverage/"
-    - ".next/"
