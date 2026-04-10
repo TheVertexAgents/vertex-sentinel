@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
 import { createSignedCheckpoint } from '../../src/utils/checkpoint.js';
+import type { TradeDecision } from '../../src/logic/strategy/risk_assessment.js';
 
 describe('Checkpoint PnL Integration', () => {
   beforeEach(() => {
@@ -12,12 +13,20 @@ describe('Checkpoint PnL Integration', () => {
 
   it('should include PnL metrics in signed checkpoints and persist to logs/audit.json', async () => {
     const agent = { name: 'Test Agent', version: '1.0.0', agentId: '1', agentAddress: '0x0123456789abcdef0123456789abcdef0123456789abcdef' };
-    const decision = {
+    const decision: TradeDecision = {
       action: 'BUY' as const,
       pair: 'BTC/USD',
       amountUsdScaled: 10000n,
       confidence: 0.95,
-      reasoning: 'Test reasoning'
+      riskScore: 0.05,
+      reasoning: 'Test reasoning',
+      breakdown: {
+        marketRisk: 0.01,
+        portfolioRisk: 0.01,
+        sentimentRisk: 0.01,
+        manualPenalty: 0.02,
+        aiScore: 0.05
+      }
     };
     const pk = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
