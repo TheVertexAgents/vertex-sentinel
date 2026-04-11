@@ -22,6 +22,7 @@ describe('Identity Client Unit Tests', function () {
   });
 
   it('Should return false if registration check fails on a non-zero address', async function () {
+    this.timeout(10000); // Increased timeout as we now try multiple methods
     // This address is non-zero, but won't have a contract in the test environment
     const client = new IdentityClient('0x1234567890123456789012345678901234567890', 31337);
 

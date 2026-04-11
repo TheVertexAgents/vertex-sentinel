@@ -16,6 +16,7 @@ export class IdentityClient {
 
   /**
    * @dev Checks if the agent is registered in the registry.
+   * Tries multiple methods to support different AgentRegistry implementations.
    */
   async isAgentRegistered(agentAddress: Hex): Promise<boolean> {
     // Zero address check for local/demo mode
@@ -32,6 +33,32 @@ export class IdentityClient {
         transport: http(),
       });
 
+      // Try method 1: walletToAgentId (shared hackathon registry)
+      try {
+        const agentId = await publicClient.readContract({
+          address: this.registryAddress,
+          abi: [
+            {
+              name: 'walletToAgentId',
+              type: 'function',
+              stateMutability: 'view',
+              inputs: [{ name: 'wallet', type: 'address' }],
+              outputs: [{ type: 'uint256' }],
+            },
+          ],
+          functionName: 'walletToAgentId',
+          args: [agentAddress],
+        });
+        const isRegistered = (agentId as bigint) > 0n;
+        if (isRegistered) {
+          console.log(`[identity] ✅ Agent registered with ID: ${agentId}`);
+        }
+        return isRegistered;
+      } catch {
+        // Method 1 failed, try method 2
+      }
+
+      // Try method 2: isRegisteredAgent (our local contract)
       const isRegistered = await publicClient.readContract({
         address: this.registryAddress,
         abi: [
@@ -49,7 +76,8 @@ export class IdentityClient {
 
       return isRegistered as boolean;
     } catch (error) {
-      console.warn(`[identity] Registration check failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`);
+      // Silently fail - registration check is non-critical
+      // RiskRouter will perform final authorization anyway
       return false;
     }
   }
