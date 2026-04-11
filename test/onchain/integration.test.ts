@@ -8,7 +8,7 @@ describe('On-Chain Registry Clients Unit Tests', () => {
 
   it('ValidationRegistryClient should handle zero address gracefully', async () => {
     const client = new ValidationRegistryClient('0x0000000000000000000000000000000000000000', 31337);
-    const result = await client.postHeartbeat(1n, '0xabc' as Hex, 100, 'test', mockPKey);
+    const result = await client.postHeartbeat(1n, '0xabc' as Hex, 'test', mockPKey);
     expect(result).to.be.null;
   });
 

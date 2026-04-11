@@ -12,7 +12,7 @@
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
-    "test": "NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx hardhat test test/RiskRouter.test.ts && NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx mocha test/**/*.test.ts --exclude test/RiskRouter.test.ts",
+    "test": "NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx hardhat test test/RiskRouter.test.ts test/contracts/*.test.ts && NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx mocha test/**/*.test.ts --exclude 'test/RiskRouter.test.ts' --exclude 'test/contracts/*.test.ts'",
     "demo": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/demo_flow.ts --network hardhat",
     "register": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "onboard:sepolia": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",

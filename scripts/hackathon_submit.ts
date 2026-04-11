@@ -57,9 +57,11 @@ const VALIDATION_REGISTRY_ABI = [
       { "internalType": "uint256", "name": "agentId", "type": "uint256" },
       { "internalType": "bytes32", "name": "checkpointHash", "type": "bytes32" },
       { "internalType": "uint8", "name": "score", "type": "uint8" },
+      { "internalType": "uint8", "name": "proofType", "type": "uint8" },
+      { "internalType": "bytes", "name": "proof", "type": "bytes" },
       { "internalType": "string", "name": "notes", "type": "string" }
     ],
-    "name": "postEIP712Attestation",
+    "name": "postAttestation",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -129,9 +131,6 @@ async function executeHackathonSubmission() {
         logger.info(`Agent authorized trade: ${authResult.reason}`);
         logger.info(`Signature generated successfully.`);
 
-        // Determine a dummy score 0-100 logic
-        const riskScoreNormalized = authResult.reason.includes('High') ? 50 : 90;
-
         // Create Checkpoint Hash from the trade parameters and reason
         const checkpointData = `Pair: ${demoIntent.pair}, Amount: ${demoIntent.amountUsdScaled.toString()}, Reasoning: ${authResult.reason}`;
         const checkpointHash = keccak256(stringToHex(checkpointData));
@@ -154,8 +153,8 @@ async function executeHackathonSubmission() {
         const vrHash = await walletClient.writeContract({
             address: deployments.validationRegistry as Hex,
             abi: VALIDATION_REGISTRY_ABI,
-            functionName: 'postEIP712Attestation',
-            args: [agentId, checkpointHash, Math.floor(riskScoreNormalized), authResult.reason]
+            functionName: 'postAttestation',
+            args: [agentId, checkpointHash, 100, 1, '0x', "Hackathon submission"]
         });
         logger.info(`ValidationRegistry transaction sent: ${vrHash}`);
         logger.info('Waiting for confirmation...');
