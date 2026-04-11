@@ -1,6 +1,6 @@
 version: 2
 secret:
-  ignored-paths:
+  ignore-paths:
     - ".git"
     - "node_modules"
     - "dist"

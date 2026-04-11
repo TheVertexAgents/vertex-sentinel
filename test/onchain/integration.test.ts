@@ -4,8 +4,8 @@ import { ReputationRegistryClient } from '../../src/onchain/reputation.js';
 import type { Hex } from 'viem';
 
 describe('On-Chain Registry Clients Unit Tests', () => {
-  // Use a split string to avoid secret detection
-  const mockPKey = '0x' + 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex;
+  // Use a completely fake key to avoid any entropy-based detection
+  const mockPKey = '0x1234567890123456789012345678901234567890123456789012345678901234' as Hex;
 
   it('ValidationRegistryClient should handle zero address gracefully', async () => {
     const client = new ValidationRegistryClient('0x0000000000000000000000000000000000000000', 31337);
