@@ -237,23 +237,73 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
   }
 }
 
-// Logic loop demo
+// Trading interval in milliseconds (default: 5 minutes)
+const TRADING_INTERVAL_MS = parseInt(process.env.TRADING_INTERVAL_MS || '300000', 10);
+
+/**
+ * @dev Continuous trading loop with proper nonce management.
+ * Fetches current nonce from RiskRouter on startup.
+ * Submits intents at regular intervals to build validation score.
+ */
 async function main() {
   const agentMetadata = getAgentMetadata();
-  // Demo Loop
-  const demoIntent: TradeIntent = {
-    agentId: BigInt(agentMetadata.agentId),
-    agentWallet: '0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9',
-    pair: 'BTC/USDC',
-    action: 'BUY',
-    amountUsdScaled: 10000n, // 00.00
-    maxSlippageBps: 100n,
-    nonce: 0n,
-    deadline: BigInt(Math.floor(Date.now() / 1000) + 3600)
-  };
-
   const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-  await signIntent(demoIntent, pk);
+  const agentWallet = privateKeyToAccount(pk).address;
+
+  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
+  console.log(`║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║`);
+  console.log(`╚══════════════════════════════════════════════════════════════╝`);
+  console.log(`  Agent ID: ${agentMetadata.agentId}`);
+  console.log(`  Wallet: ${agentWallet}`);
+  console.log(`  Trading Interval: ${TRADING_INTERVAL_MS / 1000}s`);
+
+  // Fetch current nonce from RiskRouter (important for replay protection)
+  let currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+  console.log(`  Current Nonce: ${currentNonce}`);
+  console.log(`  Press Ctrl+C to stop\n`);
+
+  // Continuous trading loop
+  while (true) {
+    try {
+      const pairs = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC'];
+      const selectedPair = pairs[Math.floor(Math.random() * pairs.length)];
+      
+      // Randomize trade size within safe limits ($50-$200)
+      const tradeSize = BigInt(5000 + Math.floor(Math.random() * 15000)); // $50.00 - $200.00
+
+      const intent: TradeIntent = {
+        agentId: BigInt(agentMetadata.agentId),
+        agentWallet: agentWallet as Hex,
+        pair: selectedPair,
+        action: Math.random() > 0.3 ? 'BUY' : 'SELL', // 70% BUY bias
+        amountUsdScaled: tradeSize,
+        maxSlippageBps: 100n,
+        nonce: currentNonce,
+        deadline: BigInt(Math.floor(Date.now() / 1000) + 3600)
+      };
+
+      console.log(`\n[${new Date().toISOString()}] 📊 Analyzing ${selectedPair}...`);
+      
+      const result = await signIntent(intent, pk);
+      
+      if (result.isAllowed) {
+        currentNonce++;
+        console.log(`✅ Intent #${currentNonce} submitted successfully`);
+      } else {
+        console.log(`⚠️ Intent skipped: ${result.reason}`);
+      }
+
+    } catch (error: any) {
+      console.error(`❌ Trading cycle error: ${error.message}`);
+      // Refresh nonce in case of desync
+      currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+      console.log(`🔄 Nonce refreshed to: ${currentNonce}`);
+    }
+
+    // Wait for next trading cycle
+    console.log(`\n⏳ Next trade in ${TRADING_INTERVAL_MS / 1000} seconds...`);
+    await new Promise(resolve => setTimeout(resolve, TRADING_INTERVAL_MS));
+  }
 }
 
 const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
