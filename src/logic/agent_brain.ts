@@ -109,15 +109,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
   try {
     const account = privateKeyToAccount(privateKey);
 
-    // 1. Check Identity (ERC-8004 Alignment)
-    try {
-      const isRegistered = await identityClient.isAgentRegistered(account.address);
-      if (!isRegistered) {
-        console.warn(`[agent_brain] Agent not found in AgentRegistry (non-critical). RiskRouter will perform final authorization...`);
-      }
-    } catch (error: any) {
-      console.warn(`[agent_brain] AgentRegistry check failed (non-critical): ${error.message}. Proceeding with RiskRouter authorization...`);
-    }
+    // 1. Check Identity (ERC-8004 Alignment) - non-blocking
+    const isRegistered = await identityClient.isAgentRegistered(account.address);
+    // Note: Registration check is informational only. RiskRouter performs final authorization.
 
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
@@ -215,17 +209,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         };
       }
 
-      // ✅ NEW: Submit Reputation Feedback on successful trade authorization
-      // This builds the agent's verified track record.
-      if (checkpoint.checkpointHash) {
-        await reputationClient.submitFeedback(
-          BigInt(getAgentMetadata().agentId),
-          100,
-          checkpoint.checkpointHash as Hex,
-          "Verified high-integrity trade execution.",
-          privateKey
-        );
-      }
+      // NOTE: Reputation feedback must come from OTHER operators (not self-rating).
+      // The ReputationRegistry enforces: "operator cannot self-rate"
+      // Reputation will be built through external validator attestations.
     }
 
     return { isAllowed: true, reason: decision.reasoning, signature };
