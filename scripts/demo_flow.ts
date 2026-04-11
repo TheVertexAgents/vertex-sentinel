@@ -45,22 +45,40 @@ async function main() {
   const [deployer, agentSigner] = await viem.getWalletClients();
   const publicClient = await viem.getPublicClient();
 
-  // ─── STEP 1: Deploy MockRegistry ─────────────────────────────────────────
-  console.log('\n[Step 1] Deploying MockRegistry via Viem...');
-  const registry = await viem.deployContract('MockRegistry');
+  // ─── STEP 1: Deploy AgentRegistry (ERC-8004) ─────────────────────────────
+  console.log('\n[Step 1] Deploying AgentRegistry (ERC-8004) via Viem...');
+  const registry = await viem.deployContract('AgentRegistry');
   const registryAddress = getAddress(registry.address);
-  console.log(`  ✅ MockRegistry deployed at: ${registryAddress}`);
+  console.log(`  ✅ AgentRegistry deployed at: ${registryAddress}`);
 
-  // ─── STEP 2: Deploy RiskRouter ────────────────────────────────────────────
+  // ─── STEP 2: Deploy RiskRouter (Sentinel Layer) ──────────────────────────
   console.log('\n[Step 2] Deploying RiskRouter (Sentinel Layer) via Viem...');
   const riskRouter = await viem.deployContract('RiskRouter', [registryAddress]);
   const routerAddress = getAddress(riskRouter.address);
   console.log(`  ✅ RiskRouter (Sentinel) deployed at: ${routerAddress}`);
 
-  // ─── STEP 3: Authorize the demo agent ────────────────────────────────────
-  console.log('\n[Step 3] Authorizing demo agent in Sentinel...');
-  await riskRouter.write.addAgent([agentSigner.account.address]);
-  console.log(`  ✅ Agent ${agentSigner.account.address} authorized.`);
+  // ─── STEP 3: Register demo agent in AgentRegistry ────────────────────────
+  console.log('\n[Step 3] Registering demo agent in AgentRegistry (ERC-8004)...');
+  const agentId = 1n;
+  await registry.write.register([
+    agentSigner.account.address,  // agentWallet
+    'Vertex Demo Agent',           // name
+    'Demo agent for hackathon',    // description
+    ['trading', 'risk-assessment'], // capabilities
+    'ipfs://demo-agent-metadata'   // agentURI
+  ]);
+  console.log(`  ✅ Agent registered with ID: ${agentId}`);
+  console.log(`  ✅ Agent wallet: ${agentSigner.account.address}`);
+
+  // ─── STEP 3b: Set risk parameters for the agent ──────────────────────────
+  console.log('\n[Step 3b] Setting risk parameters in RiskRouter...');
+  await riskRouter.write.setRiskParams([
+    agentId,           // agentId
+    1000000n,          // maxPositionUsdScaled ($10,000)
+    500n,              // maxDrawdownBps (5%)
+    100n               // maxTradesPerHour
+  ]);
+  console.log(`  ✅ Risk params set: maxPosition=$10,000, maxDrawdown=5%, maxTrades=100/hr`);
 
   // ─── STEP 4: Create and sign a TradeIntent (Brain Layer) ─────────────────
   console.log('\n[Step 4] Agent Brain: Building and signing TradeIntent (EIP-712)...');
@@ -87,13 +105,13 @@ async function main() {
 
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
   const intent = {
-    agentId: 1n,
+    agentId: agentId,
     agentWallet: agentSigner.account.address,
     pair: 'BTC/USDC',
     action: 'BUY',
     amountUsdScaled: 10000n, // $100.00
     maxSlippageBps: 100n, // 1%
-    nonce: 1n,
+    nonce: 0n, // First trade, nonce starts at 0
     deadline: deadline,
   };
 
@@ -153,16 +171,43 @@ async function main() {
 
   // ─── STEP 7: Demo the REJECTED path ──────────────────────────────────────
   console.log('\n[Step 7] 🚫 REJECTED PATH DEMO: Attempting high-volume trade...');
-  const highVolumeIntent = { ...intent, amountUsdScaled: 20000000n, nonce: 2n };
+  const highVolumeIntent = { ...intent, amountUsdScaled: 20000000n, nonce: 1n }; // Next nonce after successful trade
+
+  // Sign the high-volume intent
+  const highVolumeSignature = await agentSigner.signTypedData({
+    domain,
+    types,
+    primaryType: 'TradeIntent',
+    message: highVolumeIntent,
+  });
 
   try {
-      const highVolumeHash = await riskRouter.write.authorizeTrade([highVolumeIntent, signature], {
+      const highVolumeHash = await riskRouter.write.authorizeTrade([highVolumeIntent, highVolumeSignature], {
           account: agentSigner.account
       });
-      await publicClient.waitForTransactionReceipt({ hash: highVolumeHash });
-      console.log('  ✅ Rejection path complete (check on-chain status if needed).');
+      const highVolumeReceipt = await publicClient.waitForTransactionReceipt({ hash: highVolumeHash });
+      
+      // Check if it was actually rejected (TradeRejected event)
+      let rejected = false;
+      for (const log of highVolumeReceipt.logs) {
+        try {
+          const event = decodeEventLog({
+            abi: riskRouter.abi,
+            data: log.data,
+            topics: log.topics
+          });
+          if (event.eventName === 'TradeRejected') {
+            rejected = true;
+            console.log(`  ✅ Sentinel correctly REJECTED: ${(event.args as any).reason}`);
+            break;
+          }
+        } catch { continue; }
+      }
+      if (!rejected) {
+        console.log('  ⚠️  Trade was processed (check circuit breaker settings).');
+      }
   } catch (error) {
-      console.log('  ✅ Sentinel correctly blocked/failed the high-volume trade submission.');
+      console.log('  ✅ Sentinel correctly blocked the high-volume trade submission.');
   }
 
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
