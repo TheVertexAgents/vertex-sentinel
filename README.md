@@ -1,68 +1,110 @@
+<div align="center">
+
 # ⚡ Vertex Sentinel
 
-> **Verifiable risk-management for autonomous AI trading agents.**
-> EIP-712 signed TradeIntents · On-chain guardrails · Fail-Closed execution · No private key delegation.
+### Verifiable Risk-Management for Autonomous AI Trading Agents
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+**EIP-712 Signed Intents · On-Chain Guardrails · Fail-Closed Execution · Zero Private Key Delegation**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity&logoColor=white)](https://soliditylang.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![EIP-712](https://img.shields.io/badge/EIP--712-Typed%20Data%20Signing-6f42c1)](https://eips.ethereum.org/EIPS/eip-712)
-[![Viem](https://img.shields.io/badge/Viem-2.x-fbbf24)](https://viem.sh)
+[![ERC-8004](https://img.shields.io/badge/ERC--8004-Agent%20Identity-10B981)](https://eips.ethereum.org/EIPS/eip-8004)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-## 🏗️ Hardened & Verified Architecture
+[📖 Documentation](docs/LITEPAPER.md) · [🎯 Live Demo](dashboard/index.html) · [📊 Pitch Deck](pitch-deck.html) · [🔗 Deployed Contract](https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC)
 
-The Vertex Sentinel is a **production-ready risk layer** following the strict **Constitution v2.0.0** standards. It has achieved a 5/5 pass rate on core security tests.
-
-### 🛡️ Security Pillars
-- **Fail-Closed Execution**: Critical failures or risk breaches trigger an immediate halt (`CriticalSecurityException`).
-- **Strict Type Safety**: Built with TypeScript 5.x and Zod; zero use of `any` types.
-- **Verifiable Audit Trail**: Every trade decision generates a cryptographically signed EIP-712 checkpoint stored in `logs/audit.json`.
+</div>
 
 ---
 
-## 📊 Live Monitoring Dashboard
+## 🏆 AI Trading Agents Hackathon 2026
 
-The Sentinel includes a built-in monitoring dashboard to visualize verifiable execution in real-time.
+> **Dual Challenge Submission**: ERC-8004 Agent Identity + Kraken CLI Trading
 
-### How to run the Dashboard:
+| Challenge | Status | Evidence |
+|-----------|--------|----------|
+| **ERC-8004** | ✅ Complete | Agent Registry, Reputation Scoring, Validation Attestations |
+| **Kraken CLI** | ✅ Complete | 4 Live BTC/USD trades executed with full audit trail |
 
-1. **Start the Monitor**:
-   ```bash
-   npm run dashboard
-   ```
-
-2. **Access the UI**:
-   Open http://localhost:3000/dashboard/index.html in your browser.
-
-**Features:**
-- **Real-Time Audit Feed**: Automatically polls `logs/audit.json` every 5 seconds.
-- **Signature Verification**: Visual badges confirm every decision is EIP-712 signed.
-- **Human-Readable Explanations**: Deep-dive into the "Why" behind every trade decision.
-- **Glassmorphism Theme**: High-fidelity UI matching the Sentinel brand.
+📄 **[View Live Execution Proof →](LIVE_EXECUTION_PROOF.md)**
 
 ---
 
-## ⚡ One-Click Verification
+## 🎯 The Problem
 
-To verify the full infrastructure, run:
+As AI agents transition from chatbots to autonomous financial operators, critical risks emerge:
 
-```bash
-# 1. Run the Security Suite
-npm test
+| Risk | Impact | Current Solutions |
+|------|--------|-------------------|
+| 🤖 **Hallucinations** | Agent swaps 100 ETH instead of 1.0 ETH | Advisory warnings only |
+| 🔓 **Key Compromise** | Attacker drains all funds instantly | Manual intervention required |
+| 📊 **Market Volatility** | Stale prices cause massive slippage | No automated circuit breakers |
 
-# 2. Run the Full-Loop Orchestration
-npm run demo
+**Current AI safety tools are advisory—they warn, but don't stop bad trades.**
+
+---
+
+## 💡 The Solution: Fail-Closed Architecture
+
+Vertex Sentinel introduces a **3-layer security architecture** that makes unauthorized trades impossible:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     VERTEX SENTINEL ARCHITECTURE                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │   INTENT     │───▶│   SENTINEL   │───▶│  EXECUTION   │      │
+│  │   LAYER      │    │   LAYER      │    │   LAYER      │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│        │                    │                    │              │
+│        ▼                    ▼                    ▼              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ TradeIntent  │    │ RiskRouter   │    │ Execution    │      │
+│  │ + EIP-712    │    │ Circuit      │    │ Proxy        │      │
+│  │ Signature    │    │ Breakers     │    │ (Kraken)     │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│                                                                 │
+│  ❌ Any failure = HALT (No funds moved)                        │
+│  ✅ All checks pass = Execute with audit trail                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
+### 🛡️ Security Pillars
+
+| Pillar | Implementation |
+|--------|----------------|
+| **Fail-Closed** | Any validation failure triggers `CriticalSecurityException` |
+| **Cryptographic Signing** | Every trade requires EIP-712 typed data signature |
+| **On-Chain Verification** | RiskRouter.sol enforces limits before execution |
+| **Full Audit Trail** | Immutable logs in `logs/audit.json` with reasoning |
+
 ---
 
-## Quick Start
+## 🚀 Live Execution Proof
+
+**4 Real BTC/USD Trades** executed on April 5, 2026 via Kraken API:
+
+| Trade | Order ID | Amount | Price | Signature |
+|-------|----------|--------|-------|-----------|
+| #1 | `LIVE-IHNIDEAJ` | 0.00011 BTC | $67,345.80 | `0xd685...621c` |
+| #2 | `LIVE-J5YTJ2Z6` | 0.00012 BTC | $67,345.70 | `0xb1aa...5d1b` |
+| #3 | `LIVE-CA0ZKG18` | 0.00013 BTC | $67,345.80 | `0xdd15...711c` |
+| #4 | `LIVE-5ERBD4KX` | 0.00014 BTC | $67,351.70 | `0x9300...1e1c` |
+
+**Total Volume**: 0.00050 BTC | **Success Rate**: 100% | **All Signatures Verified** ✅
+
+---
+
+## 📦 Quick Start
 
 ### Prerequisites
-- **Node.js 20+** (LTS stable)
-- `npm` or compatible package manager
+- **Node.js 20+** (LTS)
+- **npm** or compatible package manager
 
-### Install & Configure
+### Installation
 
 ```bash
 git clone https://github.com/TheVertexAgents/vertex-sentinel.git
@@ -71,39 +113,123 @@ npm install
 cp .env.example .env
 ```
 
----
+### Run Tests
 
-## 🛡️ Smart Contract Strengthening (Issue #76)
+```bash
+# Full security test suite
+npm test
 
-The Sentinel has been upgraded with a robust suite of on-chain registries aligned with ERC-8004 and EIP-712 standards.
+# Full orchestration demo
+npm run demo
+```
 
-### 🔗 Registry Ecosystem
-- **AgentRegistry**: ERC-721 based identity registry (ERC-8004).
-- **RiskRouter**: Advanced trade authorization with per-agent risk limits.
-- **ReputationRegistry**: On-chain feedback and anti-sybil scoring.
-- **ValidationRegistry**: Cryptographic attestations for trade checkpoints.
-- **HackathonVault**: Self-serve capital allocation for registered agents.
+### Launch Dashboard
 
-## Key Contracts
-
-### `RiskRouter.sol`
-The on-chain 'bouncer' — intercepts `TradeIntent` structs and enforces:
-- **Agent Authorization** — only registered agents can pass.
-- **Deadline Enforcement** — rejects intents with `block.timestamp > deadline`.
-- **Circuit Breaker** — rejects trades exceeding volume thresholds.
-- **EIP-712 Signature Recovery** — recovers signer via `ECDSA.recover()`.
+```bash
+npm run dashboard
+# Open http://localhost:3000/dashboard/index.html
+```
 
 ---
 
-## Roadmap
+## 🔗 Smart Contract Ecosystem
 
-- [x] **Phase 1: Foundation**
-- [x] **Phase 2: Security & Identity**
-- [x] **Phase 3: Integration & Deployment**
-- [x] **Phase 4: Explainability & Monitoring**
-- [ ] **Phase 5: Optimization**
+Deployed on **Sepolia Testnet**:
+
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| **RiskRouter** | [`0xd6A6...FdBC`](https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC) | Trade authorization & circuit breakers |
+| **AgentRegistry** | ERC-8004 | Agent identity (ERC-721 based) |
+| **ReputationRegistry** | On-chain | Anti-sybil scoring & feedback |
+| **ValidationRegistry** | On-chain | Cryptographic attestations |
+| **HackathonVault** | On-chain | Capital allocation for agents |
+
+### RiskRouter.sol Features
+
+```solidity
+// Core enforcement mechanisms:
+✓ Agent Authorization — Only registered agents can trade
+✓ Deadline Enforcement — Rejects stale intents (block.timestamp > deadline)
+✓ Circuit Breaker — Rejects trades exceeding volume thresholds
+✓ EIP-712 Recovery — Verifies signatures via ECDSA.recover()
+```
 
 ---
 
-## License
-MIT © VertexAgents
+## 📊 Monitoring Dashboard
+
+Real-time visualization of verifiable execution:
+
+- **Live Audit Feed** — Polls `logs/audit.json` every 5 seconds
+- **Signature Verification** — Visual badges confirm EIP-712 signing
+- **Explainability** — Human-readable reasoning for every decision
+- **Glassmorphism UI** — Professional dark theme with gradients
+
+---
+
+## 📁 Project Structure
+
+```
+vertex-sentinel/
+├── src/
+│   ├── contracts/          # Solidity smart contracts
+│   │   ├── RiskRouter.sol
+│   │   ├── AgentRegistry.sol
+│   │   ├── ReputationRegistry.sol
+│   │   └── ValidationRegistry.sol
+│   ├── execution/          # Execution layer proxy
+│   ├── logic/              # Risk assessment flows
+│   ├── mcp/                # Model Context Protocol integration
+│   └── utils/              # EIP-712 signing utilities
+├── dashboard/              # Monitoring UI
+├── scripts/                # Deployment & execution scripts
+├── test/                   # Comprehensive test suite
+├── docs/                   # Documentation
+│   ├── LITEPAPER.md
+│   ├── SDK_QUICKSTART.md
+│   └── WHITEPAPER.md
+└── logs/                   # Audit trail storage
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [x] **Phase 1**: Foundation — Core architecture & EIP-712 signing
+- [x] **Phase 2**: Security — Fail-closed execution & circuit breakers
+- [x] **Phase 3**: Identity — ERC-8004 agent registry & reputation
+- [x] **Phase 4**: Integration — Kraken MCP & live trading
+- [ ] **Phase 5**: Optimization — Multi-exchange support & dynamic risk modules
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our development workflow:
+
+```bash
+# Fork and clone
+git clone https://github.com/YOUR_USERNAME/vertex-sentinel.git
+
+# Install dependencies
+npm install
+
+# Run tests before submitting
+npm test
+```
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the AI Trading Agents Hackathon 2026**
+
+[🐦 Twitter](https://twitter.com/VertexAgents) · [💬 Discord](https://discord.gg/vertexagents) · [📧 Contact](mailto:contact@vertexagents.io)
+
+</div>
