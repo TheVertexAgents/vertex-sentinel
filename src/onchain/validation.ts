@@ -1,4 +1,4 @@
-import { createWalletClient, http, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 
@@ -20,6 +20,7 @@ export class ValidationRegistryClient {
 
   /**
    * @dev Posts an EIP-712 checkpoint attestation (Heartbeat).
+   * Waits for transaction confirmation to prevent nonce collisions.
    */
   async postHeartbeat(
     agentId: bigint,
@@ -34,9 +35,16 @@ export class ValidationRegistryClient {
 
     try {
       const account = privateKeyToAccount(privateKey);
+      const chain = this.getChain();
+      
       const walletClient = createWalletClient({
         account,
-        chain: this.getChain(),
+        chain,
+        transport: http(),
+      });
+
+      const publicClient = createPublicClient({
+        chain,
         transport: http(),
       });
 
@@ -60,6 +68,13 @@ export class ValidationRegistryClient {
         args: [agentId, checkpointHash, Math.min(100, Math.max(0, score)), notes],
       });
 
+      // Wait for confirmation to prevent nonce collision with next transaction
+      await publicClient.waitForTransactionReceipt({
+        hash,
+        timeout: 60_000, // 60 second timeout
+      });
+
+      console.log(`[validation] ✅ Heartbeat confirmed: ${hash}`);
       return hash;
     } catch (error) {
       console.warn(`[validation] Failed to post attestation: ${error instanceof Error ? error.message : String(error)}`);
