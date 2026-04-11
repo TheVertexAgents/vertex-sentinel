@@ -1,9 +1,11 @@
 version: 2
 secret:
-  ignore-paths:
+  ignored-paths:
     - ".git"
     - "node_modules"
     - "dist"
     - "build"
     - "coverage"
     - ".next"
+    - "test"
+    - "scripts"

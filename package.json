@@ -16,7 +16,7 @@
     "demo": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/demo_flow.ts --network hardhat",
     "register": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "onboard:sepolia": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
-    "hackathon:submit": "NETWORK=sepolia KRAKEN_CLI_PATH=/home/asif1/hackathons/VertexAgents-The-Sentinel-Layer/scripts/mock_kraken.sh NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/hackathon_submit.ts --network sepolia",
+    "hackathon:submit": "NETWORK=sepolia KRAKEN_CLI_PATH=./scripts/mock_kraken.sh NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/hackathon_submit.ts --network sepolia",
     "node": "npx hardhat node",
     "dashboard": "serve dashboard -p 3000"
   },
