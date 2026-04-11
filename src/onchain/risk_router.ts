@@ -49,6 +49,42 @@ export class RiskRouterClient {
   }
 
   /**
+   * @dev Fetches the current nonce for an agent from RiskRouter.
+   */
+  async getIntentNonce(agentId: bigint): Promise<bigint> {
+    if (this.routerAddress === '0x0000000000000000000000000000000000000000') {
+      return 0n;
+    }
+
+    try {
+      const publicClient = createPublicClient({
+        chain: this.getChain(),
+        transport: http(),
+      });
+
+      const nonce = await publicClient.readContract({
+        address: this.routerAddress,
+        abi: [
+          {
+            name: 'getIntentNonce',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [{ name: 'agentId', type: 'uint256' }],
+            outputs: [{ type: 'uint256' }],
+          },
+        ],
+        functionName: 'getIntentNonce',
+        args: [agentId],
+      });
+
+      return nonce as bigint;
+    } catch (error) {
+      console.warn(`[RiskRouterClient] Failed to fetch nonce, using 0: ${error instanceof Error ? error.message : String(error)}`);
+      return 0n;
+    }
+  }
+
+  /**
    * @dev Signs a TradeIntent using EIP-712.
    */
   async signIntent(intent: TradeIntent, privateKey: Hex): Promise<Hex> {
