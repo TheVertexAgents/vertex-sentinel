@@ -2,7 +2,7 @@
 
 # ⚡ Vertex Sentinel
 
-### Verifiable Risk-Management for Autonomous AI Trading Agents
+### The Open-Source, Trustless Standard for Verifiable, Non-Custodial Agentic Execution
 
 **EIP-712 Signed Intents · On-Chain Guardrails · Fail-Closed Execution · Zero Private Key Delegation**
 
@@ -34,7 +34,7 @@
 
 ## 🎯 The Problem
 
-As AI agents transition from chatbots to autonomous financial operators, critical risks emerge:
+The current Agentic Economy (ARMA, Mamo, ZyFAI) relies on **"Black-Box" backends** where users delegate private keys to opaque company servers.
 
 | Risk | Impact | Current Solutions |
 |------|--------|-------------------|
@@ -43,6 +43,15 @@ As AI agents transition from chatbots to autonomous financial operators, critica
 | 📊 **Market Volatility** | Stale prices cause massive slippage | No automated circuit breakers |
 
 **Current AI safety tools are advisory—they warn, but don't stop bad trades.**
+
+### The Vertex Gap: Why We're Different
+
+| Feature | Legacy AI Agents (ARMA, Mamo, etc.) | Vertex Sentinel |
+|---------|-------------------------------------|-----------------|
+| **Security** | Proprietary, Centralized Backend | Auditable Smart Contract Logic |
+| **Trust** | "Trust the Company" | "Trust the Contract" (On-chain proof) |
+| **Execution** | Private APIs (Opaque) | Kraken CLI + On-chain Intent Logs |
+| **Validation** | None (Black Box) | ERC-8004 Validation Artifacts |
 
 ---
 
@@ -230,6 +239,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 **Built with ❤️ for the AI Trading Agents Hackathon 2026**
 
-[🐦 Twitter](https://twitter.com/VertexAgents) · [💬 Discord](https://discord.gg/vertexagents) · [📧 Contact](mailto:contact@vertexagents.io)
+[🔗 Linktree](https://linktr.ee/vertexagents) · [🐙 GitHub](https://github.com/TheVertexAgents) · [📧 Contact](mailto:info.vertexagents@gmail.com)
 
 </div>
