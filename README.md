@@ -180,15 +180,16 @@ Real-time visualization of verifiable execution:
 
 ```
 vertex-sentinel/
+├── contracts/              # Solidity smart contracts
+│   ├── RiskRouter.sol
+│   ├── AgentRegistry.sol
+│   ├── ReputationRegistry.sol
+│   └── ValidationRegistry.sol
 ├── src/
-│   ├── contracts/          # Solidity smart contracts
-│   │   ├── RiskRouter.sol
-│   │   ├── AgentRegistry.sol
-│   │   ├── ReputationRegistry.sol
-│   │   └── ValidationRegistry.sol
 │   ├── execution/          # Execution layer proxy
 │   ├── logic/              # Risk assessment flows
 │   ├── mcp/                # Model Context Protocol integration
+│   ├── onchain/            # On-chain integration clients
 │   └── utils/              # EIP-712 signing utilities
 ├── dashboard/              # Monitoring UI
 ├── scripts/                # Deployment & execution scripts
