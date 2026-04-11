@@ -11,7 +11,6 @@ import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
 import { IdentityClient } from '../onchain/identity.js';
 import { ValidationRegistryClient } from "../onchain/validation.js";
-import { ReputationRegistryClient } from "../onchain/reputation.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -77,7 +76,7 @@ const config = getDeploymentConfig();
 
 // Init On-Chain Clients
 const validationClient = new ValidationRegistryClient(config.validationRegistry as Hex, config.chainId);
-const reputationClient = new ReputationRegistryClient(config.reputationRegistry as Hex, config.chainId);
+// Note: ReputationRegistry requires external validators to rate agents (no self-rating allowed)
 const riskRouterClient = new RiskRouterClient(config.riskRouter as Hex, config.chainId);
 const identityClient = new IdentityClient(config.agentRegistry as Hex, config.chainId);
 
@@ -109,9 +108,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
   try {
     const account = privateKeyToAccount(privateKey);
 
-    // 1. Check Identity (ERC-8004 Alignment) - non-blocking
-    const isRegistered = await identityClient.isAgentRegistered(account.address);
-    // Note: Registration check is informational only. RiskRouter performs final authorization.
+    // 1. Check Identity (ERC-8004 Alignment) - non-blocking, informational only
+    // RiskRouter performs final authorization regardless of registry status
+    await identityClient.isAgentRegistered(account.address);
 
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
