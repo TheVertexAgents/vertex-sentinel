@@ -1,9 +1,13 @@
 {
-  "name": "vertexagents-the-sentinel-layer",
+  "name": "vertex-sentinel",
   "version": "1.0.0",
-  "description": "",
+  "description": "Verifiable risk-management layer for autonomous AI trading agents. EIP-712 signed TradeIntents, on-chain guardrails, and fail-closed execution.",
   "type": "module",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheVertexAgents/vertex-sentinel.git"
+  },
   "scripts": {
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts",
@@ -15,9 +19,24 @@
     "node": "npx hardhat node",
     "dashboard": "serve dashboard -p 3000"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "ai-trading",
+    "autonomous-agents",
+    "eip-712",
+    "ethereum",
+    "risk-management",
+    "smart-contracts",
+    "defi",
+    "kraken",
+    "mcp",
+    "fail-closed"
+  ],
+  "author": "VertexAgents <info.vertexagents@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/TheVertexAgents/vertex-sentinel#readme",
+  "bugs": {
+    "url": "https://github.com/TheVertexAgents/vertex-sentinel/issues"
+  },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.31.0",
     "@google-cloud/firestore": "^8.3.0",
