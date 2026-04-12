@@ -16,7 +16,6 @@ async function main() {
     const dummyDeployments = { network: "sepolia", chainId: 11155111, agentRegistry: "0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3", riskRouter: "0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC", agentId: "1", agentAddress: "0x0123456789abcdef0123456789abcdef0123456789abcdef" };
     fs.writeFileSync(deploymentsPath, JSON.stringify(dummyDeployments, null, 2));
     
-    process.env.KRAKEN_CLI_PATH = './scripts/live_kraken_cli.js';
     process.env.NETWORK = 'sepolia';
     
     const agentMetadata = loadAgentMetadata();

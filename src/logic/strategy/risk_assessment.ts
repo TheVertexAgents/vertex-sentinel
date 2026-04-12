@@ -52,7 +52,7 @@ export async function getMcpClient() {
     env: {
       ...process.env,
       NODE_ENV: process.env.NODE_ENV || 'development',
-      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || path.join(process.cwd(), 'scripts/live_kraken_cli.js')
+      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
     } as Record<string, string>
   });
 
