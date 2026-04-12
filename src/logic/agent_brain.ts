@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { validateEnv } from './env.js';
 import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
-import { analyzeRisk } from './strategy/risk_assessment.js';
+import { analyzeRisk, getMcpClient } from './strategy/risk_assessment.js';
 import { createSignedCheckpoint } from '../utils/checkpoint.js';
 import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
@@ -89,8 +89,10 @@ function getTraceId(): string {
 
 /**
  * @dev Mock "Strykr PRISM API" for canonical asset resolution.
+ * TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
  */
 async function getAssetResolution(pair: string) {
+  console.warn('[PRISM] Using placeholder resolution - real API integration pending');
   console.log(JSON.stringify({
     level: "INFO",
     module: "PRISM",
@@ -115,15 +117,28 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
-    // 3. Update PnL Tracker before checkpoint
+    // 3. Update PnL Tracker before checkpoint (using real market data)
     const tracker = getPnLTracker();
-    const mockPrice = 67000;
+    let realPrice = 0;
+    try {
+      const client = await getMcpClient();
+      const tickerResponse = await client.callTool({
+        name: 'get_ticker',
+        arguments: { symbol: intent.pair }
+      }) as { content: Array<{ type: string; text: string }> };
+      const ticker = JSON.parse(tickerResponse.content[0].text);
+      realPrice = parseFloat(ticker.c[0]); // Last trade price
+    } catch (e) {
+      console.warn('[AGENT_BRAIN] Failed to fetch real market price, using fallback (67000)');
+      realPrice = 67000;
+    }
+
     tracker.recordTrade({
       id: traceId,
       pair: intent.pair,
       side: intent.action as 'BUY' | 'SELL',
-      price: mockPrice,
-      amount: Number(intent.amountUsdScaled) / 100 / mockPrice,
+      price: realPrice,
+      amount: Number(intent.amountUsdScaled) / 100 / realPrice,
       timestamp: new Date().toISOString()
     });
 
