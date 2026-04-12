@@ -17,7 +17,7 @@ typechain-types/
 # ── Python ───────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 venv/
 .venv/
 *.egg-info/

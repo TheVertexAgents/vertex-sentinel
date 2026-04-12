@@ -223,11 +223,12 @@ export class RiskRouterClient {
   }
 
   /**
-   * @dev Waits for a transaction to be confirmed.
+   * @dev Waits for a transaction to be confirmed with retry logic.
+   * Sepolia can be slow, so we use a longer timeout and retry.
    */
   async waitForTradeAuthorization(
     txHash: Hex,
-    timeoutMs: number = 30000
+    timeoutMs: number = 90000 // Increased to 90 seconds for Sepolia
   ): Promise<{ authorized: boolean; reason?: string }> {
     try {
       const chain = this.getChain();
@@ -236,12 +237,29 @@ export class RiskRouterClient {
         transport: http(),
       });
 
-      const receipt = await publicClient.waitForTransactionReceipt({
-        hash: txHash,
-        timeout: timeoutMs,
-      });
+      // Retry up to 3 times with increasing timeouts
+      let lastError: Error | null = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const receipt = await publicClient.waitForTransactionReceipt({
+            hash: txHash,
+            timeout: timeoutMs,
+            pollingInterval: 4_000, // Poll every 4 seconds
+          });
+          return { authorized: receipt.status === 'success' };
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          if (attempt < 3) {
+            console.log(`[RiskRouter] Receipt not found, retry ${attempt}/3...`);
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s between retries
+          }
+        }
+      }
 
-      return { authorized: receipt.status === 'success' };
+      return {
+        authorized: false,
+        reason: lastError?.message || 'Transaction receipt not found after retries',
+      };
     } catch (error) {
       return {
         authorized: false,

@@ -32,6 +32,14 @@ async function main() {
         { pair: 'BTC/USD', amount: 0.00012, usdValue: 8020n },
         { pair: 'BTC/USD', amount: 0.00013, usdValue: 8690n },
         { pair: 'BTC/USD', amount: 0.00014, usdValue: 9360n },
+        { pair: 'BTC/USD', amount: 0.00015, usdValue: 10030n },
+        { pair: 'BTC/USD', amount: 0.00016, usdValue: 10700n },
+        { pair: 'BTC/USD', amount: 0.00017, usdValue: 11370n },
+        { pair: 'BTC/USD', amount: 0.00018, usdValue: 12040n },
+        { pair: 'BTC/USD', amount: 0.00019, usdValue: 12710n },
+        { pair: 'BTC/USD', amount: 0.00020, usdValue: 13380n },
+        { pair: 'BTC/USD', amount: 0.00021, usdValue: 14050n },
+        { pair: 'BTC/USD', amount: 0.00022, usdValue: 14720n },
     ];
     for (let i = 0; i < trades.length; i++) {
         console.log(`\n--- EXECUTING TRADE ${i + 1} / ${trades.length} ---`);

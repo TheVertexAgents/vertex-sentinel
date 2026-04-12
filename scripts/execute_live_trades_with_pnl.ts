@@ -33,7 +33,7 @@ async function main() {
         }
     };
     
-    // Buy and Sell trades with PnL calculation
+    // Buy and Sell trades with PnL calculation (6 complete cycles = 12 trades)
     const trades = [
         { pair: 'BTC/USD', amount: 0.00011, usdValue: 7350, side: 'BUY' },
         { pair: 'BTC/USD', amount: 0.00011, usdValue: 7350, side: 'SELL' },
@@ -43,6 +43,10 @@ async function main() {
         { pair: 'BTC/USD', amount: 0.00013, usdValue: 8690, side: 'SELL' },
         { pair: 'BTC/USD', amount: 0.00014, usdValue: 9360, side: 'BUY' },
         { pair: 'BTC/USD', amount: 0.00014, usdValue: 9360, side: 'SELL' },
+        { pair: 'BTC/USD', amount: 0.00015, usdValue: 10030, side: 'BUY' },
+        { pair: 'BTC/USD', amount: 0.00015, usdValue: 10030, side: 'SELL' },
+        { pair: 'BTC/USD', amount: 0.00016, usdValue: 10700, side: 'BUY' },
+        { pair: 'BTC/USD', amount: 0.00016, usdValue: 10700, side: 'SELL' },
     ];
     
     // Track trades for PnL calculation
