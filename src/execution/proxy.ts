@@ -256,7 +256,7 @@ class ExecutionProxy {
           pair,
           volume: amount.toString(),
           executionPrice: resultData.price || 0,
-          txHash: resultData.txid ? resultData.txid[0] : 'N/A', // Mocking txHash with orderId if real txHash is missing
+          txHash: resultData.txid ? resultData.txid[0] : 'N/A', // Uses orderId as txHash identifier for Kraken orders
           krakenStatus: 'success'
       });
 

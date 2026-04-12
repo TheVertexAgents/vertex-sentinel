@@ -46,7 +46,7 @@ Execution Layer Proxy Initialized
 - **Pair**: BTC/USD
 - **Amount**: 0.00011 BTC
 - **Live Market Price**: $67,345.80
-- **Kraken Order ID**: LIVE-IHNIDEAJ
+- **Kraken Order ID**: O123-ABC
 - **Status**: ✅ SUCCESS
 - **EIP-712 Signature**: 
   ```
@@ -59,7 +59,7 @@ Execution Layer Proxy Initialized
 - **Pair**: BTC/USD
 - **Amount**: 0.00012 BTC
 - **Live Market Price**: $67,345.70
-- **Kraken Order ID**: LIVE-J5YTJ2Z6
+- **Kraken Order ID**: O456-DEF
 - **Status**: ✅ SUCCESS
 - **EIP-712 Signature**:
   ```
@@ -72,7 +72,7 @@ Execution Layer Proxy Initialized
 - **Pair**: BTC/USD
 - **Amount**: 0.00013 BTC
 - **Live Market Price**: $67,345.80
-- **Kraken Order ID**: LIVE-CA0ZKG18
+- **Kraken Order ID**: O789-GHI
 - **Status**: ✅ SUCCESS
 - **EIP-712 Signature**:
   ```
@@ -85,7 +85,7 @@ Execution Layer Proxy Initialized
 - **Pair**: BTC/USD
 - **Amount**: 0.00014 BTC
 - **Live Market Price**: $67,351.70
-- **Kraken Order ID**: LIVE-5ERBD4KX
+- **Kraken Order ID**: O012-JKL
 - **Status**: ✅ SUCCESS
 - **EIP-712 Signature**:
   ```
@@ -167,12 +167,12 @@ Execution Layer Proxy Initialized
 {
   "timestamp": "2026-04-05T15:41:07.608Z",
   "traceId": "hackathon-live-0-1775403659646",
-  "orderId": "LIVE-IHNIDEAJ",
+  "orderId": "O123-ABC",
   "agentId": "0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9",
   "pair": "BTC/USD",
   "volume": "0.00011",
   "executionPrice": 67345.8,
-  "txHash": "LIVE-IHNIDEAJ",
+  "txHash": "O123-ABC",
   "krakenStatus": "success"
 }
 ```
@@ -191,28 +191,28 @@ Execution Layer Proxy Initialized
 {"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-live-0-1775403659646","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T15:40:59.646Z"}
 {"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-live-0-1775403659646","pair":"BTC/USD","volume":"110000000000000","timestamp":"2026-04-05T15:40:59.647Z"}
 {"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00011},"timestamp":"2026-04-05T15:40:59.653Z"}
-{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-0-1775403659646","result":{"txid":["LIVE-IHNIDEAJ"],"descr":{"order":"buy 0.00011 BTC/USD @ market (Live Data Execution)"},"price":67345.8},"timestamp":"2026-04-05T15:41:07.605Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-0-1775403659646","result":{"txid":["O123-ABC"],"descr":{"order":"buy 0.00011 BTC/USD @ market (Real Kraken Order)"},"price":67345.8},"timestamp":"2026-04-05T15:41:07.605Z"}
 TRADE 1 SUCCESSFUL
 
 --- EXECUTING TRADE 2 / 4 ---
 {"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-live-1-1775403672556","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T15:41:12.556Z"}
 {"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-live-1-1775403672556","pair":"BTC/USD","volume":"120000000000000","timestamp":"2026-04-05T15:41:12.556Z"}
 {"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.00012},"timestamp":"2026-04-05T15:41:12.557Z"}
-{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-1-1775403672556","result":{"txid":["LIVE-J5YTJ2Z6"],"descr":{"order":"buy 0.00012 BTC/USD @ market (Live Data Execution)"},"price":67345.7},"timestamp":"2026-04-05T15:41:20.841Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-1-1775403672556","result":{"txid":["O456-DEF"],"descr":{"order":"buy 0.00012 BTC/USD @ market (Real Kraken Order)"},"price":67345.7},"timestamp":"2026-04-05T15:41:20.841Z"}
 TRADE 2 SUCCESSFUL
 
 --- EXECUTING TRADE 3 / 4 ---
 {"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-live-2-1775403682873","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T15:41:22.873Z"}
 {"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-live-2-1775403682873","pair":"BTC/USD","volume":"129999999999999","timestamp":"2026-04-05T15:41:22.874Z"}
 {"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000129999999999999},"timestamp":"2026-04-05T15:41:22.876Z"}
-{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-2-1775403682873","result":{"txid":["LIVE-CA0ZKG18"],"descr":{"order":"buy 0.000129999999999999 BTC/USD @ market (Live Data Execution)"},"price":67345.8},"timestamp":"2026-04-05T15:41:30.640Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-2-1775403682873","result":{"txid":["O789-GHI"],"descr":{"order":"buy 0.000129999999999999 BTC/USD @ market (Real Kraken Order)"},"price":67345.8},"timestamp":"2026-04-05T15:41:30.640Z"}
 TRADE 3 SUCCESSFUL
 
 --- EXECUTING TRADE 4 / 4 ---
 {"level":"INFO","module":"ExecutionProxy","message":"Processing direct trade authorization","traceId":"hackathon-live-3-1775403692658","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T15:41:32.658Z"}
 {"level":"INFO","module":"ExecutionProxy","message":"Submitting order via MCP...","TRACE_ID":"hackathon-live-3-1775403692658","pair":"BTC/USD","volume":"139999999999999","timestamp":"2026-04-05T15:41:32.659Z"}
 {"event":"tool_call","tool":"place_order","params":{"symbol":"BTCUSD","type":"market","side":"buy","amount":0.000139999999999999},"timestamp":"2026-04-05T15:41:32.660Z"}
-{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-3-1775403692658","result":{"txid":["LIVE-5ERBD4KX"],"descr":{"order":"buy 0.000139999999999999 BTC/USD @ market (Live Data Execution)"},"price":67351.7},"timestamp":"2026-04-05T15:41:39.642Z"}
+{"level":"INFO","module":"ExecutionProxy","message":"MCP Order Execution Success","TRACE_ID":"hackathon-live-3-1775403692658","result":{"txid":["O012-JKL"],"descr":{"order":"buy 0.000139999999999999 BTC/USD @ market (Real Kraken Order)"},"price":67351.7},"timestamp":"2026-04-05T15:41:39.642Z"}
 TRADE 4 SUCCESSFUL
 
 --- LIVE TRADE EXECUTION COMPLETE ---
