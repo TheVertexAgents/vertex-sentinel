@@ -84,11 +84,15 @@ async function main() {
 
     if (fs.existsSync(auditLogPath)) {
         console.log("--- FINAL AUDIT LOG SNAPSHOT ---");
-        const auditLines = fs.readFileSync(auditLogPath, 'utf8').trim().split('\\n');
+        const auditLines = fs.readFileSync(auditLogPath, 'utf8').trim().split('\n');
         auditLines.forEach(line => {
             if (line) {
-                const j = JSON.parse(line);
-                console.log(`[AUDIT] Trace: ${j.traceId} | Pair: ${j.pair} | Status: ${j.krakenStatus}`);
+                try {
+                    const j = JSON.parse(line);
+                    console.log(`[AUDIT] Trace: ${j.traceId} | Pair: ${j.pair} | Status: ${j.krakenStatus}`);
+                } catch (e) {
+                    // Ignore overlapping log lines from proxy concurrency
+                }
             }
         });
     }
