@@ -119,7 +119,7 @@ describe('Kraken MCP Server (TDD)', () => {
     }
   });
 
-  it('should return InternalError on exchange error during non-sensitive operations', async () => {
+  it('should return MCP error response on exchange error during non-sensitive operations', async () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
@@ -133,17 +133,19 @@ describe('Kraken MCP Server (TDD)', () => {
     const entry = handlers.get('tools/call');
     const callback = entry.callback || entry;
 
-    try {
-      await callback({
-        method: 'tools/call',
-        params: {
-          name: 'get_ticker',
-          arguments: { symbol: 'BTC/USD' }
-        }
-      });
-      expect.fail('Should have thrown an error');
-    } catch (error: any) {
-      expect(error.message).to.contain('Exchange error: CLI connection lost');
-    }
+    // Non-sensitive tools now return { isError: true } instead of throwing,
+    // allowing the LLM to see the error and decide to retry gracefully.
+    const result = await callback({
+      method: 'tools/call',
+      params: {
+        name: 'get_ticker',
+        arguments: { symbol: 'BTC/USD' }
+      }
+    });
+
+    expect(result.isError).to.be.true;
+    expect(result.content).to.be.an('array');
+    expect(result.content[0].type).to.equal('text');
+    expect(result.content[0].text).to.contain('Exchange error: CLI connection lost');
   });
 });
