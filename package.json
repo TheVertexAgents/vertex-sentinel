@@ -9,6 +9,7 @@
     "url": "https://github.com/TheVertexAgents/vertex-sentinel.git"
   },
   "scripts": {
+    "build": "npx tsc",
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts",
     "compile": "npx hardhat compile",
