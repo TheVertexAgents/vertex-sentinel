@@ -10,7 +10,7 @@
 Based on our repository analysis and analysis of existing templates, the dashboard should adopt a **"Modular Card-and-Grid"** layout to improve information density without cluttering the UI.
 
 ### A. Global Monitoring Header (The "Control Bar")
-- **Agent Identity & Version:** Clearly display the Agent Name (e.g., "Vertex Sentinel Alpha") and version from `agent-id.json`.
+- **Agent Identity & Version:** Clearly display the Agent Name (e.g., "Vertex Sentinel Layer") and version from `agent-id.json`.
 - **System Heartbeat:** A pulsing indicator (e.g., Emerald for Online, Crimson for Offline) connected to the Kraken MCP and RiskRouter health.
 - **Fail-Closed Status Badge:** A "Glassmorphism" badge stating "🛡️ FAIL-CLOSED ACTIVE" to confirm safety guardrails.
 - **Global Actions:**
