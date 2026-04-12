@@ -145,7 +145,6 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       await validationClient.postHeartbeat(
         BigInt(getAgentMetadata().agentId),
         checkpoint.checkpointHash as Hex,
-        100,
         `Vertex Heartbeat: ${decision.reasoning}`,
         privateKey
       );

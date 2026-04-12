@@ -25,7 +25,6 @@ export class ValidationRegistryClient {
   async postHeartbeat(
     agentId: bigint,
     checkpointHash: Hex,
-    score: number,
     notes: string,
     privateKey: Hex
   ): Promise<Hex | null> {
@@ -52,26 +51,29 @@ export class ValidationRegistryClient {
         address: this.registryAddress,
         abi: [
           {
-            name: 'postEIP712Attestation',
+            name: 'postAttestation',
             type: 'function',
             stateMutability: 'nonpayable',
             inputs: [
               { name: 'agentId', type: 'uint256' },
               { name: 'checkpointHash', type: 'bytes32' },
               { name: 'score', type: 'uint8' },
+              { name: 'proofType', type: 'uint8' },
+              { name: 'proof', type: 'bytes' },
               { name: 'notes', type: 'string' },
             ],
             outputs: [],
           },
         ],
-        functionName: 'postEIP712Attestation',
-        args: [agentId, checkpointHash, Math.min(100, Math.max(0, score)), notes],
+        functionName: 'postAttestation',
+        args: [agentId, checkpointHash, 100, 1, '0x', notes],
       });
 
       // Wait for confirmation to prevent nonce collision with next transaction
+      // Reliability Fix (PR #89): Ensure heartbeat is confirmed before trade intent
       await publicClient.waitForTransactionReceipt({
         hash,
-        timeout: 60_000, // 60 second timeout
+        timeout: 90_000, // 90 second timeout for Sepolia
       });
 
       console.log(`[validation] ✅ Heartbeat confirmed: ${hash}`);
