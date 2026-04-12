@@ -52,7 +52,7 @@ export async function getMcpClient() {
     env: {
       ...process.env,
       NODE_ENV: process.env.NODE_ENV || 'development',
-      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || path.join(process.cwd(), 'scripts/live_kraken_cli.js')
+      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
     } as Record<string, string>
   });
 
@@ -70,15 +70,40 @@ export async function getMcpClient() {
 }
 
 /**
- * @dev Mock Sentiment Source.
- * TODO: Integrate real sentiment API (PRISM, CryptoQuant, etc.)
+ * @dev Live AI Sentiment API (Genkit)
  */
-async function getSentiment() {
-  console.warn('[SENTIMENT] Using placeholder sentiment - real API integration pending');
+async function getSentiment(pair: string) {
+  try {
+    const aiResponse = await ai.generate({
+      model: googleAI.model('gemini-flash-latest'),
+      prompt: `Analyze the current real-world market sentiment for ${pair} crypto asset. Output JSON with headline, indicator (Bullish/Bearish/Neutral), and score (0.0 to 1.0).`,
+      output: {
+        format: 'json',
+        schema: z.object({
+          headline: z.string(),
+          indicator: z.string(),
+          score: z.number().min(0).max(1)
+        })
+      }
+    });
+
+    if (aiResponse.output) {
+      console.log(`[SENTIMENT] Successfully fetched live sentiment for ${pair}`);
+      return aiResponse.output;
+    }
+  } catch (err: any) {
+    if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
+      console.warn(`[SENTIMENT] Service unavailable. Entering degraded mode for sentiment.`);
+    } else {
+      console.warn(`[SENTIMENT] Live sentiment API unreachable. Degraded mode active.`);
+    }
+  }
+
+  // Degraded Mode Fallback
   return {
-    headline: "Market sentiment remains cautious ahead of FOMC meeting; crypto liquidity tightening in minor pairs.",
-    indicator: "Neutral-Bearish",
-    score: 0.45
+    headline: `Live sentiment unavailable for ${pair}. Relying strictly on market volatility metrics.`,
+    indicator: "Neutral",
+    score: 0.5
   };
 }
 
@@ -107,7 +132,7 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
 
     const balance = balanceResponse?.content?.[0] ? JSON.parse(balanceResponse.content[0].text) as Balance : {};
     const history = historyResponse?.content?.[0] ? JSON.parse(historyResponse.content[0].text) as TradeHistory : { trades: {}, count: 0 };
-    const sentiment = await getSentiment();
+    const sentiment = await getSentiment(pair);
 
     // 3. Manual Penalty Model (Bootstrap Logic)
     const ask = parseFloat(ticker.a[0]);
@@ -125,9 +150,13 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     // 4. Genkit AI Risk Assessment
     const amountUsd = Number(amountUsdScaled) / 100;
 
-    const aiResponse = await ai.generate({
-      model: googleAI.model('gemini-flash-latest'),
-      prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
+    let aiResult = null;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const aiResponse = await ai.generate({
+          model: googleAI.model('gemini-flash-latest'),
+          prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
 
 Analyze the provided data and evaluate:
 1. Market Risk: Based on Bid/Ask spread and volatility.
@@ -159,20 +188,41 @@ Output your response in valid JSON format:
   "sentimentRisk": number (0.0 to 1.0),
   "justification": "concise string"
 }`,
-      output: {
-        format: 'json',
-        schema: z.object({
-          riskScore: z.number(),
-          marketRisk: z.number(),
-          portfolioRisk: z.number(),
-          sentimentRisk: z.number(),
-          justification: z.string(),
-        })
+          output: {
+            format: 'json',
+            schema: z.object({
+              riskScore: z.number(),
+              marketRisk: z.number(),
+              portfolioRisk: z.number(),
+              sentimentRisk: z.number(),
+              justification: z.string(),
+            })
+          }
+        });
+        aiResult = aiResponse.output;
+        break; // Success, exit retry loop
+      } catch (err: any) {
+        attempts++;
+        if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
+          console.warn(`[AI_RISK] 503 Error on attempt ${attempts}. Retrying...`);
+          await new Promise(r => setTimeout(r, attempts * 1000));
+        } else {
+          console.warn(`[AI_RISK] API failed: ${err.message}`);
+          break; // Don't retry on other errors
+        }
       }
-    });
+    }
 
-    const aiResult = aiResponse.output;
-    if (!aiResult) throw new Error("AI failed to provide a risk assessment.");
+    if (!aiResult) {
+      console.warn("[AI_RISK] All AI attempts failed. Entering DEGRADED MODE (relying strictly on market data).");
+      aiResult = {
+        riskScore: 0, // Fallback to solely relying on manualPenalty
+        marketRisk: 0,
+        portfolioRisk: 0,
+        sentimentRisk: 0,
+        justification: "Degraded Mode: Hardware rules override. API Unavailable.",
+      };
+    }
 
     // 5. Hybrid Enforcement (Fail-Closed)
     // If either manual penalty or AI score exceeds 0.8, we HOLD.
