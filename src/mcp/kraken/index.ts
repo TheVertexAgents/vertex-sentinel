@@ -20,9 +20,24 @@ import { ZodError } from 'zod';
 
 /**
  * @title Kraken MCP Server
- * @dev Standardized MCP server for Kraken exchange interactions via Kraken CLI.
- * Decouples execution logic from the Sentinel Layer.
+ * @dev Standardized MCP server for Kraken exchange interactions via the official
+ * Kraken Rust CLI binary. Decouples execution logic from the Sentinel Layer.
  * Strictly adheres to Project Constitution v2.0.0.
+ *
+ * CLI Syntax (2026 Kraken CLI):
+ *   Global JSON:  kraken -o json <command> [args...]
+ *   Ticker:       kraken -o json ticker <PAIR>
+ *   Balance:      kraken -o json balance
+ *   History:      kraken -o json trades-history
+ *   Order Buy:    kraken -o json order buy <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
+ *   Order Sell:   kraken -o json order sell <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
+ *
+ * Paper Mode (KRAKEN_PAPER_MODE=true):
+ *   Ticker:       kraken -o json ticker <PAIR>          (always real market data)
+ *   Balance:      kraken -o json paper balance
+ *   History:      kraken -o json paper history
+ *   Order Buy:    kraken -o json paper buy <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
+ *   Order Sell:   kraken -o json paper sell <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
  */
 export class KrakenMcpServer {
   public server: Server; // Made public for testing
@@ -38,7 +53,7 @@ export class KrakenMcpServer {
     this.server = new Server(
       {
         name: 'kraken-mcp-server',
-        version: '1.0.0',
+        version: '2.0.0',
       },
       {
         capabilities: {
@@ -71,38 +86,70 @@ export class KrakenMcpServer {
   }
 
   /**
-   * @dev Executes a command using the Kraken CLI.
+   * @dev Returns true if KRAKEN_PAPER_MODE environment variable is set to 'true'.
+   */
+  private isPaperMode(): boolean {
+    return process.env.KRAKEN_PAPER_MODE === 'true';
+  }
+
+  /**
+   * @dev Executes a command using the official Kraken Rust CLI binary.
    * Implements "Fail-Closed" principle.
    * Uses spawnSync with argument array to prevent command injection.
+   *
+   * @param commandParts - The command and its arguments (e.g., ['ticker', 'BTCUSD']
+   *   or ['order', 'buy', 'BTCUSD', '0.001', '--type', 'market']).
+   *   The global `-o json` flag is prepended automatically.
+   * @returns Parsed JSON output from the CLI.
+   * @throws Error if CLI execution fails, returns no output, or outputs invalid JSON.
    */
-  private executeKrakenCli(command: string, args: string[]): unknown {
+  private executeKrakenCli(commandParts: string[]): unknown {
     const krakenPath = process.env.KRAKEN_CLI_PATH || 'kraken';
 
-    const finalArgs = [command, ...args, '-o', 'json'];
+    // Prepend the global JSON output flag
+    const finalArgs = ['-o', 'json', ...commandParts];
+
+    this.log('cli_exec', {
+      binary: krakenPath,
+      args: finalArgs,
+      paperMode: this.isPaperMode(),
+    });
 
     const result = spawnSync(krakenPath, finalArgs, {
         env: {
             ...process.env,
             KRAKEN_API_KEY: this.apiKey,
-            KRAKEN_API_SECRET: this.apiSecret
+            // Pass both variants for compatibility with the kraken binary
+            KRAKEN_API_SECRET: this.apiSecret,
+            KRAKEN_SECRET: this.apiSecret,
         },
         stdio: ['inherit', 'pipe', 'pipe'],
-        encoding: 'utf-8'
+        encoding: 'utf-8',
+        timeout: 30000, // 30s timeout to prevent hanging
     });
 
     if (result.error) {
         throw new Error(`Failed to execute Kraken CLI: ${result.error.message}`);
     }
 
-    if (!result.stdout) {
-        throw new Error(`Kraken CLI returned no output. Stderr: ${result.stderr}`);
+    // Capture stderr for rate-limit and error diagnostics
+    const stderrOutput = result.stderr?.trim() || '';
+
+    if (result.status !== null && result.status !== 0) {
+        const errorDetail = stderrOutput || result.stdout?.trim() || 'Unknown CLI error';
+        throw new Error(`Kraken CLI exited with code ${result.status}: ${errorDetail}`);
+    }
+
+    if (!result.stdout || !result.stdout.trim()) {
+        throw new Error(`Kraken CLI returned no output. Stderr: ${stderrOutput}`);
     }
 
     try {
       const parsed = JSON.parse(result.stdout);
 
-      if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-        throw new Error(`Kraken CLI Error (${parsed.error}): ${parsed.message}`);
+      // Handle Kraken API-level errors embedded in JSON
+      if (parsed && typeof parsed === 'object' && 'error' in parsed && Array.isArray(parsed.error) && parsed.error.length > 0) {
+        throw new Error(`Kraken API Error: ${parsed.error.join(', ')}`);
       }
 
       return parsed;
@@ -112,6 +159,18 @@ export class KrakenMcpServer {
       }
       throw new Error(`Failed to parse Kraken CLI output: ${String(error)}`);
     }
+  }
+
+  /**
+   * @dev Creates a standardized MCP error response.
+   * Instead of crashing the Node process, this returns an error object
+   * that the LLM reasoning engine can interpret and decide to retry.
+   */
+  private mcpErrorResponse(message: string): { isError: true; content: Array<{ type: string; text: string }> } {
+    return {
+      isError: true,
+      content: [{ type: 'text', text: message }],
+    };
   }
 
   private setupTools() {
@@ -173,8 +232,9 @@ export class KrakenMcpServer {
             
             this.log('tool_call', { tool: toolName, symbol });
 
+            // Ticker always uses real market data, even in paper mode
             const cleanSymbol = symbol.replace('/', '');
-            const result = this.executeKrakenCli('ticker', [cleanSymbol]);
+            const result = this.executeKrakenCli(['ticker', cleanSymbol]);
 
             if (!result || typeof result !== 'object') {
                 throw new Error('Invalid ticker response from CLI');
@@ -200,22 +260,81 @@ export class KrakenMcpServer {
           case 'get_balance': {
             this.log('tool_call', { tool: toolName });
             
-            const result = this.executeKrakenCli('balance', []);
+            // Paper mode: `paper balance` | Live mode: `balance`
+            const cmd = this.isPaperMode() ? ['paper', 'balance'] : ['balance'];
+            const result = this.executeKrakenCli(cmd);
             const validated = BalanceSchema.parse(result);
 
+            // Normalize paper balance format to flat key-value for consistent LLM output
+            // Paper: {balances: {BTC: {available, reserved, total}}, mode} → {BTC: "0.01", USD: "9290.56"}
+            let normalizedBalance: Record<string, string>;
+            if (validated && typeof validated === 'object' && 'balances' in validated) {
+              const paperData = validated as { balances: Record<string, { total: number }> };
+              normalizedBalance = {};
+              for (const [asset, info] of Object.entries(paperData.balances)) {
+                normalizedBalance[asset] = info.total.toString();
+              }
+            } else {
+              // Live format — already flat, normalize values to strings
+              normalizedBalance = {};
+              for (const [key, val] of Object.entries(validated as Record<string, string | number>)) {
+                normalizedBalance[key] = String(val);
+              }
+            }
+
             return {
-              content: [{ type: 'text', text: JSON.stringify(validated) }],
+              content: [{ type: 'text', text: JSON.stringify(normalizedBalance) }],
             };
           }
 
           case 'get_trade_history': {
             this.log('tool_call', { tool: toolName });
 
-            const result = this.executeKrakenCli('trades', []);
+            // Paper mode: `paper history` | Live mode: `trades-history`
+            const cmd = this.isPaperMode() ? ['paper', 'history'] : ['trades-history'];
+            const result = this.executeKrakenCli(cmd);
             const validated = TradeHistorySchema.parse(result);
 
+            // Normalize paper trade history (array) to unified record format
+            // Paper: {trades: [{id, side, price(num), ...}]} → {trades: {id: {ordertxid, type, price(str), ...}}, count}
+            let normalizedHistory: { trades: Record<string, Record<string, unknown>>; count: number };
+
+            if (Array.isArray(validated.trades)) {
+              // Paper format — convert array to record with string-typed fields
+              const tradesRecord: Record<string, Record<string, unknown>> = {};
+              for (const trade of validated.trades) {
+                const key = (trade as Record<string, unknown>).id as string
+                  || (trade as Record<string, unknown>).order_id as string
+                  || `trade-${Date.now()}`;
+                const t = trade as Record<string, unknown>;
+                tradesRecord[key] = {
+                  ordertxid: t.order_id || t.id || '',
+                  pair: t.pair,
+                  time: typeof t.time === 'string' ? new Date(t.time as string).getTime() / 1000 : t.time,
+                  type: t.side || t.type,
+                  ordertype: t.ordertype || 'market',
+                  price: String(t.price),
+                  cost: String(t.cost),
+                  fee: String(t.fee),
+                  vol: String(t.volume || t.vol),
+                };
+              }
+              const rawData = validated as Record<string, unknown>;
+              normalizedHistory = {
+                trades: tradesRecord,
+                count: (rawData.filled_count as number) || Object.keys(tradesRecord).length,
+              };
+            } else {
+              // Live format — already a record
+              const rawData = validated as Record<string, unknown>;
+              normalizedHistory = {
+                trades: validated.trades as Record<string, Record<string, unknown>>,
+                count: (rawData.count as number) || 0,
+              };
+            }
+
             return {
-              content: [{ type: 'text', text: JSON.stringify(validated) }],
+              content: [{ type: 'text', text: JSON.stringify(normalizedHistory) }],
             };
           }
 
@@ -223,18 +342,19 @@ export class KrakenMcpServer {
             const params = OrderParamsSchema.parse(request.params.arguments);
             this.log('tool_call', { tool: toolName, params: params as unknown as Record<string, unknown> });
 
-            const cliArgs = [
-                params.side,
-                params.symbol.replace('/', ''),
-                params.amount.toString(),
-                '--type', params.type
-            ];
+            const cleanSymbol = params.symbol.replace('/', '');
+
+            // Paper mode: `paper buy/sell <PAIR> <VOL> ...`
+            // Live mode:  `order buy/sell <PAIR> <VOL> ...`
+            const cliArgs: string[] = this.isPaperMode()
+              ? ['paper', params.side, cleanSymbol, params.amount.toString(), '--type', params.type]
+              : ['order', params.side, cleanSymbol, params.amount.toString(), '--type', params.type];
             
             if (params.price) {
                 cliArgs.push('--price', params.price.toString());
             }
 
-            const result = this.executeKrakenCli('order', cliArgs);
+            const result = this.executeKrakenCli(cliArgs);
             const validated = OrderResultSchema.parse(result);
 
             return {
@@ -253,12 +373,14 @@ export class KrakenMcpServer {
           throw new McpError(ErrorCode.InvalidParams, `Validation error: ${errorMessage}`);
         }
 
-        // According to Constitution v2.0.0: Fail-Closed on sensitive errors
+        // According to Constitution v2.0.0: Fail-Closed on order execution security errors
         if (toolName === 'place_order') {
           throw new CriticalSecurityException(`Execution failure on Kraken CLI: ${errorMessage}`);
         }
 
-        throw new McpError(ErrorCode.InternalError, `Exchange error: ${errorMessage}`);
+        // For all other tools (read-only): return MCP error response so the LLM
+        // can see rate-limit / network errors and decide to retry gracefully.
+        return this.mcpErrorResponse(`Exchange error: ${errorMessage}`);
       }
     });
   }
@@ -266,7 +388,11 @@ export class KrakenMcpServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    this.log('server_start', { message: 'Kraken MCP server running on stdio (CLI mode)' });
+    this.log('server_start', {
+      message: 'Kraken MCP server running on stdio (CLI mode)',
+      paperMode: this.isPaperMode(),
+      version: '2.0.0',
+    });
   }
 }
 
