@@ -26,15 +26,8 @@ async function main() {
             const type = args.indexOf('--type') !== -1 ? args[args.indexOf('--type') + 1] : 'market';
             if (symbol === 'BTCUSD') symbol = 'BTC/USD';
             let result;
-            try {
-                const order = await exchange.createOrder(symbol, type, side, amount);
-                result = { txid: [order.id], descr: { order: `${side} ${amount} ${symbol} @ ${type}` } };
-            } catch (e) {
-                if (e.message.includes('Permission denied') || e.message.includes('API key')) {
-                    const ticker = await exchange.fetchTicker(symbol);
-                    result = { txid: ['LIVE-' + Math.random().toString(36).substring(2, 10).toUpperCase()], descr: { order: `${side} ${amount} ${symbol} @ ${type} (Live Data Execution)` }, price: ticker.last };
-                } else { throw e; }
-            }
+            const order = await exchange.createOrder(symbol, type, side, amount);
+            result = { txid: [order.id], descr: { order: `${side} ${amount} ${symbol} @ ${type}` } };
             console.log(JSON.stringify(result));
         }
     } catch (error) { console.error(JSON.stringify({ error: 'error', message: error.message })); process.exit(1); }

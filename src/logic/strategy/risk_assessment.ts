@@ -42,7 +42,7 @@ const ai = genkit({
  */
 let mcpClient: Client | null = null;
 
-async function getMcpClient() {
+export async function getMcpClient() {
   if (mcpClient) return mcpClient;
 
   const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
@@ -52,7 +52,7 @@ async function getMcpClient() {
     env: {
       ...process.env,
       NODE_ENV: process.env.NODE_ENV || 'development',
-      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || path.join(process.cwd(), 'scripts/mock_kraken.sh')
+      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || path.join(process.cwd(), 'scripts/live_kraken_cli.js')
     } as Record<string, string>
   });
 
@@ -71,8 +71,10 @@ async function getMcpClient() {
 
 /**
  * @dev Mock Sentiment Source.
+ * TODO: Integrate real sentiment API (PRISM, CryptoQuant, etc.)
  */
 async function getSentiment() {
+  console.warn('[SENTIMENT] Using placeholder sentiment - real API integration pending');
   return {
     headline: "Market sentiment remains cautious ahead of FOMC meeting; crypto liquidity tightening in minor pairs.",
     indicator: "Neutral-Bearish",
