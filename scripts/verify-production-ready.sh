@@ -186,7 +186,7 @@ TEST_OUTPUT=$(npm test 2>&1 || true)
 
 # Extract test count
 if echo "$TEST_OUTPUT" | grep -q "passing"; then
-    PASSING_TESTS=$(echo "$TEST_OUTPUT" | grep -o "[0-9]* passing" | head -1 | grep -o "[0-9]*")
+    PASSING_TESTS=$(echo "$TEST_OUTPUT" | grep -o "[0-9]* passing" | tail -1 | grep -o "[0-9]*")
     echo -e "${GREEN}✓ Tests Passed: ${PASSING_TESTS}${NC}"
     log_result "PASS" "Test suite: ${PASSING_TESTS} passing"
     
