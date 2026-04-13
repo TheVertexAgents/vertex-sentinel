@@ -11,6 +11,8 @@ const envSchema = z.object({
   KRAKEN_API_KEY: z.string().min(1, "KRAKEN_API_KEY is required"),
   KRAKEN_SECRET: z.string().min(1, "KRAKEN_SECRET is required"),
   INFURA_KEY: z.string().min(1, "INFURA_KEY is required"),
+  TX_CONFIRMATION_TIMEOUT: z.coerce.number().int().positive().default(90000),
+  LOCAL_RPC_URL: z.string().url().default('http://127.0.0.1:8545'),
 });
 
 /**

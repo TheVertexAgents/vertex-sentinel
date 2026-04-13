@@ -63,7 +63,7 @@ class ExecutionProxy {
       transport: http(
         network === 'sepolia'
           ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
-          : 'http://127.0.0.1:8545'
+          : process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545'
       ),
     });
 

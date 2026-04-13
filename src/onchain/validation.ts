@@ -76,7 +76,7 @@ export class ValidationRegistryClient {
       // Reliability Fix (PR #89): Ensure heartbeat is confirmed before trade intent
       await publicClient.waitForTransactionReceipt({
         hash,
-        timeout: 90_000, // 90 second timeout for Sepolia
+        timeout: Number(process.env.TX_CONFIRMATION_TIMEOUT) || 90000,
       });
 
       console.log(`[validation] ✅ Heartbeat confirmed: ${hash}`);

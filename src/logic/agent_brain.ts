@@ -101,7 +101,7 @@ async function getAssetResolution(pair: string) {
     message: `Resolving canonical metadata for ${pair}...`,
     timestamp: new Date().toISOString()
   }));
-  return { symbol: pair, precision: 18 };
+  return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
 }
 
 /**
@@ -143,7 +143,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       pair: intent.pair,
       side: intent.action as 'BUY' | 'SELL',
       price: realPrice,
-      amount: Number(intent.amountUsdScaled) / 100 / realPrice,
+      amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor / realPrice,
       timestamp: new Date().toISOString()
     });
 
@@ -302,9 +302,9 @@ async function main() {
         pair: selectedPair,
         action: Math.random() > 0.3 ? 'BUY' : 'SELL', // 70% BUY bias
         amountUsdScaled: tradeSize,
-        maxSlippageBps: 100n,
+        maxSlippageBps: getAgentMetadata().defaultSlippageBps,
         nonce: currentNonce,
-        deadline: BigInt(Math.floor(Date.now() / 1000) + 3600)
+        deadline: BigInt(Math.floor(Date.now() / 1000) + getAgentMetadata().defaultDeadlineOffset)
       };
 
       console.log(`\n[${new Date().toISOString()}] 📊 Analyzing ${selectedPair}...`);

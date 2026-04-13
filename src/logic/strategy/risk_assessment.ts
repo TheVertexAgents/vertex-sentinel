@@ -1,6 +1,7 @@
 import { genkit, z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { CriticalSecurityException } from '../errors.js';
+import { loadAgentMetadata } from '../config.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import path from 'path';
@@ -187,11 +188,11 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
 
     const spreadPenalty = Math.min(0.5, (spread / 0.02) * 0.5);
     const volatilityPenalty = Math.min(0.3, (volatility / 0.1) * 0.3);
-    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / 100000) * 0.2);
+    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / (loadAgentMetadata().usdScalingFactor * 1000)) * 0.2);
     const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty);
 
     // 4. Genkit AI Risk Assessment
-    const amountUsd = Number(amountUsdScaled) / 100;
+    const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
 
     let aiResult = null;
     let attempts = 0;

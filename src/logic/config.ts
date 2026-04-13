@@ -11,6 +11,10 @@ export const AgentMetadataSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, "Version must follow semantic versioning (x.y.z)"),
   agentId: z.number().int().positive("Agent ID must be a positive integer"),
+  usdScalingFactor: z.number().int().positive().default(100),
+  defaultSlippageBps: z.any().transform(val => BigInt(val)).default(100n),
+  defaultDeadlineOffset: z.number().int().positive().default(3600),
+  prismDefaultPrecision: z.number().int().positive().default(18),
 });
 
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
