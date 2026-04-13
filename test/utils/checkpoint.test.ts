@@ -10,7 +10,11 @@ describe('Checkpoint Utility Unit Tests', function () {
   const agent: AgentMetadata = {
     name: "Test Agent",
     version: "1.0.0",
-    agentId: 1
+    agentId: 1,
+    usdScalingFactor: 100,
+    defaultSlippageBps: 50n,
+    defaultDeadlineOffset: 300,
+    prismDefaultPrecision: 6
   };
 
   const decision: TradeDecision = {
