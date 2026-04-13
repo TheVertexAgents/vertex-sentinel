@@ -41,32 +41,85 @@ const ai = genkit({
  * @dev Simple MCP Client Singleton for Ticker and Account Data.
  */
 let mcpClient: Client | null = null;
+let isConnecting = false;
+let connectionFailed = false;
 
 export async function getMcpClient() {
   if (mcpClient) return mcpClient;
+  if (connectionFailed) throw new Error('MCP connection previously failed');
+  if (isConnecting) throw new Error('MCP connection already in progress');
 
-  const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
-  const transport = new StdioClientTransport({
-    command: 'npx',
-    args: ['tsx', serverPath],
-    env: {
-      ...process.env,
-      NODE_ENV: process.env.NODE_ENV || 'development',
-      KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
-    } as Record<string, string>
-  });
+  isConnecting = true;
+  console.log('[MCP_INITIALIZE] Connecting to Kraken MCP server...');
 
-  mcpClient = new Client(
-    { name: 'sentinel-strategy-client', version: '1.0.0' },
-    { capabilities: {} }
-  );
+  try {
+    const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
+    console.log(`[MCP_INITIALIZE] Spawning MCP server from: ${serverPath}`);
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: ['--import', 'tsx', '--no-warnings', serverPath],
+      env: {
+        ...process.env,
+        NODE_ENV: process.env.NODE_ENV || 'development',
+        KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
+      } as Record<string, string>
+    });
 
-  await Promise.race([
-    mcpClient.connect(transport),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 15000))
-  ]);
+    mcpClient = new Client(
+      { name: 'sentinel-strategy-client', version: '1.0.0' },
+      { capabilities: {} }
+    );
 
-  return mcpClient;
+    await Promise.race([
+      mcpClient.connect(transport),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 15000))
+    ]);
+
+    isConnecting = false;
+    console.log('[MCP_INITIALIZE] Connected successfully');
+    return mcpClient;
+  } catch (err: any) {
+    isConnecting = false;
+    connectionFailed = true;
+    console.warn(`[MCP_INITIALIZE] Connection failed: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * @dev Safely calls an MCP tool and parses the response.
+ */
+async function callMcpTool(name: string, args: Record<string, any> = {}) {
+  const client = await getMcpClient();
+  const response = await client.callTool({ name, arguments: args }) as { 
+    isError?: boolean; 
+    content: Array<{ type: string; text: string }> 
+  };
+
+  if (response.isError) {
+    throw new Error(response.content[0].text);
+  }
+
+  try {
+    return JSON.parse(response.content[0].text);
+  } catch (err) {
+    throw new Error(`Invalid JSON response from ${name}: ${response.content[0].text}`);
+  }
+}
+
+/**
+ * @dev Closes the MCP client and cleans up transport resources.
+ */
+export async function closeMcpClient() {
+  if (mcpClient) {
+    console.log('[MCP_CLIENT] Closing connection...');
+    try {
+      await mcpClient.close();
+    } catch (err: any) {
+      console.warn(`[MCP_CLIENT] Error closing client: ${err.message}`);
+    }
+    mcpClient = null;
+  }
 }
 
 /**
@@ -112,26 +165,14 @@ async function getSentiment(pair: string) {
  * Integrates Genkit AI reasoning with a manual bootstrap penalty model.
  */
 export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promise<TradeDecision> {
+  console.log(`[RISK_STRATEGY] Starting analysis for ${pair}...`);
   try {
-    const client = await getMcpClient();
-
     // 1. Fetch Market Data
-    const tickerResponse = await client.callTool({
-      name: 'get_ticker',
-      arguments: { symbol: pair }
-    }) as { content: Array<{ type: string; text: string }> };
-
-    if (!tickerResponse?.content?.[0]) {
-      throw new CriticalSecurityException(`Kraken Ticker unreachable for ${pair}`);
-    }
-    const ticker = JSON.parse(tickerResponse.content[0].text) as Ticker;
+    const ticker = await callMcpTool('get_ticker', { symbol: pair }) as Ticker;
 
     // 2. Fetch Portfolio & History
-    const balanceResponse = await client.callTool({ name: 'get_balance', arguments: {} }) as { content: Array<{ type: string; text: string }> };
-    const historyResponse = await client.callTool({ name: 'get_trade_history', arguments: {} }) as { content: Array<{ type: string; text: string }> };
-
-    const balance = balanceResponse?.content?.[0] ? JSON.parse(balanceResponse.content[0].text) as Balance : {};
-    const history = historyResponse?.content?.[0] ? JSON.parse(historyResponse.content[0].text) as TradeHistory : { trades: {}, count: 0 };
+    const balance = await callMcpTool('get_balance', {}) as Balance;
+    const history = await callMcpTool('get_trade_history', {}) as TradeHistory;
     const sentiment = await getSentiment(pair);
 
     // 3. Manual Penalty Model (Bootstrap Logic)

@@ -48,8 +48,11 @@ export async function createSignedCheckpoint(
   chainId: number = 11155111,
   pnl?: any
 ): Promise<SignedCheckpoint> {
-  try {
-    const timestamp = BigInt(Math.floor(Date.now() / 1000));
+    if (!privateKey) {
+      throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint. Check your environment configuration.");
+    }
+    try {
+      const timestamp = BigInt(Math.floor(Date.now() / 1000));
     const reasoningHash = keccak256(stringToBytes(decision.reasoning));
 
     const account = privateKeyToAccount(privateKey as `0x${string}`);
