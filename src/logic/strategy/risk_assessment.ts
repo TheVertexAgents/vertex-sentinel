@@ -167,8 +167,6 @@ async function getSentiment(pair: string) {
 export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promise<TradeDecision> {
   console.log(`[RISK_STRATEGY] Starting analysis for ${pair}...`);
   try {
-    const client = await getMcpClient();
-
     // 1. Fetch Market Data
     const ticker = await callMcpTool('get_ticker', { symbol: pair }) as Ticker;
 
