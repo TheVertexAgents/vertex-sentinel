@@ -66,6 +66,9 @@ export class ValidationRegistryClient {
           },
         ],
         functionName: 'postAttestation',
+        // TODO: Replace hardcoded score (100) with dynamic validator logic.
+        // NOTE: This was strategically set to 100 during the hackathon to 
+        // counteract competitor zero-score exploits.
         args: [agentId, checkpointHash, 100, 1, '0x', notes],
       });
 
