@@ -87,6 +87,7 @@ Vertex Sentinel introduces a **3-layer security architecture** that makes unauth
 |--------|----------------|
 | **Fail-Closed** | Any validation failure triggers `CriticalSecurityException` |
 | **Cryptographic Signing** | Every trade requires EIP-712 typed data signature |
+| **Live Sentiment** | Real-time social/news analysis via LunarCrush V4 API |
 | **On-Chain Verification** | RiskRouter.sol enforces limits before execution |
 | **Full Audit Trail** | Immutable logs in `logs/audit.json` with reasoning |
 
@@ -205,11 +206,8 @@ vertex-sentinel/
 
 ## 🗺️ Roadmap
 
-- [x] **Phase 1**: Foundation — Core architecture & EIP-712 signing
-- [x] **Phase 2**: Security — Fail-closed execution & circuit breakers
-- [x] **Phase 3**: Identity — ERC-8004 agent registry & reputation
-- [x] **Phase 4**: Integration — Kraken MCP & live trading
-- [ ] **Phase 5**: Optimization — Multi-exchange support & dynamic risk modules
+- [x] **Phase 4**: Integration — Kraken MCP, Live Trading & Sentiment Ingestion
+- [ ] **Phase 5**: Expansion — Multi-exchange support & Dynamic Risk modules
 
 ---
 
