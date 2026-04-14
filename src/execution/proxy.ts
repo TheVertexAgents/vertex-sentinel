@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
+import { logger } from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,13 +93,13 @@ class ExecutionProxy {
    * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
    */
   private log(level: 'INFO' | 'ERROR' | 'CRITICAL', message: string, data: Record<string, unknown> = {}) {
-    console.error(JSON.stringify({
+    logger.error({
       level,
       module: 'ExecutionProxy',
       message,
       ...data,
       timestamp: new Date().toISOString(),
-    }));
+    });
   }
 
   /**

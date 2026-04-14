@@ -1,6 +1,7 @@
 import { createPublicClient, http, type Hex } from 'viem';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev Agent Registration and Identity management.
@@ -51,7 +52,7 @@ export class IdentityClient {
         });
         const isRegistered = (agentId as bigint) > 0n;
         if (isRegistered) {
-          console.log(`[identity] ✅ Agent registered with ID: ${agentId}`);
+          logger.info({ module: 'identity', step: 'REGISTERED', agentId: agentId.toString() });
         }
         return isRegistered;
       } catch {

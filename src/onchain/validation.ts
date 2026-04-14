@@ -2,6 +2,7 @@ import { createWalletClient, createPublicClient, http, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { loadAgentMetadata } from '../logic/config.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev Client for interacting with the ValidationRegistry.
@@ -82,10 +83,10 @@ export class ValidationRegistryClient {
         timeout: Number(process.env.TX_CONFIRMATION_TIMEOUT) || 90000,
       });
 
-      console.log(`[validation] ✅ Heartbeat confirmed: ${hash}`);
+      logger.info({ module: 'validation', step: 'HEARTBEAT_CONFIRMED', hash });
       return hash;
     } catch (error) {
-      console.warn(`[validation] Failed to post attestation: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error({ module: 'validation', step: 'ATTESTATION_FAILED', error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }

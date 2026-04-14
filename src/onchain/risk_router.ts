@@ -3,6 +3,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import type { TradeIntent } from '../logic/types.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev RiskRouter integration layer.
@@ -250,7 +251,7 @@ export class RiskRouterClient {
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           if (attempt < 3) {
-            console.log(`[RiskRouter] Receipt not found, retry ${attempt}/3...`);
+            logger.warn({ module: 'RiskRouter', step: 'RETRY_RECEIPT', attempt });
             await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s between retries
           }
         }

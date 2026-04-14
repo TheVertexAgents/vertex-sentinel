@@ -17,6 +17,7 @@ import {
 import { validateEnv } from '../../logic/env.js';
 import { CriticalSecurityException } from '../../logic/errors.js';
 import { ZodError } from 'zod';
+import { logger } from '../../utils/logger.js';
 
 /**
  * @title Kraken MCP Server
@@ -78,11 +79,11 @@ export class KrakenMcpServer {
    * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
    */
   private log(event: string, data: Record<string, unknown>) {
-    console.error(JSON.stringify({
+    logger.error({
       event,
       ...data,
       timestamp: new Date().toISOString(),
-    }));
+    });
   }
 
   /**
@@ -400,11 +401,11 @@ export class KrakenMcpServer {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new KrakenMcpServer();
   server.run().catch((error: Error) => {
-    console.error(JSON.stringify({
+    logger.error({
       event: 'startup_error',
       error: error.message,
       timestamp: new Date().toISOString()
-    }));
+    });
     process.exit(1);
   });
 }

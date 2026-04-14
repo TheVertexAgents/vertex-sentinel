@@ -1,6 +1,7 @@
 import { createWalletClient, http, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev Client for interacting with the ReputationRegistry.
@@ -63,7 +64,7 @@ export class ReputationRegistryClient {
 
       return hash;
     } catch (error) {
-      console.warn(`[reputation] Failed to submit feedback: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error({ module: 'reputation', step: 'FEEDBACK_FAILED', error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }
