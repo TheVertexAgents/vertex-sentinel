@@ -1,4 +1,4 @@
-import { createPublicClient, http, parseAbi, formatEther } from 'viem';
+import { createPublicClient, http, parseAbi } from 'viem';
 import { hardhat, sepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Hex } from 'viem';
@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { CriticalSecurityException } from '../logic/errors.js';
+import { loadAgentMetadata } from '../logic/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -227,8 +228,10 @@ class ExecutionProxy {
     this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString() });
     
     try {
-      // Constitution Alignment: Unit conversion and symbol formatting
-      const amount = parseFloat(formatEther(volume));
+      const config = loadAgentMetadata();
+      // Constitution Alignment: Unit conversion and symbol formatting.
+      // Replace formatEther (10^18) with scaling factor based on config.usdScalingFactor.
+      const amount = Number(volume) / config.usdScalingFactor;
       const cleanSymbol = pair.replace('/', '');
 
       const result = await this.mcpClient.callTool({
@@ -261,6 +264,7 @@ class ExecutionProxy {
       });
 
     } catch (error: unknown) {
+      const config = loadAgentMetadata();
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, error: errorMessage });
 
@@ -268,7 +272,7 @@ class ExecutionProxy {
           traceId,
           agentId: this.agentAddress,
           pair,
-          volume: formatEther(volume),
+          volume: (Number(volume) / config.usdScalingFactor).toString(),
           krakenStatus: 'failed',
           error: errorMessage
       });

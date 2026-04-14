@@ -128,14 +128,20 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         name: 'get_ticker',
         arguments: { symbol: intent.pair }
       }) as { content: Array<{ type: string; text: string }> };
+
+      if (!tickerResponse.content || tickerResponse.content.length === 0) {
+        throw new Error('Empty ticker response from MCP');
+      }
+
       const ticker = JSON.parse(tickerResponse.content[0].text);
-      realPrice = parseFloat(ticker.c[0]); // Last trade price
-    } catch (e) {
-      // TODO: Implement Fail-Closed behavior. Remove hardcoded fallback.
-      // NOTE: This fallback was used to ensure execution during Kraken API instability 
-      // observed during the "Open Validation" phase of the hackathon.
-      console.warn('[AGENT_BRAIN] Failed to fetch real market price, using fallback (67000)');
-      realPrice = 67000;
+      if (!ticker.c || !ticker.c[0]) {
+        throw new Error('Invalid ticker data: missing last trade price (c[0])');
+      }
+
+      realPrice = parseFloat(ticker.c[0]);
+    } catch (e: any) {
+      // Fail-Closed: Remove hardcoded fallback.
+      throw new CriticalSecurityException('Fail-Closed: Failed to fetch real market price: ' + e.message);
     }
 
     tracker.recordTrade({
@@ -166,7 +172,8 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         BigInt(getAgentMetadata().agentId),
         checkpoint.checkpointHash as Hex,
         `Vertex Heartbeat: ${decision.reasoning}`,
-        privateKey
+        privateKey,
+        checkpoint.signature as Hex
       );
     }
 

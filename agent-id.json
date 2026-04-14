@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "agentId": 1,
   "usdScalingFactor": 100,
+  "targetValidationScore": 100,
   "defaultSlippageBps": 100,
   "defaultDeadlineOffset": 3600,
   "prismDefaultPrecision": 18

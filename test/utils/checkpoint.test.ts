@@ -12,6 +12,7 @@ describe('Checkpoint Utility Unit Tests', function () {
     version: "1.0.0",
     agentId: 1,
     usdScalingFactor: 100,
+    targetValidationScore: 100,
     defaultSlippageBps: 50n,
     defaultDeadlineOffset: 300,
     prismDefaultPrecision: 6
