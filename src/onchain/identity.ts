@@ -1,5 +1,6 @@
 import { createPublicClient, http, type Hex } from 'viem';
 import { sepolia, hardhat } from 'viem/chains';
+import { CriticalSecurityException } from '../logic/errors.js';
 
 /**
  * @dev Agent Registration and Identity management.
@@ -19,12 +20,9 @@ export class IdentityClient {
    * Tries multiple methods to support different AgentRegistry implementations.
    */
   async isAgentRegistered(agentAddress: Hex): Promise<boolean> {
-    // TODO: Remove registry bypass once the "Judge Bot" whitelisting is fully stable.
-    // NOTE: This was implemented as a temporary measure during the "Open Validation" 
-    // phase of the hackathon to avoid disruption from registry exploits.
-    if (this.registryAddress === '0x0000000000000000000000000000000000000000' || process.env.DEMO_MODE === 'true') {
-      console.warn(`[identity] Skipping registration check (DEMO_MODE=true or zero address)`);
-      return true;
+    // Fail-Closed: Remove registry bypass and zero-address guards.
+    if (this.registryAddress === '0x0000000000000000000000000000000000000000') {
+      throw new CriticalSecurityException('Fail-Closed: AgentRegistry address is uninitialized (zero address)');
     }
 
     try {
@@ -78,9 +76,8 @@ export class IdentityClient {
 
       return isRegistered as boolean;
     } catch (error) {
-      // Silently fail - registration check is non-critical
-      // RiskRouter will perform final authorization anyway
-      return false;
+      if (error instanceof CriticalSecurityException) throw error;
+      throw new CriticalSecurityException(`Fail-Closed: Registration check failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

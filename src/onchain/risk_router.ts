@@ -53,7 +53,7 @@ export class RiskRouterClient {
    */
   async getIntentNonce(agentId: bigint): Promise<bigint> {
     if (this.routerAddress === '0x0000000000000000000000000000000000000000') {
-      return 0n;
+      throw new CriticalSecurityException('Fail-Closed: RiskRouter address is uninitialized (zero address)');
     }
 
     try {
@@ -79,8 +79,8 @@ export class RiskRouterClient {
 
       return nonce as bigint;
     } catch (error) {
-      console.warn(`[RiskRouterClient] Failed to fetch nonce, using 0: ${error instanceof Error ? error.message : String(error)}`);
-      return 0n;
+      if (error instanceof CriticalSecurityException) throw error;
+      throw new CriticalSecurityException(`Fail-Closed: Failed to fetch nonce: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -146,10 +146,9 @@ export class RiskRouterClient {
     signature: Hex,
     privateKey: Hex
   ): Promise<{ success: boolean; transactionHash?: Hex; error?: string }> {
-    // Demo Mode Guard
-    if (this.routerAddress === '0x0000000000000000000000000000000000000000' || process.env.DEMO_MODE === 'true') {
-        console.warn(`[RiskRouterClient] Skipping on-chain submission (DEMO_MODE=true or zero address)`);
-        return { success: true };
+    // Fail-Closed: Remove zero-address and DEMO_MODE guards.
+    if (this.routerAddress === '0x0000000000000000000000000000000000000000') {
+        throw new CriticalSecurityException('Fail-Closed: RiskRouter address is uninitialized (zero address)');
     }
 
     try {
@@ -215,6 +214,7 @@ export class RiskRouterClient {
         transactionHash: txHash,
       };
     } catch (error) {
+      if (error instanceof CriticalSecurityException) throw error;
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

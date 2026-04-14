@@ -17,6 +17,11 @@ describe("Sentinel Full Loop Integration", function () {
     
     // We are simulating an actual fully live execution E2E
     process.env.NETWORK = 'local';
+    process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
+    process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    process.env.KRAKEN_API_KEY = 'test-kraken-key';
+    process.env.KRAKEN_SECRET = 'NOT_A_SECRET';
+    process.env.INFURA_KEY = 'test-infura';
     
     // 1. Validate Config
     const agentMetadata = loadAgentMetadata();

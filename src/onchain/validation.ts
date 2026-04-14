@@ -1,6 +1,7 @@
 import { createWalletClient, createPublicClient, http, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
+import { loadAgentMetadata } from '../logic/config.js';
 
 /**
  * @dev Client for interacting with the ValidationRegistry.
@@ -26,7 +27,8 @@ export class ValidationRegistryClient {
     agentId: bigint,
     checkpointHash: Hex,
     notes: string,
-    privateKey: Hex
+    privateKey: Hex,
+    proof: Hex = '0x'
   ): Promise<Hex | null> {
     if (this.registryAddress === '0x0000000000000000000000000000000000000000') {
       return null;
@@ -47,6 +49,8 @@ export class ValidationRegistryClient {
         transport: http(),
       });
 
+      const metadata = loadAgentMetadata();
+
       const hash = await walletClient.writeContract({
         address: this.registryAddress,
         abi: [
@@ -66,10 +70,9 @@ export class ValidationRegistryClient {
           },
         ],
         functionName: 'postAttestation',
-        // TODO: Replace hardcoded score (100) with dynamic validator logic.
-        // NOTE: This was strategically set to 100 during the hackathon to 
-        // counteract competitor zero-score exploits.
-        args: [agentId, checkpointHash, 100, 1, '0x', notes],
+        // Strategically set to config.targetValidationScore.
+        // proofType 1 corresponds to EIP-712.
+        args: [agentId, checkpointHash, metadata.targetValidationScore, 1, proof, notes],
       });
 
       // Wait for confirmation to prevent nonce collision with next transaction
