@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CriticalSecurityException } from './errors.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev Schema for environment variable validation.
@@ -30,5 +31,6 @@ export function validateEnv() {
     throw new CriticalSecurityException(`Environment validation failed: ${errorMessages}`);
   }
 
+  logger.info({ step: 'ENV_VALIDATED', message: 'Environment variables successfully validated.' });
   return result.data;
 }

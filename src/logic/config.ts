@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { CriticalSecurityException } from './errors.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * @dev Schema for agent metadata validation.
@@ -44,6 +45,7 @@ export function loadAgentMetadata(): AgentMetadata {
       throw new CriticalSecurityException(`Agent metadata validation failed: ${errorMessages}`);
     }
 
+    logger.info({ step: 'METADATA_LOADED', agentId: result.data.agentId, name: result.data.name });
     return result.data;
   } catch (error) {
     if (error instanceof CriticalSecurityException) throw error;

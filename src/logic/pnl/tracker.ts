@@ -1,5 +1,6 @@
 import { PnLCalculator } from './calculator.js';
 import { PnLTrackerConfig, Trade, Position, PnLMetrics, PnLSummary } from './types.js';
+import { logger } from '../../utils/logger.js';
 
 export class PnLTracker {
   private config: Required<PnLTrackerConfig>;
@@ -82,7 +83,7 @@ export class PnLTracker {
       );
       position.unrealizedPnL = result.netPnL;
     } catch (error) {
-      console.warn(`[PnLTracker] Failed to update unrealized PnL for ${pair}: `, error);
+      logger.warn({ module: 'PnLTracker', step: 'UNREALIZED_UPDATE_FAILED', pair, error: error instanceof Error ? error.message : String(error) });
     }
   }
 

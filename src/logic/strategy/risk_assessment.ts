@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger.js';
 import { genkit, z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { CriticalSecurityException } from '../errors.js';
@@ -51,11 +52,11 @@ export async function getMcpClient() {
   if (isConnecting) throw new Error('MCP connection already in progress');
 
   isConnecting = true;
-  console.log('[MCP_INITIALIZE] Connecting to Kraken MCP server...');
+  logger.info({ module: 'MCP_INITIALIZE', message: 'Connecting to Kraken MCP server...' });
 
   try {
     const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
-    console.log(`[MCP_INITIALIZE] Spawning MCP server from: ${serverPath}`);
+    logger.info({ module: 'MCP_INITIALIZE', step: 'SPAWN_SERVER', serverPath });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: ['--import', 'tsx', '--no-warnings', serverPath],
@@ -77,12 +78,12 @@ export async function getMcpClient() {
     ]);
 
     isConnecting = false;
-    console.log('[MCP_INITIALIZE] Connected successfully');
+    logger.info({ module: 'MCP_INITIALIZE', message: 'Connected successfully' });
     return mcpClient;
   } catch (err: any) {
     isConnecting = false;
     connectionFailed = true;
-    console.warn(`[MCP_INITIALIZE] Connection failed: ${err.message}`);
+    logger.error({ module: 'MCP_INITIALIZE', step: 'CONNECTION_FAILED', error: err.message });
     throw err;
   }
 }
@@ -113,11 +114,11 @@ async function callMcpTool(name: string, args: Record<string, any> = {}) {
  */
 export async function closeMcpClient() {
   if (mcpClient) {
-    console.log('[MCP_CLIENT] Closing connection...');
+    logger.info({ module: 'MCP_CLIENT', message: 'Closing connection...' });
     try {
       await mcpClient.close();
     } catch (err: any) {
-      console.warn(`[MCP_CLIENT] Error closing client: ${err.message}`);
+      logger.warn({ module: 'MCP_CLIENT', step: 'CLOSE_ERROR', error: err.message });
     }
     mcpClient = null;
   }
@@ -142,14 +143,14 @@ async function getSentiment(pair: string) {
     });
 
     if (aiResponse.output) {
-      console.log(`[SENTIMENT] Successfully fetched live sentiment for ${pair}`);
+      logger.info({ module: 'SENTIMENT', step: 'FETCH_SUCCESS', pair });
       return aiResponse.output;
     }
   } catch (err: any) {
     if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
-      console.warn(`[SENTIMENT] Service unavailable. Entering degraded mode for sentiment.`);
+      logger.warn({ module: 'SENTIMENT', message: 'Service unavailable. Entering degraded mode for sentiment.' });
     } else {
-      console.warn(`[SENTIMENT] Live sentiment API unreachable. Degraded mode active.`);
+      logger.warn({ module: 'SENTIMENT', message: 'Live sentiment API unreachable. Degraded mode active.' });
     }
   }
 
@@ -168,7 +169,7 @@ async function getSentiment(pair: string) {
  * Integrates Genkit AI reasoning with a manual bootstrap penalty model.
  */
 export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promise<TradeDecision> {
-  console.log(`[RISK_STRATEGY] Starting analysis for ${pair}...`);
+  logger.info({ module: 'RISK_STRATEGY', step: 'ANALYSIS_START', pair });
   try {
     // 1. Fetch Market Data
     const ticker = await callMcpTool('get_ticker', { symbol: pair }) as Ticker;
@@ -248,10 +249,10 @@ Output your response in valid JSON format:
       } catch (err: any) {
         attempts++;
         if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
-          console.warn(`[AI_RISK] 503 Error on attempt ${attempts}. Retrying...`);
+          logger.warn({ module: 'AI_RISK', step: 'RETRY_503', attempt: attempts });
           await new Promise(r => setTimeout(r, attempts * 1000));
         } else {
-          console.warn(`[AI_RISK] API failed: ${err.message}`);
+          logger.error({ module: 'AI_RISK', step: 'API_FAILED', error: err.message });
           break; // Don't retry on other errors
         }
       }
@@ -261,7 +262,7 @@ Output your response in valid JSON format:
       // TODO: Implement verifiable Fail-Closed state.
       // NOTE: This degraded mode was a strategic design choice during early hackathon 
       // phases to prevent AI downtime from causing competitive zero-score penalties.
-      console.warn("[AI_RISK] All AI attempts failed. Entering DEGRADED MODE (relying strictly on market data).");
+      logger.warn({ module: 'AI_RISK', message: 'All AI attempts failed. Entering DEGRADED MODE (relying strictly on market data).' });
       aiResult = {
         riskScore: 0, // Fallback to solely relying on manualPenalty
         marketRisk: 0,
@@ -308,7 +309,7 @@ Output your response in valid JSON format:
     if (error instanceof CriticalSecurityException) throw error;
 
     if (process.env.NETWORK !== 'sepolia') {
-      console.warn(`[risk_assessment] Risk assessment failed in local mode, using fallback. Error: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn({ module: 'RISK_ASSESSMENT', step: 'LOCAL_FALLBACK', error: error instanceof Error ? error.message : String(error) });
       return {
         action: 'HOLD',
         pair,

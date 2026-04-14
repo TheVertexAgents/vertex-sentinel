@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger.js';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { TradeIntent, Authorization } from './types.js';
@@ -94,13 +95,8 @@ function getTraceId(): string {
 async function getAssetResolution(pair: string) {
   // TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
   // Current placeholder used to support local development during Judge Bot whitelisting trials.
-  console.warn('[PRISM] Using placeholder resolution - real API integration pending');
-  console.log(JSON.stringify({
-    level: "INFO",
-    module: "PRISM",
-    message: `Resolving canonical metadata for ${pair}...`,
-    timestamp: new Date().toISOString()
-  }));
+  logger.warn({ module: 'PRISM', message: 'Using placeholder resolution - real API integration pending' });
+  logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair });
   return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
 }
 
@@ -161,13 +157,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // ✅ NEW: Automated Heartbeat Attestation to ValidationRegistry
     // Strategic: Always post 100 to counteract competitor zero-scores.
     if (checkpoint.checkpointHash) {
-      console.error(JSON.stringify({
-        level: "INFO",
-        step: "POSTING_HEARTBEAT",
-        TRACE_ID: traceId,
-        checkpointHash: checkpoint.checkpointHash,
-        timestamp: new Date().toISOString()
-      }));
+      logger.info({ step: 'POSTING_HEARTBEAT', traceId, checkpointHash: checkpoint.checkpointHash });
       await validationClient.postHeartbeat(
         BigInt(getAgentMetadata().agentId),
         checkpoint.checkpointHash as Hex,
@@ -185,17 +175,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     fs.writeFileSync(pnlLogPath, JSON.stringify(tracker.getSummary(), null, 2));
 
     // 6. Log Human-Readable Explanation (UX Alignment)
-    console.log(`\n${formatExplanation(decision)}\n`);
+    logger.info({ step: 'EXPLANATION', explanation: formatExplanation(decision) });
 
-    console.error(JSON.stringify({
-      level: "INFO",
-      step: "RISK_ASSESSMENT",
-      TRACE_ID: traceId,
-      pair: intent.pair,
-      score: decision.riskScore,
-      reason: decision.reasoning,
-      timestamp: new Date().toISOString()
-    }));
+    logger.info({ step: 'RISK_ASSESSMENT', traceId, pair: intent.pair, score: decision.riskScore, reason: decision.reasoning });
 
     if (decision.action === 'HOLD') {
        return { isAllowed: false, reason: `Risk too high or strategy HOLD: ${decision.reasoning}`, signature: '0x' };
@@ -208,13 +190,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
 
     if (!authResult.success) {
-      console.error(JSON.stringify({
-        level: "ERROR",
-        step: "RISKROUTER_AUTHORIZATION_FAILED",
-        TRACE_ID: traceId,
-        error: authResult.error,
-        timestamp: new Date().toISOString()
-      }));
+      logger.error({ step: 'RISKROUTER_AUTHORIZATION_FAILED', traceId, error: authResult.error });
       return { 
         isAllowed: false, 
         reason: `RiskRouter validation failed: ${authResult.error}`, 
@@ -255,7 +231,7 @@ let isRunning = true;
 let sleepResolve: ((value: unknown) => void) | null = null;
 
 async function shutdown() {
-  console.log(`\n[${new Date().toISOString()}] 🛑 Received shutdown signal. Initiating graceful shutdown...`);
+  logger.info({ step: 'SHUTDOWN_INITIATED', message: 'Received shutdown signal. Initiating graceful shutdown...' });
   isRunning = false;
   
   if (sleepResolve) {
@@ -265,7 +241,7 @@ async function shutdown() {
   // Force cleanup of MCP resources
   await closeMcpClient();
   
-  console.log(`[${new Date().toISOString()}] ✅ Agent shutdown complete.`);
+  logger.info({ step: 'SHUTDOWN_COMPLETE', message: 'Agent shutdown complete.' });
   process.exit(0);
 }
 
@@ -314,27 +290,27 @@ async function main() {
         deadline: BigInt(Math.floor(Date.now() / 1000) + getAgentMetadata().defaultDeadlineOffset)
       };
 
-      console.log(`\n[${new Date().toISOString()}] 📊 Analyzing ${selectedPair}...`);
+      logger.info({ step: 'ANALYSIS_START', pair: selectedPair });
       
       const result = await signIntent(intent, pk);
       
       if (result.isAllowed) {
         currentNonce++;
-        console.log(`✅ Intent #${currentNonce} submitted successfully`);
+        logger.info({ step: 'INTENT_SUBMITTED', nonce: currentNonce });
       } else {
-        console.log(`⚠️ Intent skipped: ${result.reason}`);
+        logger.warn({ step: 'INTENT_SKIPPED', reason: result.reason });
       }
 
     } catch (error: any) {
-      console.error(`❌ Trading cycle error: ${error.message}`);
+      logger.error({ step: 'CYCLE_ERROR', error: error.message });
       // Refresh nonce in case of desync
       currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
-      console.log(`🔄 Nonce refreshed to: ${currentNonce}`);
+      logger.info({ step: 'NONCE_REFRESHED', nonce: currentNonce });
     }
 
     // Wait for next trading cycle
     if (!isRunning) break;
-    console.log(`\n⏳ Next trade in ${TRADING_INTERVAL_MS / 1000} seconds...`);
+    logger.debug({ step: 'WAITING', interval: TRADING_INTERVAL_MS / 1000 });
     await new Promise(resolve => {
       sleepResolve = resolve;
       setTimeout(() => {
@@ -344,11 +320,11 @@ async function main() {
     });
   }
 
-  console.log(`\n[${new Date().toISOString()}] ✅ Agent shutdown complete.`);
+  logger.info({ step: 'SHUTDOWN_COMPLETE', message: 'Agent shutdown complete.' });
   process.exit(0);
 }
 
-console.log(`[${new Date().toISOString()}] 🚀 Agent brain script loading...`);
+logger.info({ step: 'SCRIPT_LOADING', message: 'Agent brain script loading...' });
 
 const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
                (process.argv[1] && (
@@ -357,13 +333,13 @@ const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
                ));
 
 if (isMain && process.env.NODE_ENV !== 'test') {
-  console.log(`[${new Date().toISOString()}] 🎯 Main entry point detected. Starting agent...`);
+  logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent...' });
   main().catch((err) => {
-    console.error(`❌ Main error:`, err);
+    logger.error({ step: 'MAIN_ERROR', error: err.message, stack: err.stack });
     process.exit(1);
   });
 } else {
-  console.log(`[${new Date().toISOString()}] ℹ Loaded as module (isMain=${isMain}, NODE_ENV=${process.env.NODE_ENV})`);
+  logger.info({ step: 'MODULE_LOADED', isMain, nodeEnv: process.env.NODE_ENV });
 }
 
 export { signIntent, getAssetResolution };
