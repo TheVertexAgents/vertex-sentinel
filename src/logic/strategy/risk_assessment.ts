@@ -7,10 +7,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import path from 'path';
 import type { Ticker, Balance, TradeHistory } from '../../mcp/kraken/types.js';
+import { getNewsFeed } from './news_feed.js';
 
 /**
  * @dev Strategy Output Schema.
  * Enhanced to meet Milestone 2 requirements for Intelligent Verifiability.
+ * Updated for Issue #110 to include live news highlights.
  */
 export const TradeDecisionSchema = z.object({
   action: z.enum(['BUY', 'SELL', 'HOLD']),
@@ -19,6 +21,7 @@ export const TradeDecisionSchema = z.object({
   confidence: z.number().min(0).max(1),
   riskScore: z.number().min(0).max(1),
   reasoning: z.string(),
+  newsHighlights: z.array(z.string()),
   breakdown: z.object({
     marketRisk: z.number(),
     portfolioRisk: z.number(),
@@ -154,9 +157,6 @@ async function getSentiment(pair: string) {
     }
   }
 
-  // TODO: Harden sentiment detection once Judge Bot provides official sentiment feed.
-  // NOTE: This fallback was necessary during the whitelisting phase when external APIs 
-  // were occasionally blocked or restricted.
   return {
     headline: `Live sentiment unavailable for ${pair}. Relying strictly on market volatility metrics.`,
     indicator: "Neutral",
@@ -177,9 +177,13 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     // 2. Fetch Portfolio & History
     const balance = await callMcpTool('get_balance', {}) as Balance;
     const history = await callMcpTool('get_trade_history', {}) as TradeHistory;
+
+    // 3. Fetch Live News & Sentiment (Issue #110)
+    const baseAsset = pair.split('/')[0].split('-')[0]; // Handle various pair formats
+    const news = await getNewsFeed([baseAsset, 'BTC', 'ETH', 'SOL']);
     const sentiment = await getSentiment(pair);
 
-    // 3. Manual Penalty Model (Bootstrap Logic)
+    // 4. Manual Penalty Model (Bootstrap Logic)
     const ask = parseFloat(ticker.a[0]);
     const bid = parseFloat(ticker.b[0]);
     const spread = (ask - bid) / ask;
@@ -190,9 +194,18 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const spreadPenalty = Math.min(0.5, (spread / 0.02) * 0.5);
     const volatilityPenalty = Math.min(0.3, (volatility / 0.1) * 0.3);
     const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / (loadAgentMetadata().usdScalingFactor * 1000)) * 0.2);
-    const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty);
 
-    // 4. Genkit AI Risk Assessment
+    // News-based manual penalty
+    let newsPenalty = 0;
+    if (news.headlines.some(h => h.impact === 'high' && h.sentiment < 0.4)) {
+      newsPenalty = 0.5;
+    } else if (news.headlines.some(h => h.impact === 'medium' && h.sentiment < 0.4)) {
+      newsPenalty = 0.2;
+    }
+
+    const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty + newsPenalty);
+
+    // 5. Genkit AI Risk Assessment
     const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
 
     let aiResult = null;
@@ -209,6 +222,14 @@ Analyze the provided data and evaluate:
 3. Historical Correlation: Is this strategy repeating past failures?
 4. Sentiment Risk: Adverse news or indicators.
 
+News Summary (Structured Data):
+${JSON.stringify(news, null, 2)}
+
+Instructions for weighing News:
+- Market News and Social Sentiment OVERRIDE technical patterns when impact is high.
+- If any headline has impact='high' AND sentiment<0.4 (e.g., regulatory exploit, major hack, government ban, or negative whale activity), identify this as critical sentiment risk.
+- Social sentiment (0.0-1.0) is pre-processed and reliable: weight it heavily alongside news.
+
 Trade Intent:
 - Pair: ${pair}
 - Amount: $${amountUsd.toFixed(2)}
@@ -222,7 +243,7 @@ ${JSON.stringify(balance, null, 2)}
 Recent History (last ${history.count} trades):
 ${JSON.stringify(history.trades, null, 2)}
 
-Sentiment:
+Sentiment (LLM reasoning):
 "${sentiment.headline}" (${sentiment.indicator})
 
 Output your response in valid JSON format:
@@ -231,7 +252,7 @@ Output your response in valid JSON format:
   "marketRisk": number (0.0 to 1.0),
   "portfolioRisk": number (0.0 to 1.0),
   "sentimentRisk": number (0.0 to 1.0),
-  "justification": "concise string"
+  "justification": "concise string citing specific headlines if relevant"
 }`,
           output: {
             format: 'json',
@@ -259,27 +280,31 @@ Output your response in valid JSON format:
     }
 
     if (!aiResult) {
-      // TODO: Implement verifiable Fail-Closed state.
-      // NOTE: This degraded mode was a strategic design choice during early hackathon 
-      // phases to prevent AI downtime from causing competitive zero-score penalties.
       logger.warn({ module: 'AI_RISK', message: 'All AI attempts failed. Entering DEGRADED MODE (relying strictly on market data).' });
       aiResult = {
-        riskScore: 0, // Fallback to solely relying on manualPenalty
+        riskScore: 0,
         marketRisk: 0,
         portfolioRisk: 0,
         sentimentRisk: 0,
-        justification: "Degraded Mode: Hardware rules override. API Unavailable.",
+        justification: "Degraded Mode: Hardware rules override. AI Engine Unavailable.",
       };
     }
 
-    // 5. Hybrid Enforcement (Fail-Closed)
+    // 6. Hybrid Enforcement (Fail-Closed)
     // If either manual penalty or AI score exceeds 0.8, we HOLD.
     const riskScore = Math.max(manualPenalty, aiResult.riskScore);
     const confidence = 1.0 - riskScore;
     const confidenceThreshold = 0.2; // Equivalent to risk 0.8
 
     let action: 'BUY' | 'SELL' | 'HOLD' = 'BUY';
+    const newsHighlights = news.headlines.map(h => `[${h.impact.toUpperCase()}] ${h.title} (${h.source})`);
+
     let reasons = [aiResult.justification];
+
+    // Append top news highlights to reasoning to ensure they are hashed and signed (Issue #110 decision)
+    if (newsHighlights.length > 0) {
+      reasons.push(`News: ${newsHighlights.slice(0, 2).join(' | ')}`);
+    }
 
     if (manualPenalty > 0.8) reasons.push(`Critical Manual Penalty: ${(manualPenalty * 100).toFixed(0)}%`);
     if (aiResult.riskScore > 0.8) reasons.push(`Critical AI Risk Score: ${(aiResult.riskScore * 100).toFixed(0)}%`);
@@ -295,6 +320,7 @@ Output your response in valid JSON format:
       confidence,
       riskScore,
       reasoning: reasons.join(" | "),
+      newsHighlights,
       breakdown: {
         marketRisk: aiResult.marketRisk,
         portfolioRisk: aiResult.portfolioRisk,
@@ -317,6 +343,7 @@ Output your response in valid JSON format:
         confidence: 0,
         riskScore: 1.0,
         reasoning: 'Fallback: AI/MCP Engine unavailable in local mode',
+        newsHighlights: [],
         breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
       };
     }

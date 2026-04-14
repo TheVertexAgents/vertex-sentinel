@@ -20,6 +20,7 @@ describe('Checkpoint PnL Integration', () => {
       confidence: 0.95,
       riskScore: 0.05,
       reasoning: 'Test reasoning',
+      newsHighlights: [],
       breakdown: {
         marketRisk: 0.01,
         portfolioRisk: 0.01,

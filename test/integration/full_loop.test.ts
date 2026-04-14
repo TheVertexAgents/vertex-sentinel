@@ -22,6 +22,7 @@ describe("Sentinel Full Loop Integration", function () {
     process.env.KRAKEN_API_KEY = 'test-kraken-key';
     process.env.KRAKEN_SECRET = 'NOT_A_SECRET';
     process.env.INFURA_KEY = 'test-infura';
+    process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
     
     // 1. Validate Config
     const agentMetadata = loadAgentMetadata();

@@ -25,6 +25,7 @@ describe('Checkpoint Utility Unit Tests', function () {
     confidence: 0.85,
     riskScore: 0.15,
     reasoning: "Test reasoning",
+    newsHighlights: [],
     breakdown: {
       marketRisk: 0.05,
       portfolioRisk: 0.02,

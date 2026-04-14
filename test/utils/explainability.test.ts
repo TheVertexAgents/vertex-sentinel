@@ -12,6 +12,7 @@ describe('Explainability Utility Unit Tests', () => {
             confidence: 0.9,
             riskScore: 0.1,
             reasoning: 'Stable market conditions',
+            newsHighlights: [],
             breakdown: {
                 marketRisk: 0.05,
                 portfolioRisk: 0.02,
@@ -41,6 +42,7 @@ describe('Explainability Utility Unit Tests', () => {
             confidence: 0.2,
             riskScore: 0.8,
             reasoning: 'High volatility detected',
+            newsHighlights: [],
             breakdown: {
                 marketRisk: 0.4,
                 portfolioRisk: 0.2,

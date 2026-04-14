@@ -16,6 +16,7 @@ describe('Execution Proxy Unit Tests', () => {
         process.env.KRAKEN_API_KEY = 'test-kraken-key';
         process.env.KRAKEN_SECRET = 'NOT_A_SECRET';
         process.env.INFURA_KEY = 'test-infura';
+        process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
         process.env.NETWORK = 'local';
 
         if (fs.existsSync(auditLogPath)) {
