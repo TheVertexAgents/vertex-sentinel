@@ -10,6 +10,6 @@ secret:
     - "test"
     - "scripts"
   ignore_known_secrets: true
-  ignored_hashes:
+  ignore_hashes:
     - 430da963a2cbc3cf94121a098db39120826fd3d37c210bc8d0357fa6d77780de
     - 94f9bc59136fa5e2b217da7a442fb22cdbb0de975ef8d6835ead1edfada6bd9f
