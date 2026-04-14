@@ -5,7 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import ExecutionProxy from '../../src/execution/proxy.js';
 
-describe('Execution Proxy Unit Tests', () => {
+describe('Execution Proxy Unit Tests', function () {
+    this.timeout(30000); // 30s timeout for binary execution
     let proxy: any;
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
     const originalEnv = { ...process.env };
@@ -14,7 +15,7 @@ describe('Execution Proxy Unit Tests', () => {
         process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
         process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
         process.env.KRAKEN_API_KEY = 'test-kraken-key';
-        process.env.KRAKEN_SECRET = 'NOT_A_SECRET';
+        process.env.KRAKEN_SECRET = 'ZmFrZS1zZWNyZXQtZm9yLXRlc3Rpbmc=';
         process.env.INFURA_KEY = 'test-infura';
         process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
         process.env.NETWORK = 'local';
@@ -55,7 +56,7 @@ describe('Execution Proxy Unit Tests', () => {
         }
     });
 
-    it('should attempt real MCP loopback execution for trade', async () => {
+    it('should attempt real MCP loopback execution for trade', async function () {
         // Use real loopback to comply with validation (no mocks)
         const { KrakenMcpServer } = await import('../../src/mcp/kraken/index.js');
         const mcpServer = new KrakenMcpServer();
