@@ -20,7 +20,7 @@ describe("Sentinel Full Loop Integration", function () {
     process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
     process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
     process.env.KRAKEN_API_KEY = 'test-kraken-key';
-    process.env.KRAKEN_SECRET = 'NOT_A_SECRET';
+    process.env.KRAKEN_SECRET = 'test-secret-value';
     process.env.INFURA_KEY = 'test-infura';
     process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
     
