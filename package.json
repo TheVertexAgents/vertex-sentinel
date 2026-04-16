@@ -52,6 +52,7 @@
     "dotenv": "^17.3.1",
     "firebase-admin": "^13.7.0",
     "genkit": "^1.31.0",
+    "js-yaml": "^4.1.1",
     "serve": "^14.2.6",
     "sinon": "^21.0.3",
     "ts-node": "^10.9.2",

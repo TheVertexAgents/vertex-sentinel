@@ -31,7 +31,7 @@ export class IdentityClient {
 
       const publicClient = createPublicClient({
         chain: chain,
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       // Try method 1: walletToAgentId (shared hackathon registry)
