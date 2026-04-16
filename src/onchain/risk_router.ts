@@ -60,7 +60,7 @@ export class RiskRouterClient {
     try {
       const publicClient = createPublicClient({
         chain: this.getChain(),
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const nonce = await publicClient.readContract({
@@ -94,7 +94,7 @@ export class RiskRouterClient {
       const client = createWalletClient({
         account,
         chain: this.getChain(),
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const { domain, types } = this.getTypedData();
@@ -159,7 +159,7 @@ export class RiskRouterClient {
       const walletClient = createWalletClient({
         account,
         chain,
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const RISK_ROUTER_ABI = [
@@ -235,7 +235,7 @@ export class RiskRouterClient {
       const chain = this.getChain();
       const publicClient = createPublicClient({
         chain,
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       // Retry up to 3 times with increasing timeouts

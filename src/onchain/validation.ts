@@ -42,12 +42,12 @@ export class ValidationRegistryClient {
       const walletClient = createWalletClient({
         account,
         chain,
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const publicClient = createPublicClient({
         chain,
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const metadata = loadAgentMetadata();
