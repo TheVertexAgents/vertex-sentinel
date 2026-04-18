@@ -38,7 +38,7 @@ jobs:
           GOOGLE_GENAI_API_KEY: "mock_google_key"
           KRAKEN_API_KEY: "mock_kraken_key"
           KRAKEN_SECRET: "mock_kraken_secret"
-        run: npx tsx -e 'import { validateEnv } from "./src/logic/env.js"; validateEnv();'
+        run: npx tsx scripts/check_env.ts
         continue-on-error: false
 
       - name: Execute Sepolia Deployment script
