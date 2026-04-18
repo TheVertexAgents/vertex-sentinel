@@ -1,15 +1,21 @@
 version: 2
 secret:
-  ignored_paths:
+  ignored-paths:
     - ".git"
     - "node_modules"
     - "dist"
     - "build"
     - "coverage"
     - ".next"
-    - "test"
-    - "scripts"
-  ignore_known_secrets: true
-  ignore_hashes:
-    - 430da963a2cbc3cf94121a098db39120826fd3d37c210bc8d0357fa6d77780de
-    - 94f9bc59136fa5e2b217da7a442fb22cdbb0de975ef8d6835ead1edfada6bd9f
+    - "test/**"
+    - "scripts/**"
+  ignore-known-secrets: true
+  ignored-matches:
+    - name: "Mock Secret for Testing"
+      match: "ZmFrZS1zZWNyZXQtZm9yLXRlc3Rpbmc="
+    - name: "Detected Secret SHA 1"
+      match: "430da963a2cbc3cf94121a098db39120826fd3d37c210bc8d0357fa6d77780de"
+    - name: "Detected Secret SHA 2"
+      match: "94f9bc59136fa5e2b217da7a442fb22cdbb0de975ef8d6835ead1edfada6bd9f"
+    - name: "Detected Secret SHA 3"
+      match: "5f38141917fde9f1c2ef64d5b8a7609a57f2034530ce4cad4d21eddd77864326"
