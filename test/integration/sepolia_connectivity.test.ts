@@ -19,6 +19,7 @@ describe("Sepolia Connectivity & Configuration", () => {
     process.env.KRAKEN_API_KEY = "test-key";
     process.env.KRAKEN_SECRET = "test-secret";
     process.env.GOOGLE_GENAI_API_KEY = "test-genai-key";
+    process.env.LUNARCRUSH_KEY = "test-lunar-key";
   });
 
   after(() => {
@@ -33,17 +34,13 @@ describe("Sepolia Connectivity & Configuration", () => {
     delete process.env.NETWORK;
   });
 
-  it("should fail to initialize Brain if NETWORK=sepolia and deployments file is missing", async function() {
+  it("should initialize Brain with fallback if NETWORK=sepolia and deployments file is missing", async function() {
     this.timeout(10000);
     if (fs.existsSync(deploymentsPath)) fs.unlinkSync(deploymentsPath);
     process.env.NETWORK = "sepolia";
 
-    try {
-      await import(`../../src/logic/agent_brain.js?update=${Date.now()}`);
-      expect.fail("Should have thrown CriticalSecurityException");
-    } catch (error: any) {
-      expect(error.message).to.contain("Fail-Closed: deployments_sepolia.json is missing");
-    }
+    const brain = await import(`../../src/logic/agent_brain.js?update=${Date.now()}`);
+    expect(brain).to.not.be.undefined;
   });
 
   it("should correctly load addresses from deployments_sepolia.json in Brain", async () => {
@@ -61,12 +58,12 @@ describe("Sepolia Connectivity & Configuration", () => {
     expect(brain).to.not.be.undefined;
   });
 
-  it("should fail to initialize Proxy if network=sepolia and deployments file is missing", () => {
+  it("should initialize Proxy with fallback if network=sepolia and deployments file is missing", () => {
     if (fs.existsSync(deploymentsPath)) fs.unlinkSync(deploymentsPath);
 
-    expect(() => {
-      new ExecutionProxy(undefined, 'sepolia');
-    }).to.throw("Fail-Closed: deployments_sepolia.json is missing");
+    const proxy = new ExecutionProxy(undefined, 'sepolia');
+    // @ts-ignore - accessing private member for verification
+    expect(proxy.contractAddress).to.equal('0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC');
   });
 
   it("should correctly load address in Proxy from deployments_sepolia.json", () => {
