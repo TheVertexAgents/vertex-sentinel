@@ -41,4 +41,5 @@ jobs:
           KRAKEN_API_KEY: 'mock-key'
           KRAKEN_SECRET: 'mock-secret'
           INFURA_KEY: 'mock-key'
+          LUNARCRUSH_KEY: 'mock-key'
           NODE_ENV: 'test'
