@@ -60,8 +60,11 @@ const HACKATHON_VAULT_ABI = [
 ] as const;
 
 async function main() {
-  const { viem } = hre;
-  const [operatorWallet] = await viem.getWalletClients();
+  const walletClients = await viem.getWalletClients();
+  if (walletClients.length === 0) {
+      throw new Error("No wallet clients found. Check AGENT_PRIVATE_KEY and Hardhat configuration.");
+  }
+  const [operatorWallet] = walletClients;
   const publicClient = await viem.getPublicClient();
 
   logger.info(`--- Vertex Sentinel Onboarding (Sepolia) ---`);
@@ -169,6 +172,11 @@ main()
   .then(() => process.exit(0))
   .catch((error) => {
     logger.error("--- SCRIPT FAILED ---");
-    logger.error("Full Error Object:", util.inspect(error, { depth: null, colors: true }));
+    if (error instanceof Error) {
+        logger.error(`Error Message: ${error.message}`);
+        logger.error(`Error Stack: ${error.stack}`);
+    } else {
+        logger.error("Full Error Object:", util.inspect(error, { depth: null, colors: true }));
+    }
     process.exit(1);
   });
