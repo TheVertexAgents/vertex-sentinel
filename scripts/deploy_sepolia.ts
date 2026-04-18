@@ -39,6 +39,20 @@ const AGENT_REGISTRY_ABI = [
     stateMutability: "view",
     inputs: [{ name: "agentId", type: "uint256" }],
     outputs: [{ name: "registered", type: "bool" }]
+  },
+  {
+    name: "isRegisteredAgent",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "agentWallet", type: "address" }],
+    outputs: [{ name: "registered", type: "bool" }]
+  },
+  {
+    name: "walletToAgentId",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "agentWallet", type: "address" }],
+    outputs: [{ name: "agentId", type: "uint256" }]
   }
 ] as const;
 
@@ -93,36 +107,64 @@ async function main() {
 
   let agentIdStr: string = deployments.agentId;
 
-  // 3. Register Agent if not ID found
+  // 3. Register Agent if not found locally
   if (agentIdStr && agentIdStr !== "PENDING_VERIFICATION") {
     logger.info(`Agent already registered locally with ID: ${agentIdStr}`);
   } else {
-    logger.info(`Registering agent "${process.env.AGENT_NAME || 'Vertex Sentinel Layer'}"...`);
-    
-    const hash = await operatorWallet.writeContract({
-      address: SHARED_CONFIG.agentRegistry as Hex,
-      abi: AGENT_REGISTRY_ABI,
-      functionName: "register",
-      args: [
-        agentAddress,
-        process.env.AGENT_NAME || "Vertex Sentinel Layer",
-        "A verifiable risk-management layer for autonomous AI agents.",
-        ["trading", "risk-management", "eip712-signing"],
-        "https://vertex-agents.com/metadata.json"
-      ]
+    // Check on-chain registration before attempting register()
+    const isRegisteredOnChain = await publicClient.readContract({
+        address: SHARED_CONFIG.agentRegistry as Hex,
+        abi: AGENT_REGISTRY_ABI,
+        functionName: 'isRegisteredAgent',
+        args: [agentAddress]
     });
 
-    logger.info(`Registration transaction sent: ${hash}`);
-    logger.info(`Waiting for confirmation...`);
-    
-    await publicClient.waitForTransactionReceipt({ hash });
-    
-    logger.info(`--- SUCCESS ---`);
-    logger.info(`Agent Registered! PLEASE PARSE your agentId from Etherscan logs:`);
-    logger.info(`https://sepolia.etherscan.io/tx/${hash}`);
-    logger.info(`Then update agentId in deployments_sepolia.json`);
-    
-    agentIdStr = "PENDING_VERIFICATION"; 
+    if (isRegisteredOnChain) {
+        const onChainId = await publicClient.readContract({
+            address: SHARED_CONFIG.agentRegistry as Hex,
+            abi: AGENT_REGISTRY_ABI,
+            functionName: 'walletToAgentId',
+            args: [agentAddress]
+        }) as bigint;
+        
+        agentIdStr = onChainId.toString();
+        logger.info(`Agent already registered on-chain with ID: ${agentIdStr}. Syncing local deployments_sepolia.json.`);
+        
+        fs.writeFileSync(deploymentsPath, JSON.stringify({ agentId: agentIdStr }, null, 2));
+    } else {
+        logger.info(`Registering agent "${process.env.AGENT_NAME || 'Vertex Sentinel Layer'}"...`);
+        
+        const hash = await operatorWallet.writeContract({
+            address: SHARED_CONFIG.agentRegistry as Hex,
+            abi: AGENT_REGISTRY_ABI,
+            functionName: "register",
+            args: [
+                agentAddress,
+                process.env.AGENT_NAME || "Vertex Sentinel Layer",
+                "A verifiable risk-management layer for autonomous AI agents.",
+                ["trading", "risk-management", "eip712-signing"],
+                process.env.AGENT_METADATA_URI || "https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"
+            ]
+        });
+
+        logger.info(`Registration transaction sent: ${hash}`);
+        logger.info(`Waiting for confirmation...`);
+        
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        
+        // Extract AgentId from logs (Topic 1 of AgentRegistered event)
+        const logs = receipt.logs;
+        const log = logs.find(l => l.address.toLowerCase() === SHARED_CONFIG.agentRegistry.toLowerCase());
+        if (log && log.topics[1]) {
+            agentIdStr = BigInt(log.topics[1]).toString();
+            logger.info(`Agent successfully registered! New Agent ID: ${agentIdStr}`);
+        } else {
+            logger.warn("Could not parse Agent ID from logs. Setting to PENDING_VERIFICATION.");
+            agentIdStr = "PENDING_VERIFICATION";
+        }
+
+        fs.writeFileSync(deploymentsPath, JSON.stringify({ agentId: agentIdStr }, null, 2));
+    }
   }
 
   // 4. Claim Allocation

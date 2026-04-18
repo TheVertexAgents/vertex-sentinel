@@ -38,6 +38,7 @@ jobs:
           GOOGLE_GENAI_API_KEY: "mock_google_key"
           KRAKEN_API_KEY: "mock_kraken_key"
           KRAKEN_SECRET: "mock_kraken_secret"
+          AGENT_METADATA_URI: "https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"
         run: npx tsx scripts/check_env.ts
         continue-on-error: false
 
@@ -51,5 +52,6 @@ jobs:
           KRAKEN_API_KEY: "mock_kraken_key"
           KRAKEN_SECRET: "mock_kraken_secret"
           RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          AGENT_METADATA_URI: "https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"
           NODE_OPTIONS: "--import tsx --no-warnings"
         run: npx hardhat run scripts/deploy_sepolia.ts --network sepolia
