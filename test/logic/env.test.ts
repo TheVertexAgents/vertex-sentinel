@@ -15,18 +15,17 @@ describe('Environment Validation Unit Tests', () => {
         delete process.env.KRAKEN_API_KEY;
         delete process.env.KRAKEN_SECRET;
         delete process.env.INFURA_KEY;
-        delete process.env.LUNARCRUSH_KEY;
 
         expect(() => validateEnv()).to.throw(/Environment validation failed/);
     });
 
-    it('should pass if all required variables are present', () => {
+    it('should pass if all required variables are present (even without LUNARCRUSH_KEY)', () => {
         process.env.GOOGLE_GENAI_API_KEY = 'test';
         process.env.AGENT_PRIVATE_KEY = '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
         process.env.KRAKEN_API_KEY = 'test';
         process.env.KRAKEN_SECRET = 'test';
         process.env.INFURA_KEY = 'test';
-        process.env.LUNARCRUSH_KEY = 'test';
+        delete process.env.LUNARCRUSH_KEY;
 
         expect(() => validateEnv()).to.not.throw();
     });

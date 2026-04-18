@@ -27,7 +27,7 @@ module.exports = {
       url: "http://127.0.0.1:8545",
     },
     sepolia: {
-      url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
+      url: process.env.RPC_URL || `https://sepolia.infura.io/v3/${INFURA_KEY}`,
       accounts: AGENT_PRIVATE_KEY ? [AGENT_PRIVATE_KEY] : [],
     },
   },

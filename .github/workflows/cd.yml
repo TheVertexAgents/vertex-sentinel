@@ -35,7 +35,8 @@ jobs:
 
       - name: Execute Sepolia Deployment script
         env:
-          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          AGENT_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          INFURA_KEY: ${{ secrets.INFURA_KEY }}
           RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           NODE_OPTIONS: "--loader ts-node/esm --no-warnings"
         run: npx hardhat run scripts/deploy_sepolia.ts --network sepolia
