@@ -60,6 +60,7 @@ const HACKATHON_VAULT_ABI = [
 ] as const;
 
 async function main() {
+  const { viem } = hre;
   const walletClients = await viem.getWalletClients();
   if (walletClients.length === 0) {
       throw new Error("No wallet clients found. Check AGENT_PRIVATE_KEY and Hardhat configuration.");
