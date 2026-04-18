@@ -84,9 +84,9 @@
                 <p class="text-gray-400 mt-2 font-medium tracking-wide">VERIFIABLE ON-CHAIN EXECUTION LOOP</p>
             </div>
             <div class="flex flex-wrap gap-4 items-center">
-                <div class="flex items-center gap-3 glass px-5 py-2.5 text-xs font-semibold uppercase tracking-widest border-emerald/20">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald animate-pulse-emerald"></span>
-                    <span class="text-emerald">Fail-Closed Active</span>
+                <div id="fail-closed-badge" class="flex items-center gap-3 glass px-5 py-2.5 text-xs font-semibold uppercase tracking-widest border-emerald/20">
+                    <span id="fail-closed-dot" class="w-2.5 h-2.5 rounded-full bg-emerald animate-pulse-emerald"></span>
+                    <span id="fail-closed-text" class="text-emerald">Fail-Closed Active</span>
                 </div>
                 <button id="sync-btn" class="glass px-8 py-2.5 hover:bg-white/10 transition-all font-bold flex items-center gap-3 border-cyan/30 text-cyan active:scale-95">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -140,8 +140,8 @@
             <div class="glass p-8 flex flex-col justify-between min-h-[140px]">
                 <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mb-4">System Status</p>
                 <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-emerald"></span>
-                    <p class="text-3xl font-bold text-emerald uppercase tracking-tight">Online</p>
+                    <span id="status-indicator" class="w-3 h-3 rounded-full bg-emerald"></span>
+                    <p id="status-text" class="text-3xl font-bold text-emerald uppercase tracking-tight">Online</p>
                 </div>
             </div>
         </div>
@@ -196,7 +196,10 @@
     <script>
         async function fetchLogs() {
             try {
-                const response = await fetch('../logs/audit.json');
+                const response = await fetch('/logs/audit.json');
+                if (!response.ok) {
+                    throw new Error('Audit log not found');
+                }
                 const text = await response.text();
                 const lines = text.trim().split('\n').filter(l => l.length > 0);
 
@@ -209,14 +212,45 @@
                 // or keep them separate if they are checkpoints
                 const entries = lines.map(l => JSON.parse(l)).reverse();
                 const checkpoints = entries.filter(e => e.message && e.signature);
+                const limitedCheckpoints = checkpoints.slice(0, 100);
+
+                // Update Status Indicator
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                if (entries.length > 0) {
+                    const lastEntry = entries[0];
+                    const lastTs = lastEntry.timestamp ? new Date(lastEntry.timestamp).getTime() :
+                                  (lastEntry.message && lastEntry.message.timestamp ? parseInt(lastEntry.message.timestamp) * 1000 : 0);
+                    const diffMins = (Date.now() - lastTs) / 60000;
+
+                    if (diffMins > 10) {
+                        statusIndicator.className = 'w-3 h-3 rounded-full bg-amber';
+                        statusText.className = 'text-3xl font-bold text-amber uppercase tracking-tight';
+                        statusText.textContent = 'Idle';
+                    } else {
+                        statusIndicator.className = 'w-3 h-3 rounded-full bg-emerald';
+                        statusText.className = 'text-3xl font-bold text-emerald uppercase tracking-tight';
+                        statusText.textContent = 'Online';
+                    }
+                } else {
+                    statusIndicator.className = 'w-3 h-3 rounded-full bg-crimson';
+                    statusText.className = 'text-3xl font-bold text-crimson uppercase tracking-tight';
+                    statusText.textContent = 'Offline';
+                }
 
                 // Latest PnL Metrics
-                if (checkpoints.length > 0 && checkpoints[0].pnl) {
-                    const pnl = checkpoints[0].pnl;
+                const latestCheckpointWithPnl = checkpoints.find(c => c.pnl);
+                if (latestCheckpointWithPnl) {
+                    const pnl = latestCheckpointWithPnl.pnl;
                     updatePnLStat('stat-total-pnl', pnl.totalPnL);
                     updatePnLStat('stat-realized-pnl', pnl.realizedPnL);
                     updatePnLStat('stat-unrealized-pnl', pnl.unrealizedPnL);
                     document.getElementById('stat-roi').textContent = pnl.roiPercent.toFixed(2) + '%';
+                } else {
+                    document.getElementById('stat-total-pnl').textContent = '$0.00';
+                    document.getElementById('stat-realized-pnl').textContent = '$0.00';
+                    document.getElementById('stat-unrealized-pnl').textContent = '$0.00';
+                    document.getElementById('stat-roi').textContent = '0.00%';
                 }
 
                 // Update Stats
@@ -225,7 +259,7 @@
                 document.getElementById('stat-rejections').textContent = entries.filter(e => e.action === 'HOLD' || (e.message && e.message.action === 'HOLD')).length;
 
                 // Render Grid (Top 3)
-                checkpoints.slice(0, 3).forEach((check, idx) => {
+                limitedCheckpoints.slice(0, 3).forEach((check, idx) => {
                     const msg = check.message;
                     const date = new Date(parseInt(msg.timestamp) * 1000).toLocaleTimeString();
                     const amount = (parseFloat(msg.amountUsdScaled) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -234,39 +268,54 @@
 
                     const card = document.createElement('div');
                     card.className = "glass p-8 relative overflow-hidden group";
-                    card.innerHTML = `
-                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+
+                    const topDiv = document.createElement('div');
+                    topDiv.className = "flex justify-between items-start mb-6";
+                    topDiv.innerHTML = `
+                        <span class="bg-white/5 px-3 py-1 rounded text-[10px] font-bold text-gray-400 uppercase tracking-tighter">#${checkpoints.length - idx}</span>
+                        <span class="flex items-center gap-1.5 text-[10px] font-bold text-cyan uppercase tracking-widest">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                            Verified
+                        </span>
+                    `;
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = "space-y-4";
+
+                    const intentDiv = document.createElement('div');
+                    intentDiv.innerHTML = `<p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Trade Intent</p>`;
+                    const intentAction = document.createElement('p');
+                    intentAction.className = `text-2xl font-bold ${actionColor} tracking-tight`;
+                    intentAction.textContent = `${msg.action} ${msg.pair}`;
+                    intentDiv.appendChild(intentAction);
+
+                    const statsDiv = document.createElement('div');
+                    statsDiv.className = "grid grid-cols-2 gap-4 border-t border-white/5 pt-4";
+                    statsDiv.innerHTML = `
+                        <div>
+                            <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Volume</p>
+                            <p class="font-bold text-sm mono">${amount}</p>
                         </div>
-                        <div class="flex justify-between items-start mb-6">
-                            <span class="bg-white/5 px-3 py-1 rounded text-[10px] font-bold text-gray-400 uppercase tracking-tighter">#${checkpoints.length - idx}</span>
-                            <span class="flex items-center gap-1.5 text-[10px] font-bold text-cyan uppercase tracking-widest">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
-                                Verified
-                            </span>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Trade Intent</p>
-                                <p class="text-2xl font-bold ${actionColor} tracking-tight">${msg.action} ${msg.pair}</p>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
-                                <div>
-                                    <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Volume</p>
-                                    <p class="font-bold text-sm mono">${amount}</p>
-                                </div>
-                                <div>
-                                    <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Confidence</p>
-                                    <p class="font-bold text-sm mono text-cyan">${confidence}</p>
-                                </div>
-                            </div>
+                        <div>
+                            <p class="text-gray-600 text-[10px] font-bold uppercase mb-0.5">Confidence</p>
+                            <p class="font-bold text-sm mono text-cyan">${confidence}</p>
                         </div>
                     `;
+
+                    contentDiv.appendChild(intentDiv);
+                    contentDiv.appendChild(statsDiv);
+
+                    card.innerHTML = `<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                             <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>`;
+                    card.appendChild(topDiv);
+                    card.appendChild(contentDiv);
+
                     recordsGrid.appendChild(card);
                 });
 
                 // Render Table
-                checkpoints.forEach(check => {
+                limitedCheckpoints.forEach(check => {
                     const msg = check.message;
                     const date = new Date(parseInt(msg.timestamp) * 1000).toLocaleString();
                     const amount = (parseFloat(msg.amountUsdScaled) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -280,26 +329,51 @@
                     const row = document.createElement('tr');
                     row.className = "border-b border-white/5 hover:bg-white/5 transition-colors group";
 
-                    row.innerHTML = `
-                        <td class="px-8 py-5 text-gray-500 mono text-xs">${date}</td>
-                        <td class="px-8 py-5 font-bold ${actionClass} uppercase tracking-tighter">${msg.action}</td>
-                        <td class="px-8 py-5 font-medium mono text-gray-300">${msg.pair}</td>
-                        <td class="px-8 py-5 text-right font-bold mono">${amount}</td>
-                        <td class="px-8 py-5 text-right font-bold mono ${check.pnl && check.pnl.totalPnL >= 0 ? 'text-emerald' : 'text-crimson'}">${pnlContribution}</td>
-                        <td class="px-8 py-5 text-center">
-                            <span class="inline-flex items-center px-2 py-1 rounded bg-cyan/10 text-cyan text-[10px] font-bold tracking-widest">
-                                EIP-712
-                            </span>
-                        </td>
-                        <td class="px-8 py-5 text-gray-400 font-medium max-w-xs truncate" title="${check.reasoning}">
-                            ${check.reasoning}
-                        </td>
-                    `;
+                    const timestampCell = document.createElement('td');
+                    timestampCell.className = "px-8 py-5 text-gray-500 mono text-xs";
+                    timestampCell.textContent = date;
+
+                    const actionCell = document.createElement('td');
+                    actionCell.className = `px-8 py-5 font-bold ${actionClass} uppercase tracking-tighter`;
+                    actionCell.textContent = msg.action;
+
+                    const pairCell = document.createElement('td');
+                    pairCell.className = "px-8 py-5 font-medium mono text-gray-300";
+                    pairCell.textContent = msg.pair;
+
+                    const amountCell = document.createElement('td');
+                    amountCell.className = "px-8 py-5 text-right font-bold mono";
+                    amountCell.textContent = amount;
+
+                    const pnlCell = document.createElement('td');
+                    pnlCell.className = `px-8 py-5 text-right font-bold mono ${check.pnl && check.pnl.totalPnL >= 0 ? 'text-emerald' : 'text-crimson'}`;
+                    pnlCell.textContent = pnlContribution;
+
+                    const integrityCell = document.createElement('td');
+                    integrityCell.className = "px-8 py-5 text-center";
+                    integrityCell.innerHTML = `<span class="inline-flex items-center px-2 py-1 rounded bg-cyan/10 text-cyan text-[10px] font-bold tracking-widest">EIP-712</span>`;
+
+                    const reasoningCell = document.createElement('td');
+                    reasoningCell.className = "px-8 py-5 text-gray-400 font-medium max-w-xs truncate";
+                    reasoningCell.textContent = check.reasoning;
+                    reasoningCell.title = check.reasoning;
+
+                    row.appendChild(timestampCell);
+                    row.appendChild(actionCell);
+                    row.appendChild(pairCell);
+                    row.appendChild(amountCell);
+                    row.appendChild(pnlCell);
+                    row.appendChild(integrityCell);
+                    row.appendChild(reasoningCell);
+
                     logBody.appendChild(row);
                 });
 
             } catch (error) {
                 console.error('Failed to fetch logs:', error);
+                document.getElementById('records-grid').innerHTML = '<div class="glass p-8 col-span-full text-center text-gray-500 italic">Audit log empty or unavailable.</div>';
+                document.querySelector('.text-emerald').textContent = 'Offline';
+                document.querySelector('.bg-emerald').className = 'w-3 h-3 rounded-full bg-crimson';
             }
         }
 

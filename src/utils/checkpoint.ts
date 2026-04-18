@@ -4,6 +4,7 @@ import { sepolia } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import type { TradeDecision } from '../logic/strategy/risk_assessment.js';
 import type { AgentMetadata } from '../logic/config.js';
+import type { PnLMetrics } from '../logic/pnl/types.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -46,7 +47,7 @@ export async function createSignedCheckpoint(
   decision: TradeDecision,
   privateKey: string,
   chainId: number = 11155111,
-  pnl?: any
+  pnl?: PnLMetrics
 ): Promise<SignedCheckpoint> {
     if (!privateKey) {
       throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint. Check your environment configuration.");
@@ -97,7 +98,7 @@ export async function createSignedCheckpoint(
       signature,
       checkpointHash,
       reasoning: decision.reasoning,
-      pnl: pnl
+      pnl: pnl || null
     };
 
     // Save to audit log
