@@ -53,14 +53,23 @@ function getDeploymentConfig() {
   const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
 
   if (process.env.NETWORK === 'sepolia') {
-    if (!fs.existsSync(deploymentsPath)) {
-      throw new CriticalSecurityException('Fail-Closed: deployments_sepolia.json is missing but NETWORK is set to sepolia');
+    if (fs.existsSync(deploymentsPath)) {
+      try {
+        return JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+      } catch (error: any) {
+        throw new CriticalSecurityException(`Fail-Closed: Failed to parse deployments_sepolia.json: ${error.message}`);
+      }
     }
-    try {
-      return JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
-    } catch (error: any) {
-      throw new CriticalSecurityException(`Fail-Closed: Failed to parse deployments_sepolia.json: ${error.message}`);
-    }
+    // Strategic Fallback: Official Hackathon Addresses
+    return {
+      network: 'sepolia',
+      chainId: 11155111,
+      agentRegistry: '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3',
+      riskRouter: '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC',
+      reputationRegistry: '0x423a9904e39537a9997fbaF0f220d79D7d545763',
+      validationRegistry: '0x92bF63E5C7Ac6980f237a7164Ab413BE226187F1',
+      hackathonVault: '0x0E7CD8ef9743FEcf94f9103033a044caBD45fC90'
+    };
   }
 
   // Default to Local Hardhat if not explicitly set to sepolia

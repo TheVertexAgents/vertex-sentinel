@@ -47,14 +47,16 @@ class ExecutionProxy {
     // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia
     if (!contractAddress && network === 'sepolia') {
       const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
-      if (!fs.existsSync(deploymentsPath)) {
-        throw new CriticalSecurityException('Fail-Closed: deployments_sepolia.json is missing but network is set to sepolia');
-      }
-      try {
-        const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
-        this.contractAddress = deployments.riskRouter;
-      } catch (error) {
-        throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`);
+      if (fs.existsSync(deploymentsPath)) {
+        try {
+          const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+          this.contractAddress = deployments.riskRouter;
+        } catch (error) {
+          throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } else {
+        // Strategic Fallback: Official Hackathon RiskRouter Address
+        this.contractAddress = '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC';
       }
     } else {
       this.contractAddress = contractAddress || '0x0000000000000000000000000000000000000000';
