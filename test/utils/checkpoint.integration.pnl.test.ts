@@ -33,6 +33,8 @@ describe('Checkpoint PnL Integration', () => {
 
     // PnL metrics that should be included
     const pnlMetrics = {
+        totalTrades: 10,
+        winRate: 0.6,
         totalPnL: 123.45,
         realizedPnL: 100.00,
         unrealizedPnL: 23.45,
