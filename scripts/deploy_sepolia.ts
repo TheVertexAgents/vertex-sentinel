@@ -74,7 +74,7 @@ const HACKATHON_VAULT_ABI = [
 ] as const;
 
 async function main() {
-  const { viem } = hre;
+  const viem = (hre as any).viem;
   const walletClients = await viem.getWalletClients();
   if (walletClients.length === 0) {
       throw new Error("No wallet clients found. Check AGENT_PRIVATE_KEY and Hardhat configuration.");
@@ -112,21 +112,14 @@ async function main() {
     logger.info(`Agent already registered locally with ID: ${agentIdStr}`);
   } else {
     // Check on-chain registration before attempting register()
-    const isRegisteredOnChain = await publicClient.readContract({
+    const onChainId = await publicClient.readContract({
         address: SHARED_CONFIG.agentRegistry as Hex,
         abi: AGENT_REGISTRY_ABI,
-        functionName: 'isRegisteredAgent',
+        functionName: 'walletToAgentId',
         args: [agentAddress]
-    });
+    }) as bigint;
 
-    if (isRegisteredOnChain) {
-        const onChainId = await publicClient.readContract({
-            address: SHARED_CONFIG.agentRegistry as Hex,
-            abi: AGENT_REGISTRY_ABI,
-            functionName: 'walletToAgentId',
-            args: [agentAddress]
-        }) as bigint;
-        
+    if (onChainId > 0n) {
         agentIdStr = onChainId.toString();
         logger.info(`Agent already registered on-chain with ID: ${agentIdStr}. Syncing local deployments_sepolia.json.`);
         
@@ -154,7 +147,7 @@ async function main() {
         
         // Extract AgentId from logs (Topic 1 of AgentRegistered event)
         const logs = receipt.logs;
-        const log = logs.find(l => l.address.toLowerCase() === SHARED_CONFIG.agentRegistry.toLowerCase());
+        const log = logs.find((l: any) => l.address.toLowerCase() === SHARED_CONFIG.agentRegistry.toLowerCase());
         if (log && log.topics[1]) {
             agentIdStr = BigInt(log.topics[1]).toString();
             logger.info(`Agent successfully registered! New Agent ID: ${agentIdStr}`);
