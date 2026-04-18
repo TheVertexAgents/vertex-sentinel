@@ -20,6 +20,7 @@ describe("Sepolia Connectivity & Configuration", () => {
     process.env.KRAKEN_SECRET = "test-secret";
     process.env.GOOGLE_GENAI_API_KEY = "test-genai-key";
     process.env.LUNARCRUSH_KEY = "test-lunar-key";
+    process.env.STRYKR_PRISM_API = "test-prism-key";
   });
 
   after(() => {

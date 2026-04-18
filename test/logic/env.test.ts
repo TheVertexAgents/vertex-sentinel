@@ -15,6 +15,8 @@ describe('Environment Validation Unit Tests', () => {
         delete process.env.KRAKEN_API_KEY;
         delete process.env.KRAKEN_SECRET;
         delete process.env.INFURA_KEY;
+        delete process.env.STRYKR_PRISM_API;
+        delete process.env.NETWORK;
 
         expect(() => validateEnv()).to.throw(/Environment validation failed/);
     });
@@ -25,6 +27,8 @@ describe('Environment Validation Unit Tests', () => {
         process.env.KRAKEN_API_KEY = 'test';
         process.env.KRAKEN_SECRET = 'test';
         process.env.INFURA_KEY = 'test';
+        process.env.STRYKR_PRISM_API = 'test';
+        process.env.NETWORK = 'sepolia';
         delete process.env.LUNARCRUSH_KEY;
 
         expect(() => validateEnv()).to.not.throw();

@@ -19,6 +19,7 @@ describe('Execution Proxy Unit Tests', function () {
         process.env.INFURA_KEY = 'test-infura';
         process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
         process.env.NETWORK = 'local';
+        process.env.STRYKR_PRISM_API = 'test-prism-key';
 
         if (fs.existsSync(auditLogPath)) {
             fs.unlinkSync(auditLogPath);

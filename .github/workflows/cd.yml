@@ -35,8 +35,13 @@ jobs:
 
       - name: Execute Sepolia Deployment script
         env:
-          AGENT_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          AGENT_PRIVATE_KEY: ${{ secrets.AGENT_PRIVATE_KEY }}
           INFURA_KEY: ${{ secrets.INFURA_KEY }}
+          STRYKR_PRISM_API: "mock_prism_key"
+          NETWORK: "sepolia"
+          GOOGLE_GENAI_API_KEY: "mock_google_key"
+          KRAKEN_API_KEY: "mock_kraken_key"
+          KRAKEN_SECRET: "mock_kraken_secret"
           RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           NODE_OPTIONS: "--loader ts-node/esm --no-warnings"
         run: npx hardhat run scripts/deploy_sepolia.ts --network sepolia
