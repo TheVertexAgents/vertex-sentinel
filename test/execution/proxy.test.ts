@@ -52,7 +52,7 @@ describe('Execution Proxy Unit Tests', function () {
         try {
             const proxySepolia = new ExecutionProxy(undefined, 'sepolia');
             // Official Hackathon RiskRouter Address
-            expect(proxySepolia.contractAddress).to.equal('0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC');
+            expect((proxySepolia as any).contractAddress).to.equal('0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC');
         } finally {
             if (backupCreated) fs.renameSync(deploymentsPath + '.bak', deploymentsPath);
         }
