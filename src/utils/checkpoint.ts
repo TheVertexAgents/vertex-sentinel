@@ -35,6 +35,7 @@ export interface SignedCheckpoint {
   signature: string;
   checkpointHash: string;
   reasoning: string;
+  arcL1Proof?: string;
   pnl?: any;
 }
 
@@ -98,6 +99,7 @@ export async function createSignedCheckpoint(
       signature,
       checkpointHash,
       reasoning: decision.reasoning,
+      arcL1Proof: decision.arcL1Proof,
       pnl: pnl || null
     };
 
