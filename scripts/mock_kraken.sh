@@ -1,7 +1,23 @@
 #!/bin/bash
 
-COMMAND=$1
-shift
+# Handle global flags like -o json
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -o)
+      FORMAT=$2
+      shift 2
+      ;;
+    paper)
+      PAPER_MODE=true
+      shift
+      ;;
+    *)
+      COMMAND=$1
+      shift
+      break
+      ;;
+  esac
+done
 
 case "$COMMAND" in
   ticker)
@@ -37,7 +53,7 @@ case "$COMMAND" in
       "XETH": "10.0000"
     }'
     ;;
-  trades)
+  trades|trades-history)
     echo '{
       "trades": {
         "T12345": {
@@ -76,5 +92,6 @@ case "$COMMAND" in
     ;;
   *)
     echo "Unknown command: $COMMAND" >&2
+    exit 1
     ;;
 esac

@@ -8,6 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import path from 'path';
 import type { Ticker, Balance, TradeHistory } from '../../mcp/kraken/types.js';
 import { getNewsFeed } from './news_feed.js';
+import { AgentStackClient } from '../clients/agent_stack.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -166,65 +167,6 @@ async function getSentiment(pair: string) {
 }
 
 /**
- * @dev "Hires" the AgentStack Orchestrator to provide verified data via Arc L1.
- * This is a Verification Layer that ensures market data integrity through paid nanopayments.
- */
-async function verifyWithAgentStack(intent: string, localRiskScore: number, pair: string) {
-  const url = 'http://localhost:3003/orchestrate';
-  const payload = {
-    prompt: `Provide verified ${pair} sentiment and market data for trade validation`,
-    context: { intent, localRiskScore }
-  };
-
-  logger.info({ module: 'ARC_VERIFICATION', step: 'REQUEST_START', url });
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      if (response.status === 402) {
-        throw new Error('Insufficient Funds: Payment Required on Arc L1');
-      }
-      throw new Error(`Orchestrator responded with status: ${response.status}`);
-    }
-
-    const data = await response.json() as any;
-
-    // Extract Proof (Transaction Hash) and Worker Data
-    // Expecting: { settlementHash: "0x...", workers: [...], timestamp: "..." }
-    const proof = data.settlementHash || data.transactionHash || data.proof;
-    const workers = data.workers || [];
-
-    if (!proof) {
-      logger.warn({ module: 'ARC_VERIFICATION', message: 'No settlement proof found in orchestrator response' });
-    }
-
-    logger.info({ module: 'ARC_VERIFICATION', step: 'VERIFIED', proof });
-
-    return {
-      verified: true,
-      proof,
-      workerData: JSON.stringify(workers),
-      timestamp: data.timestamp
-    };
-
-  } catch (err: any) {
-    logger.error({ module: 'ARC_VERIFICATION', step: 'FAILED', error: err.message });
-    // Fail-Closed: Return a specialized HOLD decision rather than throwing,
-    // to ensure the security halt is recorded in the audit trail.
-    return {
-      verified: false,
-      proof: undefined,
-      error: err.message
-    };
-  }
-}
-
-/**
  * @dev Core Risk Assessment Strategy Logic.
  * Integrates Genkit AI reasoning with a manual bootstrap penalty model.
  */
@@ -352,7 +294,7 @@ Output your response in valid JSON format:
 
     // 6. Arc L1 Verification Layer (Milestone 3 Integration)
     // The Sentinel MUST "hire" the AgentStack Orchestrator to verify local data.
-    const verification = await verifyWithAgentStack(
+    const verification = await AgentStackClient.verifyTrade(
       manualPenalty > 0.8 || aiResult.riskScore > 0.8 ? 'HOLD' : 'BUY', // Simplified intent for verification
       Math.max(manualPenalty, aiResult.riskScore),
       pair
