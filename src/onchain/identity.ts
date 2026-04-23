@@ -28,10 +28,13 @@ export class IdentityClient {
 
     try {
       const chain = this.chainId === 31337 ? hardhat : sepolia;
+      const rpcUrl = process.env.INFURA_KEY
+        ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
+        : undefined;
 
       const publicClient = createPublicClient({
         chain: chain,
-        transport: http(),
+        transport: http(rpcUrl),
       });
 
       // Try method 1: walletToAgentId (shared hackathon registry)

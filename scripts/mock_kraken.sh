@@ -53,7 +53,7 @@ case "$COMMAND" in
       "XETH": "10.0000"
     }'
     ;;
-  trades|trades-history)
+  trades|trades-history|history)
     echo '{
       "trades": {
         "T12345": {

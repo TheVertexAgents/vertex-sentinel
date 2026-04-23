@@ -58,9 +58,13 @@ export class RiskRouterClient {
     }
 
     try {
+      const rpcUrl = process.env.INFURA_KEY
+        ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
+        : undefined;
+
       const publicClient = createPublicClient({
         chain: this.getChain(),
-        transport: http(),
+        transport: http(rpcUrl),
       });
 
       const nonce = await publicClient.readContract({
