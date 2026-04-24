@@ -53,7 +53,7 @@ export class CirclePayments {
       const response = await client.createTransaction({
         walletId: walletId,
         destinationAddress: params.destinationWallet,
-        amounts: [params.amount],
+        amount: [params.amount],
         fee: {
           type: "level",
           config: {
