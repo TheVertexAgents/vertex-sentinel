@@ -27,6 +27,7 @@ const TYPES = {
     { name: 'amountUsdScaled', type: 'uint256' },
     { name: 'reasoningHash', type: 'bytes32' },
     { name: 'confidenceScaled', type: 'uint256' },
+    { name: 'arcL1Proof', type: 'string' },
   ],
 } as const;
 
@@ -72,6 +73,7 @@ export async function createSignedCheckpoint(
       amountUsdScaled: decision.amountUsdScaled,
       reasoningHash,
       confidenceScaled: BigInt(Math.round(decision.confidence * 1000)),
+      arcL1Proof: decision.arcL1Proof || "",
     };
 
     const checkpointHash = hashTypedData({

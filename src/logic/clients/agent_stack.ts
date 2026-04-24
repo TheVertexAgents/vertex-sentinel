@@ -33,23 +33,51 @@ export const AgentStackClient = {
     logger.info({ module: 'AGENT_STACK_CLIENT', step: 'REQUEST_START', url, pair });
 
     try {
-      const response = await fetch(url, {
+      // 1. Initial Attempt
+      let response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      // 2. Handle x402 Payment Handshake
+      if (response.status === 402) {
+        const challenge = response.headers.get('x402-payment-request');
+        if (!challenge) throw new Error('402 received but x402-payment-request header is missing');
+
+        logger.info({ module: 'AGENT_STACK_CLIENT', step: 'PAYMENT_REQUIRED', challenge });
+
+        // Parse challenge: invoiceId:amount:destination
+        const [invoiceId, amount, destinationWallet] = challenge.split(':');
+        
+        // Trigger Circle Nanopayment
+        const { CirclePayments } = await import('../../onchain/circle.js');
+        const txHash = await CirclePayments.sendPayment({
+          destinationWallet,
+          amount,
+          invoiceId
+        });
+
+        logger.info({ module: 'AGENT_STACK_CLIENT', step: 'PAYMENT_SENT', txHash });
+
+        // 3. Retry with Payment Proof
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x402-payment-proof': txHash
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
       if (!response.ok) {
-        if (response.status === 402) {
-          throw new Error('Insufficient Funds: Payment Required on Arc L1');
-        }
         throw new Error(`Orchestrator responded with status: ${response.status}`);
       }
 
       const data = await response.json() as any;
 
       // Extract Proof (Transaction Hash) and Worker Data
-      // Expecting: { settlementHash: "0x...", workers: [...], timestamp: "..." }
       const proof = data.settlementHash || data.transactionHash || data.proof;
       const workers = data.workers || [];
 
