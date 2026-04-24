@@ -29,7 +29,7 @@ async function main() {
   if (!walletSetId) throw new Error("Failed to create Wallet Set");
 
   const walletResponse = await client.createWallets({
-    blockchains: ["ARC-TESTNET"],
+    blockchains: ["ARC-TESTNET" as any],
     count: 1,
     walletSetId: walletSetId,
     accountType: "EOA",

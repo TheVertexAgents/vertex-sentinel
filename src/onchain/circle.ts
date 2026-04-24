@@ -61,7 +61,7 @@ export class CirclePayments {
           }
         },
         tokenAddress: process.env.USDC_CONTRACT_ADDRESS || "0x3600000000000000000000000000000000000000",
-        blockchain: "ARC-TESTNET"
+        blockchain: "ARC-TESTNET" as any
       });
 
       const txId = response.data?.id;
