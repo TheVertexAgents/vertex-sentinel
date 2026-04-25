@@ -137,8 +137,35 @@ npm run demo
 
 ```bash
 npm run dashboard
-# Open http://localhost:3000/dashboard/index.html
+# Open http://localhost:3005
 ```
+
+---
+
+### Sentinel Dashboard
+
+The **Vertex Sentinel: Professional Risk Terminal** provides institutional-grade visibility into agent operations:
+
+#### Key Metrics
+*   **Sentinel Savings**: The total value of capital risk blocked by the agent (e.g., prevented losses from high-risk trades).
+*   **Max Drawdown (MDD)**: The peak-to-trough decline during the current session, ensuring the agent adheres to strict risk bounds.
+*   **Sharpe Ratio**: Risk-adjusted return metric calculated in real-time from session volatility and PnL.
+*   **Win/Loss Ratio**: Consistency metric tracking the success of agent-approved intents.
+
+#### Features
+*   **Risk Terminal**: Integrated TradingView charts and social sentiment heatmaps.
+*   **Agent Operations**: Web3-enabled control panel to adjust on-chain risk parameters (Position Limits, Volume Caps) via the `RiskRouter`.
+*   **Technical Audit**: A verifiable, EIP-712 signed audit stream showing every trade intent, AI reasoning, and **Arc L1 Verification Proofs**.
+
+#### Accessing the Dashboard
+The dashboard is served on port **3005** to avoid conflicts with the AgentStack Orchestrator.
+
+```bash
+npm run dashboard
+```
+Access at **`http://localhost:3005`**.
+
+> **Note**: Ensure the AgentStack Orchestrator is running on port **3000** (as configured in `.env`) to enable data verification features.
 
 ---
 
@@ -170,10 +197,11 @@ Deployed on **Sepolia Testnet**:
 
 Real-time visualization of verifiable execution:
 
-- **Live Audit Feed** — Polls `logs/audit.json` every 5 seconds
-- **Signature Verification** — Visual badges confirm EIP-712 signing
-- **Explainability** — Human-readable reasoning for every decision
-- **Glassmorphism UI** — Professional dark theme with gradients
+- **Live Audit Feed** — Polls `logs/audit.json` every 5 seconds.
+- **Signature Verification** — Visual badges confirm EIP-712 signing.
+- **Explainability** — Human-readable reasoning for every decision.
+- **Arc L1 Verification** — Direct links to on-chain transaction proofs for data integrity.
+- **Glassmorphism UI** — Professional dark theme with real-time TradingView integration.
 
 ---
 
