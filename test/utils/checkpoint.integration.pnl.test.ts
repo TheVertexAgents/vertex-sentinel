@@ -35,10 +35,15 @@ describe('Checkpoint PnL Integration', () => {
     const pnlMetrics = {
         totalTrades: 10,
         winRate: 0.6,
+        winLossRatio: 1.5,
         totalPnL: 123.45,
         realizedPnL: 100.00,
         unrealizedPnL: 23.45,
-        roiPercent: 1.23
+        totalExposureUsd: 1000.00,
+        roiPercent: 1.23,
+        sentinelSavings: 500.00,
+        maxDrawdown: 5.0,
+        sharpeRatio: 2.1
     };
 
     const checkpoint = await createSignedCheckpoint(agent as any, decision, pk as `0x${string}`, 11155111, pnlMetrics);
