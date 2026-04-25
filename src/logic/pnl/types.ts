@@ -28,10 +28,21 @@ export interface Position {
 export interface PnLMetrics {
   totalTrades: number;
   winRate: number;
+  winLossRatio: number;
   realizedPnL: number;
   unrealizedPnL: number;
+  totalExposureUsd: number;
   totalPnL: number;
   roiPercent: number;
+  sentinelSavings: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+  onchainRisk?: {
+    maxPositionUsdScaled: string;
+    maxDrawdownBps: string;
+    maxTradesPerHour: string;
+    active: boolean;
+  } | null;
 }
 
 export interface PnLSummary {

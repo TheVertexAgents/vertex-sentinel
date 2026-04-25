@@ -90,6 +90,40 @@ export class RiskRouterClient {
   }
 
   /**
+   * @dev Fetches risk parameters for an agent.
+   */
+  async riskParams(agentId: bigint): Promise<any> {
+    const rpcUrl = process.env.INFURA_KEY
+      ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
+      : undefined;
+
+    const publicClient = createPublicClient({
+      chain: this.getChain(),
+      transport: http(rpcUrl),
+    });
+
+    return await publicClient.readContract({
+      address: this.routerAddress,
+      abi: [
+        {
+          name: 'riskParams',
+          type: 'function',
+          stateMutability: 'view',
+          inputs: [{ name: '', type: 'uint256' }],
+          outputs: [
+            { name: 'maxPositionUsdScaled', type: 'uint256' },
+            { name: 'maxDrawdownBps', type: 'uint256' },
+            { name: 'maxTradesPerHour', type: 'uint256' },
+            { name: 'active', type: 'bool' },
+          ],
+        },
+      ],
+      functionName: 'riskParams',
+      args: [agentId],
+    });
+  }
+
+  /**
    * @dev Signs a TradeIntent using EIP-712.
    */
   async signIntent(intent: TradeIntent, privateKey: Hex): Promise<Hex> {

@@ -126,6 +126,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
     // 3. Update PnL Tracker before checkpoint (using real market data)
     const tracker = getPnLTracker();
+    if (decision.action === 'HOLD') {
+      tracker.recordSavings(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor);
+    }
     let realPrice = 0;
     try {
       const client = await getMcpClient();
@@ -158,7 +161,23 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       timestamp: new Date().toISOString()
     });
 
-    const currentPnL = tracker.getMetrics();
+    // Fetch current on-chain risk parameters for "Distance to Circuit Breaker"
+    let onchainRisk: any = null;
+    try {
+      onchainRisk = await riskRouterClient.riskParams(BigInt(getAgentMetadata().agentId));
+    } catch (e) {
+      logger.warn({ module: 'AGENT_BRAIN', step: 'FETCH_RISK_PARAMS_FAILED', error: e instanceof Error ? e.message : String(e) });
+    }
+
+    const currentPnL = {
+      ...tracker.getMetrics(),
+      onchainRisk: onchainRisk ? {
+        maxPositionUsdScaled: onchainRisk[0].toString(),
+        maxDrawdownBps: onchainRisk[1].toString(),
+        maxTradesPerHour: onchainRisk[2].toString(),
+        active: onchainRisk[3]
+      } : null
+    };
 
     // 4. Create and Sign Audit Checkpoint (Verifiable Execution)
     const checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);

@@ -41,4 +41,48 @@ export class PnLCalculator {
     const wins = results.filter(r => r > 0).length;
     return (wins / results.length) * 100;
   }
+
+  /**
+   * Calculates win/loss ratio.
+   */
+  static calculateWinLossRatio(results: number[]): number {
+    const wins = results.filter(r => r > 0);
+    const losses = results.filter(r => r < 0);
+    if (losses.length === 0) return wins.length > 0 ? Infinity : 0;
+
+    const avgWin = wins.reduce((a, b) => a + b, 0) / wins.length;
+    const avgLoss = Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length);
+
+    return avgWin / avgLoss;
+  }
+
+  /**
+   * Calculates Maximum Drawdown.
+   */
+  static calculateMaxDrawdown(equityCurve: number[]): number {
+    if (equityCurve.length === 0) return 0;
+    let maxDrawdown = 0;
+    let peak = equityCurve[0];
+
+    for (const value of equityCurve) {
+      if (value > peak) peak = value;
+      const drawdown = (peak - value) / (peak || 1);
+      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+    }
+
+    return maxDrawdown * 100;
+  }
+
+  /**
+   * Calculates a simplified Sharpe Ratio.
+   * Assuming risk-free rate is 0 for simplicity.
+   */
+  static calculateSharpeRatio(results: number[]): number {
+    if (results.length < 2) return 0;
+    const mean = results.reduce((a, b) => a + b, 0) / results.length;
+    const variance = results.reduce((a, b) => a + (b - mean) ** 2, 0) / (results.length - 1);
+    const stdDev = Math.sqrt(variance);
+
+    return stdDev === 0 ? 0 : mean / stdDev;
+  }
 }

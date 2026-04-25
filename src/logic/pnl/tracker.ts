@@ -8,6 +8,8 @@ export class PnLTracker {
   private positions: Map<string, Position> = new Map();
   private realizedPnL: number = 0;
   private totalInvested: number = 0;
+  private sentinelSavings: number = 0;
+  private equityCurve: number[] = [0];
 
   constructor(config?: PnLTrackerConfig) {
     this.config = {
@@ -49,6 +51,7 @@ export class PnLTracker {
         );
         this.realizedPnL += result.netPnL;
         fullTrade.realizedPnL = result.netPnL;
+        this.equityCurve.push(this.realizedPnL);
 
         position.open = false;
         position.unrealizedPnL = 0;
@@ -57,6 +60,11 @@ export class PnLTracker {
     }
 
     this.trades.push(fullTrade);
+  }
+
+  recordSavings(amountUsd: number) {
+    this.sentinelSavings += amountUsd;
+    logger.info({ module: 'PnLTracker', step: 'SAVINGS_RECORDED', amountUsd, totalSavings: this.sentinelSavings });
   }
 
   async updateUnrealizedPnL(pair: string, mcpClient: any) {
@@ -96,13 +104,27 @@ export class PnLTracker {
       .filter(t => t.realizedPnL !== undefined)
       .map(t => t.realizedPnL as number);
 
+    const totalPnL = this.realizedPnL + unrealizedPnL;
+
+    const totalExposureUsd = Array.from(this.positions.values())
+      .filter(p => p.open)
+      .reduce((sum, p) => sum + (p.amount * p.currentPrice), 0);
+
+    // Update equity curve with current total PnL for live drawdown calculation
+    const currentEquityCurve = [...this.equityCurve, totalPnL];
+
     return {
       totalTrades: this.trades.length,
       winRate: PnLCalculator.calculateWinRate(tradeResults),
+      winLossRatio: PnLCalculator.calculateWinLossRatio(tradeResults),
       realizedPnL: this.realizedPnL,
       unrealizedPnL: unrealizedPnL,
-      totalPnL: this.realizedPnL + unrealizedPnL,
-      roiPercent: PnLCalculator.calculateROI(this.realizedPnL + unrealizedPnL, this.totalInvested)
+      totalExposureUsd: totalExposureUsd,
+      totalPnL: totalPnL,
+      roiPercent: PnLCalculator.calculateROI(totalPnL, this.totalInvested),
+      sentinelSavings: this.sentinelSavings,
+      maxDrawdown: PnLCalculator.calculateMaxDrawdown(currentEquityCurve),
+      sharpeRatio: PnLCalculator.calculateSharpeRatio(tradeResults)
     };
   }
 
