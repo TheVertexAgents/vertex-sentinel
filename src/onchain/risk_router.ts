@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, fallback, keccak256, encodeAbiParameters, parseAbiParameters, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, fallback, keccak256, encodeAbiParameters, parseAbiParameters, type Hex, type Chain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat, mainnet, base, arbitrum } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
@@ -19,15 +19,15 @@ export class RiskRouterClient {
     this.chainId = chainId;
   }
 
-  private getChain() {
-    const chainMap: Record<number, any> = {
-      1: mainnet,
-      11155111: sepolia,
-      8453: base,
-      42161: arbitrum,
-      31337: hardhat
+  private getChain(): Chain {
+    const chainMap: Record<number, Chain> = {
+      1: mainnet as Chain,
+      11155111: sepolia as Chain,
+      8453: base as Chain,
+      42161: arbitrum as Chain,
+      31337: hardhat as Chain
     };
-    return chainMap[this.chainId] || sepolia;
+    return chainMap[this.chainId] || (sepolia as Chain);
   }
 
   private getTransport() {
@@ -261,6 +261,7 @@ export class RiskRouterClient {
         address: this.routerAddress,
         abi: RISK_ROUTER_ABI,
         functionName: 'submitTradeIntent',
+        chain,
         args: [
           {
             agentId: BigInt(intent.agentId),
