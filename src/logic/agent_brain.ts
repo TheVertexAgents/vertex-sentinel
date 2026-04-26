@@ -21,6 +21,7 @@ import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
 import { NotificationService } from '../utils/notifications.js';
 import { RiskCalibrator } from './risk-calibrator.js';
+import { checkGeographicRestrictions } from '../utils/geo-restrict.js';
 
 dotenv.config();
 
@@ -144,12 +145,8 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
     const agentAddress = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(privateKey).address;
 
-    // 0. Geographic Restriction Check
-    // In a real scenario, this would use a GeoIP service or user-provided attestations.
-    // For now, we simulate a check to prevent unauthorized access.
-    if (process.env.SIMULATE_RESTRICTED_REGION === 'true') {
-        throw new CriticalSecurityException(`Fail-Closed: Vertex Sentinel is not available in your region.`);
-    }
+    // 0. Geographic Restriction Check (Fail-Closed)
+    await checkGeographicRestrictions();
 
     // 1. Check Identity (ERC-8004 Alignment) - non-blocking, informational only
     // RiskRouter performs final authorization regardless of registry status
@@ -402,6 +399,12 @@ async function main() {
       
       if (result.isAllowed) {
         logger.info({ step: 'INTENT_SUBMITTED', nonce: currentNonce });
+
+        // Shadow Trading Mode: if paper mode is true, the PnL tracker and execution proxy
+        // will log the intent but not execute on real capital if the underlying MCP/Proxy is paper-gated.
+        if (process.env.KRAKEN_PAPER_MODE === 'true') {
+           logger.info({ step: 'SHADOW_MODE_LOG', message: 'Paper Mode Active: Intent signed and authorized on-chain but using simulated execution.' });
+        }
 
         // Emit balance update event
         agentEvents.emit('balance.update', {

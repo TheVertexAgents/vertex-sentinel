@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./AgentRegistry.sol";
 
 /**
@@ -22,7 +23,7 @@ import "./AgentRegistry.sol";
  *   - Your EIP-712 signed checkpoints are submitted here as the checkpointHash
  *   - Validator scores feed into the on-chain reputation + leaderboard ranking
  */
-contract ValidationRegistry {
+contract ValidationRegistry is Ownable {
     // ─────────────────────────────────────────────────────────────────────────
     // Types
     // ─────────────────────────────────────────────────────────────────────────
@@ -50,7 +51,6 @@ contract ValidationRegistry {
     // ─────────────────────────────────────────────────────────────────────────
 
     AgentRegistry public immutable agentRegistry;
-    address public owner;
     bool public openValidation;  // if true, anyone can post; if false, whitelist only
 
     mapping(address => bool) public validators;
@@ -76,17 +76,11 @@ contract ValidationRegistry {
     // Constructor
     // ─────────────────────────────────────────────────────────────────────────
 
-    constructor(address agentRegistryAddress, bool _openValidation) {
+    constructor(address agentRegistryAddress, bool _openValidation) Ownable(msg.sender) {
         agentRegistry = AgentRegistry(agentRegistryAddress);
-        owner = msg.sender;
         openValidation = _openValidation;
         // Owner is a validator by default
         validators[msg.sender] = true;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "ValidationRegistry: not owner");
-        _;
     }
 
     modifier onlyValidator() {

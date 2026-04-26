@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title AgentRegistry
@@ -16,7 +17,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * EIP-712 support: agents can sign typed messages that are verifiable against their
  * registered agentWallet — linking off-chain AI actions to on-chain identity.
  */
-contract AgentRegistry is ERC721URIStorage, EIP712 {
+contract AgentRegistry is ERC721URIStorage, EIP712, Ownable2Step {
     struct AgentRegistration {
         address operatorWallet;
         address agentWallet;
@@ -40,7 +41,7 @@ contract AgentRegistry is ERC721URIStorage, EIP712 {
     event AgentWalletUpdated(uint256 indexed agentId, address newAgentWallet);
     event AgentDeactivated(uint256 indexed agentId);
 
-    constructor() ERC721("ERC-8004 Agent Registry", "AGENT") EIP712("VertexAgents-Sentinel", "1") {}
+    constructor() ERC721("ERC-8004 Agent Registry", "AGENT") EIP712("VertexAgents-Sentinel", "1") Ownable(msg.sender) {}
 
     /**
      * @notice Register a new AI agent — mints an ERC-721 token to the caller.
