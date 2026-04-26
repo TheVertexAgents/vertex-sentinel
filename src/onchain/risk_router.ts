@@ -1,9 +1,10 @@
 import { createWalletClient, createPublicClient, http, fallback, keccak256, encodeAbiParameters, parseAbiParameters, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { sepolia, hardhat } from 'viem/chains';
+import { sepolia, hardhat, mainnet, base, arbitrum } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import type { TradeIntent } from '../logic/types.js';
 import { logger } from '../utils/logger.js';
+import { CircleSigner } from './circle_signer.js';
 
 /**
  * @dev RiskRouter integration layer.
@@ -19,15 +20,26 @@ export class RiskRouterClient {
   }
 
   private getChain() {
-    return this.chainId === 31337 ? hardhat : sepolia;
+    const chainMap: Record<number, any> = {
+      1: mainnet,
+      11155111: sepolia,
+      8453: base,
+      42161: arbitrum,
+      31337: hardhat
+    };
+    return chainMap[this.chainId] || sepolia;
   }
 
   private getTransport() {
     if (this.chainId === 31337) return http();
 
     const transports = [];
+    const networkName = this.chainId === 1 ? 'mainnet' :
+                       this.chainId === 8453 ? 'base-mainnet' :
+                       this.chainId === 42161 ? 'arbitrum-mainnet' : 'sepolia';
+
     if (process.env.INFURA_KEY) {
-      transports.push(http(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`));
+      transports.push(http(`https://${networkName}.infura.io/v3/${process.env.INFURA_KEY}`));
     }
     if (process.env.ALCHEMY_KEY) {
       transports.push(http(`https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`));
@@ -133,10 +145,28 @@ export class RiskRouterClient {
   }
 
   /**
-   * @dev Signs a TradeIntent using EIP-712.
+   * @dev Signs a TradeIntent using EIP-712. Supports local private key or Circle WaaS.
    */
   async signIntent(intent: TradeIntent, privateKey: Hex): Promise<Hex> {
     try {
+      const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+      const { domain, types } = this.getTypedData();
+      const message = {
+        agentId: BigInt(intent.agentId),
+        agentWallet: intent.agentWallet as Hex,
+        pair: intent.pair,
+        action: intent.action,
+        amountUsdScaled: BigInt(intent.amountUsdScaled),
+        maxSlippageBps: BigInt(intent.maxSlippageBps),
+        nonce: BigInt(intent.nonce),
+        deadline: BigInt(intent.deadline),
+      };
+
+      if (useCircle) {
+        const signer = new CircleSigner();
+        return await signer.signTypedData(domain, types.TradeIntent, 'TradeIntent', message);
+      }
+
       const account = privateKeyToAccount(privateKey);
       const client = createWalletClient({
         account,
@@ -144,22 +174,11 @@ export class RiskRouterClient {
         transport: http(),
       });
 
-      const { domain, types } = this.getTypedData();
-
       const signature = await client.signTypedData({
         domain,
         types,
         primaryType: 'TradeIntent',
-        message: {
-          agentId: BigInt(intent.agentId),
-          agentWallet: intent.agentWallet as Hex,
-          pair: intent.pair,
-          action: intent.action,
-          amountUsdScaled: BigInt(intent.amountUsdScaled),
-          maxSlippageBps: BigInt(intent.maxSlippageBps),
-          nonce: BigInt(intent.nonce),
-          deadline: BigInt(intent.deadline),
-        },
+        message,
       });
 
       return signature;

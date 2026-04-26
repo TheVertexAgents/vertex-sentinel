@@ -20,6 +20,14 @@ const envSchema = z.object({
   LUNARCRUSH_KEY: z.string().optional(),
   AGENT_METADATA_URI: z.string().url("AGENT_METADATA_URI must be a valid URL").default("https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"),
   AGENT_STACK_URL: z.string().url().default('http://localhost:3003'),
+  AGENTSTACK_REQUIRED: z.enum(['true', 'false']).default('true'),
+  CIRCLE_API_KEY: z.string().optional(),
+  CIRCLE_ENTITY_SECRET: z.string().optional(),
+  USE_CIRCLE_WAAS: z.enum(['true', 'false']).default('false'),
+  SENDGRID_API_KEY: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
+  KRAKEN_PAPER_MODE: z.enum(['true', 'false']).default('false'),
 });
 
 /**

@@ -300,7 +300,8 @@ Output your response in valid JSON format:
       pair
     );
 
-    if (!verification.verified) {
+    const agentStackRequired = process.env.AGENTSTACK_REQUIRED === 'true';
+    if (!verification.verified && agentStackRequired) {
       return {
         action: 'HOLD',
         pair,
@@ -312,6 +313,8 @@ Output your response in valid JSON format:
         arcL1Proof: undefined,
         breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
       };
+    } else if (!verification.verified) {
+      logger.warn({ module: 'RISK_ASSESSMENT', message: 'AgentStack unreachable. Using local risk assessment only.', error: verification.error });
     }
 
     // 7. Hybrid Enforcement (Fail-Closed)

@@ -4,9 +4,23 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "./AgentRegistry.sol";
 
-contract RiskRouter is EIP712 {
+interface AggregatorV3Interface {
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+}
+
+contract RiskRouter is EIP712, Ownable2Step {
     using ECDSA for bytes32;
 
     struct TradeIntent {
@@ -36,26 +50,28 @@ contract RiskRouter is EIP712 {
         "TradeIntent(uint256 agentId,address agentWallet,string pair,string action,uint256 amountUsdScaled,uint256 maxSlippageBps,uint256 nonce,uint256 deadline)"
     );
 
-    address public owner;
     AgentRegistry public immutable agentRegistry;
 
     mapping(uint256 => RiskParams)  public riskParams;
     mapping(uint256 => TradeRecord) private _tradeRecords;
     mapping(uint256 => uint256)     private _intentNonces;
+    mapping(string => address)      public priceFeeds;
 
-    event TradeAuthorized(bytes32 indexed intentHash, address indexed agent, string pair, uint256 amountUsdScaled);
+    event TradeAuthorized(
+        bytes32 indexed intentHash,
+        address indexed agent,
+        string pair,
+        string action,
+        uint256 amountUsdScaled,
+        uint256 maxSlippageBps
+    );
     event TradeApproved(uint256 indexed agentId, bytes32 indexed intentHash, uint256 amountUsdScaled);
     event TradeRejected(uint256 indexed agentId, bytes32 indexed intentHash, string reason);
     event RiskParamsSet(uint256 indexed agentId, uint256 maxPositionUsdScaled, uint256 maxTradesPerHour);
+    event PriceFeedSet(string pair, address feed);
 
-    constructor(address _registry) EIP712("VertexAgents-Sentinel", "1") {
-        owner = msg.sender;
+    constructor(address _registry) EIP712("VertexAgents-Sentinel", "1") Ownable(msg.sender) {
         agentRegistry = AgentRegistry(_registry);
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "RiskRouter: not owner");
-        _;
     }
 
     function setRiskParams(
@@ -71,6 +87,11 @@ contract RiskRouter is EIP712 {
             active: true
         });
         emit RiskParamsSet(agentId, maxPositionUsdScaled, maxTradesPerHour);
+    }
+
+    function setPriceFeed(string calldata pair, address feed) external onlyOwner {
+        priceFeeds[pair] = feed;
+        emit PriceFeedSet(pair, feed);
     }
 
     function hashTradeIntent(TradeIntent memory intent) public view returns (bytes32) {
@@ -115,6 +136,18 @@ contract RiskRouter is EIP712 {
             return (false, "Invalid Signature");
         }
 
+        // Task 2.1: On-chain Price Verification via Chainlink
+        address feed = priceFeeds[intent.pair];
+        if (feed != address(0)) {
+            (, int256 price,, uint256 updatedAt,) = AggregatorV3Interface(feed).latestRoundData();
+            require(price > 0, "Invalid price");
+            require(block.timestamp - updatedAt < 1 hours, "Price feed stale");
+
+            // In a real implementation, we would use 'price' to verify 'amountUsdScaled'
+            // if amountUsdScaled was derived from a token amount.
+            // Currently Vertex Sentinel uses amountUsdScaled directly as the intent.
+        }
+
         (approved, reason) = _validateRisk(intent.agentId, intent.amountUsdScaled);
         if (!approved) {
             emit TradeRejected(intent.agentId, digest, reason);
@@ -124,7 +157,14 @@ contract RiskRouter is EIP712 {
         _intentNonces[intent.agentId]++;
         _recordTrade(intent.agentId);
 
-        emit TradeAuthorized(digest, signer, intent.pair, intent.amountUsdScaled);
+        emit TradeAuthorized(
+            digest,
+            signer,
+            intent.pair,
+            intent.action,
+            intent.amountUsdScaled,
+            intent.maxSlippageBps
+        );
         emit TradeApproved(intent.agentId, digest, intent.amountUsdScaled);
         return (true, "");
     }
@@ -137,7 +177,7 @@ contract RiskRouter is EIP712 {
     function _validateRisk(uint256 agentId, uint256 amountUsdScaled) internal view returns (bool, string memory) {
         RiskParams storage params = riskParams[agentId];
         if (!params.active) {
-            if (amountUsdScaled > 100000) return (false, "No risk params: exceeds 000 default cap");
+            if (amountUsdScaled > 100000) return (false, "No risk params: exceeds 1000 default cap");
         } else {
             if (amountUsdScaled > params.maxPositionUsdScaled) return (false, "Exceeds maxPositionSize");
             TradeRecord storage record = _tradeRecords[agentId];

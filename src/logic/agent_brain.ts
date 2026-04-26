@@ -19,6 +19,7 @@ import fs from 'fs';
 import { PnLTracker } from './pnl/tracker.js';
 import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
+import { NotificationService } from '../utils/notifications.js';
 import { RiskCalibrator } from './risk-calibrator.js';
 
 dotenv.config();
@@ -105,15 +106,33 @@ function getTraceId(): string {
 }
 
 /**
- * @dev Mock "Strykr PRISM API" for canonical asset resolution.
- * TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
+ * @dev Strykr PRISM API for canonical asset resolution.
  */
 async function getAssetResolution(pair: string) {
-  // TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
-  // Current placeholder used to support local development during Judge Bot whitelisting trials.
-  logger.warn({ module: 'PRISM', message: 'Using placeholder resolution - real API integration pending' });
-  logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair });
-  return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  const apiKey = process.env.STRYKR_PRISM_API;
+  const url = `https://api.prismapi.ai/resolve?pair=${encodeURIComponent(pair)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!response.ok) {
+        throw new Error(`PRISM API returned ${response.status}`);
+    }
+
+    const data = await response.json() as { symbol: string, precision: number };
+    logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair, symbol: data.symbol });
+    return data;
+  } catch (error: any) {
+    logger.warn({ module: 'PRISM', message: 'PRISM API unavailable, using fallback', error: error.message });
+    return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  }
 }
 
 /**
@@ -187,7 +206,17 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     };
 
     // 4. Create and Sign Audit Checkpoint (Verifiable Execution)
-    const checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
+    // Check if we should use Circle for checkpoint signing
+    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+    let checkpoint;
+    if (useCircle) {
+      // For now, createSignedCheckpoint uses the local PK.
+      // In a full implementation, this utility would also be Circle-aware.
+      // Since it's an internal audit log, we'll keep it as-is for now but note the potential improvement.
+      checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
+    } else {
+      checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
+    }
 
     // ✅ NEW: Automated Heartbeat Attestation to ValidationRegistry
     // Strategic: Always post 100 to counteract competitor zero-scores.
@@ -197,6 +226,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       // Emit risk alert if risk is high
       if (decision.riskScore > 0.6) {
         agentEvents.emit('risk.alert', { traceId, riskScore: decision.riskScore, reasoning: decision.reasoning });
+        NotificationService.sendTelegram(`<b>High Risk Alert</b>\nRisk Score: ${(decision.riskScore * 100).toFixed(0)}%\nReasoning: ${decision.reasoning}`);
       }
 
       await validationClient.postHeartbeat(
@@ -269,6 +299,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
         txHash: authResult.transactionHash
       });
+
+      // Send Alerts
+      NotificationService.sendTelegram(`<b>Trade Authorized</b>\nPair: ${intent.pair}\nAmount: $${(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor).toFixed(2)}\nAction: ${intent.action}`);
 
       // NOTE: Reputation feedback must come from OTHER operators (not self-rating).
       // The ReputationRegistry enforces: "operator cannot self-rate"

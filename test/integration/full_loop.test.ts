@@ -52,7 +52,7 @@ describe("Sentinel Full Loop Integration", function () {
 
     const traceId = `TEST-E2E-LOOP-${Date.now()}`;
     try {
-        await proxy.processAuthorizedTrade(decision.pair, decision.amountUsdScaled, traceId);
+        await proxy.processAuthorizedTrade(decision.pair, decision.amountUsdScaled, traceId, decision.action, 100n);
     } catch (e: any) {
         // May gracefully throw if real environment fails connection, which is valid execution
     }
