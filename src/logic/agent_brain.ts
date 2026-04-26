@@ -280,6 +280,18 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
     // Wait for transaction confirmation
     if (authResult.transactionHash) {
+      // Circle WaaS simulation check
+      if (authResult.transactionHash === '0xCIRCLE') {
+          logger.info({ step: 'CIRCLE_WAAS_SIM_CONFIRMED', traceId });
+          agentEvents.emit('trade.authorized', {
+            traceId,
+            pair: intent.pair,
+            amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
+            txHash: authResult.transactionHash
+          });
+          return { isAllowed: true, reason: decision.reasoning, signature };
+      }
+
       const confirmation = await riskRouterClient.waitForTradeAuthorization(authResult.transactionHash);
 
       if (!confirmation.authorized) {
