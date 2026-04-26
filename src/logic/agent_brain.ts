@@ -11,11 +11,15 @@ import { createSignedCheckpoint } from '../utils/checkpoint.js';
 import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
 import { IdentityClient } from '../onchain/identity.js';
+import { LocalNonceTracker } from '../utils/nonce-tracker.js';
 import { ValidationRegistryClient } from "../onchain/validation.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { PnLTracker } from './pnl/tracker.js';
+import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
+import { OHLCVCollector } from './strategy/ohlcv_collector.js';
+import { RiskCalibrator } from './risk-calibrator.js';
 
 dotenv.config();
 
@@ -86,9 +90,12 @@ const config = getDeploymentConfig();
 
 // Init On-Chain Clients
 const validationClient = new ValidationRegistryClient(config.validationRegistry as Hex, config.chainId);
+const ohlcvCollector = OHLCVCollector.getInstance();
+const riskCalibrator = new RiskCalibrator(config.riskRouter as Hex, config.chainId, BigInt(getAgentMetadata().agentId));
 // Note: ReputationRegistry requires external validators to rate agents (no self-rating allowed)
 const riskRouterClient = new RiskRouterClient(config.riskRouter as Hex, config.chainId);
 const identityClient = new IdentityClient(config.agentRegistry as Hex, config.chainId);
+const nonceTracker = LocalNonceTracker.getInstance();
 
 /**
  * @dev Helper to get a unique trace ID.
@@ -186,6 +193,12 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // Strategic: Always post 100 to counteract competitor zero-scores.
     if (checkpoint.checkpointHash) {
       logger.info({ step: 'POSTING_HEARTBEAT', traceId, checkpointHash: checkpoint.checkpointHash });
+
+      // Emit risk alert if risk is high
+      if (decision.riskScore > 0.6) {
+        agentEvents.emit('risk.alert', { traceId, riskScore: decision.riskScore, reasoning: decision.reasoning });
+      }
+
       await validationClient.postHeartbeat(
         BigInt(getAgentMetadata().agentId),
         checkpoint.checkpointHash as Hex,
@@ -215,13 +228,24 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const signature = await riskRouterClient.signIntent(intent, privateKey);
 
     // ✅ NEW: Submit signed intent to RiskRouter for on-chain validation
-    const authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
+    // Exponential backoff retry logic for authorization
+    let authResult: { success: boolean; transactionHash?: Hex; error?: string } = { success: false };
+    let attempts = 0;
+    while (attempts < 3) {
+      authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
+      if (authResult.success) break;
+
+      attempts++;
+      const delay = Math.pow(2, attempts) * 2000;
+      logger.warn({ step: 'AUTHORIZE_RETRY', traceId, attempt: attempts, delay, error: authResult.error });
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
 
     if (!authResult.success) {
       logger.error({ step: 'RISKROUTER_AUTHORIZATION_FAILED', traceId, error: authResult.error });
       return { 
         isAllowed: false, 
-        reason: `RiskRouter validation failed: ${authResult.error}`, 
+        reason: `RiskRouter validation failed after retries: ${authResult.error}`,
         signature: '0x' 
       };
     }
@@ -237,6 +261,14 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
           signature: '0x' 
         };
       }
+
+      // Emit authorization event for dashboard
+      agentEvents.emit('trade.authorized', {
+        traceId,
+        pair: intent.pair,
+        amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
+        txHash: authResult.transactionHash
+      });
 
       // NOTE: Reputation feedback must come from OTHER operators (not self-rating).
       // The ReputationRegistry enforces: "operator cannot self-rate"
@@ -293,19 +325,33 @@ async function main() {
   console.log(`  Wallet: ${agentWallet}`);
   console.log(`  Trading Interval: ${TRADING_INTERVAL_MS / 1000}s`);
 
-  // Fetch current nonce from RiskRouter (important for replay protection)
-  let currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
-  console.log(`  Current Nonce: ${currentNonce}`);
+  // Fetch current on-chain nonce and initialize LocalNonceTracker
+  const onChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+  const nonceKey = `${agentWallet}-${config.chainId}`;
+  nonceTracker.sync(nonceKey, onChainNonce);
+
+  console.log(`  Initial Nonce: ${onChainNonce}`);
   console.log(`  Press Ctrl+C to stop\n`);
+
+  // Start Risk Calibration Background Loop (every 10 minutes)
+  setInterval(() => riskCalibrator.runCalibration(), 600000);
 
   // Continuous trading loop
   while (isRunning) {
     try {
       const pairs = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC'];
+      // Update OHLCV data
+      for (const p of pairs) {
+          await ohlcvCollector.collect(p);
+      }
+
       const selectedPair = pairs[Math.floor(Math.random() * pairs.length)];
       
       // Randomize trade size within safe limits ($50-$200)
       const tradeSize = BigInt(5000 + Math.floor(Math.random() * 15000)); // $50.00 - $200.00
+
+      const currentOnChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+      const currentNonce = nonceTracker.getNextNonce(nonceKey, currentOnChainNonce);
 
       const intent: TradeIntent = {
         agentId: BigInt(agentMetadata.agentId),
@@ -323,8 +369,12 @@ async function main() {
       const result = await signIntent(intent, pk);
       
       if (result.isAllowed) {
-        currentNonce++;
         logger.info({ step: 'INTENT_SUBMITTED', nonce: currentNonce });
+
+        // Emit balance update event
+        agentEvents.emit('balance.update', {
+          pnl: getPnLTracker().getMetrics()
+        });
       } else {
         logger.warn({ step: 'INTENT_SKIPPED', reason: result.reason });
       }
@@ -332,8 +382,9 @@ async function main() {
     } catch (error: any) {
       logger.error({ step: 'CYCLE_ERROR', error: error.message });
       // Refresh nonce in case of desync
-      currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
-      logger.info({ step: 'NONCE_REFRESHED', nonce: currentNonce });
+      const refreshedNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+      nonceTracker.sync(nonceKey, refreshedNonce);
+      logger.info({ step: 'NONCE_REFRESHED', nonce: refreshedNonce });
     }
 
     // Wait for next trading cycle
@@ -361,7 +412,11 @@ const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
                ));
 
 if (isMain && process.env.NODE_ENV !== 'test') {
-  logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent...' });
+  logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent and socket server...' });
+
+  // Start standalone socket server
+  startSocketServer();
+
   main().catch((err) => {
     logger.error({ step: 'MAIN_ERROR', error: err.message, stack: err.stack });
     process.exit(1);

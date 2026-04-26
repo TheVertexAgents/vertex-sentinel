@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, fallback, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { loadAgentMetadata } from '../logic/config.js';
@@ -18,6 +18,22 @@ export class ValidationRegistryClient {
 
   private getChain() {
     return this.chainId === 31337 ? hardhat : sepolia;
+  }
+
+  private getTransport() {
+    if (this.chainId === 31337) return http();
+
+    const transports = [];
+    if (process.env.INFURA_KEY) {
+      transports.push(http(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`));
+    }
+    if (process.env.ALCHEMY_KEY) {
+      transports.push(http(`https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`));
+    }
+
+    if (transports.length === 0) return http();
+
+    return fallback(transports);
   }
 
   /**
@@ -42,12 +58,12 @@ export class ValidationRegistryClient {
       const walletClient = createWalletClient({
         account,
         chain,
-        transport: http(),
+        transport: this.getTransport(),
       });
 
       const publicClient = createPublicClient({
         chain,
-        transport: http(),
+        transport: this.getTransport(),
       });
 
       const metadata = loadAgentMetadata();
