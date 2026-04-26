@@ -39,3 +39,17 @@
 - `P2: DevEx`: Developer experience improvements for long-term project health.
 - `P2: Research`: Deeper R&D items for the future roadmap.
 - `P2: Strategic`: Long-term ecosystem alignment (e.g., ERC-8004).
+
+---
+
+## 🚀 Post-Hackathon Optimization (Next Steps)
+*Goal: Scalability, reliability, and institutional-grade performance.*
+
+| Issue | Priority | Status |
+| :--- | :--- | :--- |
+| **[PERF]** Sepolia Stability & Nonce Management Optimization | `High` | `TODO` |
+| **[PERF]** Dashboard WebSocket Migration (Socket.io) | `High` | `TODO` |
+| **[FEATURE]** Dynamic Agent Identity & Multi-Tenancy | `Medium` | `TODO` |
+| **[FEATURE]** Genkit-Powered Dynamic Risk Sizing | `Medium` | `TODO` |
+| **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `TODO` |
+| **[ANALYTICS]** Compliance Report Generation (PDF Audit Logs) | `Low` | `TODO` |

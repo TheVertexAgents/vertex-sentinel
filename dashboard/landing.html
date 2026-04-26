@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertex Sentinel | The Intelligent Risk Layer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --cyan: #00E5FF;
+            --purple: #7C3AED;
+            --obsidian: #0B0E14;
+            --emerald: #10B981;
+        }
+
+        body {
+            background-color: var(--obsidian);
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.08) 0%, transparent 40%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+        }
+
+        .text-cyan { color: var(--cyan); }
+        .glow-cyan { text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), #00B4D8);
+            color: var(--obsidian);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 items-center justify-center">
+    <div class="max-w-4xl w-full text-center space-y-12 py-20">
+        <div class="flex justify-center mb-8">
+            <img src="/dashboard/logo.png" alt="Vertex Logo" class="w-24 h-24 object-contain">
+        </div>
+
+        <h1 class="text-5xl md:text-7xl font-black tracking-tighter">
+            VERTEX <span class="text-cyan glow-cyan">SENTINEL</span>
+        </h1>
+
+        <p class="text-xl md:text-2xl text-gray-400 font-light max-w-2xl mx-auto leading-relaxed">
+            The institutional-grade risk management layer for autonomous AI agents.
+            Verifiable, fail-closed, and powered by Arc L1.
+        </p>
+
+        <div class="flex flex-col md:flex-row gap-6 justify-center pt-8">
+            <a href="/dashboard/onboarding.html" class="btn-primary px-10 py-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95">
+                Onboard New Agent
+            </a>
+            <a href="/dashboard/index.html" class="glass px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-white/5 transition-all border-white/20 active:scale-95">
+                Enter Risk Terminal
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-20">
+            <div class="glass p-8 text-left space-y-4">
+                <div class="w-10 h-10 bg-cyan/10 rounded-lg flex items-center justify-center text-cyan">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg uppercase tracking-widest">EIP-712 Integrity</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Every trade intent is cryptographically signed and verified on-chain against AI-defined risk parameters.</p>
+            </div>
+            <div class="glass p-8 text-left space-y-4">
+                <div class="w-10 h-10 bg-purple/10 rounded-lg flex items-center justify-center text-purple-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg uppercase tracking-widest">Arc L1 Verification</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Real-time market and sentiment data verification using the Arc L1 nanopayment infrastructure.</p>
+            </div>
+            <div class="glass p-8 text-left space-y-4">
+                <div class="w-10 h-10 bg-emerald/10 rounded-lg flex items-center justify-center text-emerald">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg uppercase tracking-widest">Circle WaaS</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Secure, developer-controlled wallets ensuring agent keys never exist in raw process memory.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-auto py-8 text-gray-600 text-[10px] font-bold uppercase tracking-[0.4em]">
+        © 2026 VERTEX AGENTS • ALL RIGHTS RESERVED
+    </footer>
+</body>
+</html>

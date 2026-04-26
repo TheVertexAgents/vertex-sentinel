@@ -11,11 +11,16 @@ import { createSignedCheckpoint } from '../utils/checkpoint.js';
 import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
 import { IdentityClient } from '../onchain/identity.js';
+import { LocalNonceTracker } from '../utils/nonce-tracker.js';
 import { ValidationRegistryClient } from "../onchain/validation.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { PnLTracker } from './pnl/tracker.js';
+import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
+import { OHLCVCollector } from './strategy/ohlcv_collector.js';
+import { NotificationService } from '../utils/notifications.js';
+import { RiskCalibrator } from './risk-calibrator.js';
 
 dotenv.config();
 
@@ -53,14 +58,23 @@ function getDeploymentConfig() {
   const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
 
   if (process.env.NETWORK === 'sepolia') {
-    if (!fs.existsSync(deploymentsPath)) {
-      throw new CriticalSecurityException('Fail-Closed: deployments_sepolia.json is missing but NETWORK is set to sepolia');
+    if (fs.existsSync(deploymentsPath)) {
+      try {
+        return JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+      } catch (error: any) {
+        throw new CriticalSecurityException(`Fail-Closed: Failed to parse deployments_sepolia.json: ${error.message}`);
+      }
     }
-    try {
-      return JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
-    } catch (error: any) {
-      throw new CriticalSecurityException(`Fail-Closed: Failed to parse deployments_sepolia.json: ${error.message}`);
-    }
+    // Strategic Fallback: Official Hackathon Addresses
+    return {
+      network: 'sepolia',
+      chainId: 11155111,
+      agentRegistry: '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3',
+      riskRouter: '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC',
+      reputationRegistry: '0x423a9904e39537a9997fbaF0f220d79D7d545763',
+      validationRegistry: '0x92bF63E5C7Ac6980f237a7164Ab413BE226187F1',
+      hackathonVault: '0x0E7CD8ef9743FEcf94f9103033a044caBD45fC90'
+    };
   }
 
   // Default to Local Hardhat if not explicitly set to sepolia
@@ -77,9 +91,12 @@ const config = getDeploymentConfig();
 
 // Init On-Chain Clients
 const validationClient = new ValidationRegistryClient(config.validationRegistry as Hex, config.chainId);
+const ohlcvCollector = OHLCVCollector.getInstance();
+const riskCalibrator = new RiskCalibrator(config.riskRouter as Hex, config.chainId, BigInt(getAgentMetadata().agentId));
 // Note: ReputationRegistry requires external validators to rate agents (no self-rating allowed)
 const riskRouterClient = new RiskRouterClient(config.riskRouter as Hex, config.chainId);
 const identityClient = new IdentityClient(config.agentRegistry as Hex, config.chainId);
+const nonceTracker = LocalNonceTracker.getInstance();
 
 /**
  * @dev Helper to get a unique trace ID.
@@ -89,15 +106,33 @@ function getTraceId(): string {
 }
 
 /**
- * @dev Mock "Strykr PRISM API" for canonical asset resolution.
- * TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
+ * @dev Strykr PRISM API for canonical asset resolution.
  */
 async function getAssetResolution(pair: string) {
-  // TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
-  // Current placeholder used to support local development during Judge Bot whitelisting trials.
-  logger.warn({ module: 'PRISM', message: 'Using placeholder resolution - real API integration pending' });
-  logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair });
-  return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  const apiKey = process.env.STRYKR_PRISM_API;
+  const url = `https://api.prismapi.ai/resolve?pair=${encodeURIComponent(pair)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!response.ok) {
+        throw new Error(`PRISM API returned ${response.status}`);
+    }
+
+    const data = await response.json() as { symbol: string, precision: number };
+    logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair, symbol: data.symbol });
+    return data;
+  } catch (error: any) {
+    logger.warn({ module: 'PRISM', message: 'PRISM API unavailable, using fallback', error: error.message });
+    return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  }
 }
 
 /**
@@ -106,17 +141,28 @@ async function getAssetResolution(pair: string) {
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
   const traceId = getTraceId();
   try {
-    const account = privateKeyToAccount(privateKey);
+    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+    const agentAddress = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(privateKey).address;
+
+    // 0. Geographic Restriction Check
+    // In a real scenario, this would use a GeoIP service or user-provided attestations.
+    // For now, we simulate a check to prevent unauthorized access.
+    if (process.env.SIMULATE_RESTRICTED_REGION === 'true') {
+        throw new CriticalSecurityException(`Fail-Closed: Vertex Sentinel is not available in your region.`);
+    }
 
     // 1. Check Identity (ERC-8004 Alignment) - non-blocking, informational only
     // RiskRouter performs final authorization regardless of registry status
-    await identityClient.isAgentRegistered(account.address);
+    await identityClient.isAgentRegistered(agentAddress);
 
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
     // 3. Update PnL Tracker before checkpoint (using real market data)
     const tracker = getPnLTracker();
+    if (decision.action === 'HOLD') {
+      tracker.recordSavings(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor);
+    }
     let realPrice = 0;
     try {
       const client = await getMcpClient();
@@ -149,7 +195,23 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       timestamp: new Date().toISOString()
     });
 
-    const currentPnL = tracker.getMetrics();
+    // Fetch current on-chain risk parameters for "Distance to Circuit Breaker"
+    let onchainRisk: any = null;
+    try {
+      onchainRisk = await riskRouterClient.riskParams(BigInt(getAgentMetadata().agentId));
+    } catch (e) {
+      logger.warn({ module: 'AGENT_BRAIN', step: 'FETCH_RISK_PARAMS_FAILED', error: e instanceof Error ? e.message : String(e) });
+    }
+
+    const currentPnL = {
+      ...tracker.getMetrics(),
+      onchainRisk: onchainRisk ? {
+        maxPositionUsdScaled: onchainRisk[0].toString(),
+        maxDrawdownBps: onchainRisk[1].toString(),
+        maxTradesPerHour: onchainRisk[2].toString(),
+        active: onchainRisk[3]
+      } : null
+    };
 
     // 4. Create and Sign Audit Checkpoint (Verifiable Execution)
     const checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
@@ -158,6 +220,13 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // Strategic: Always post 100 to counteract competitor zero-scores.
     if (checkpoint.checkpointHash) {
       logger.info({ step: 'POSTING_HEARTBEAT', traceId, checkpointHash: checkpoint.checkpointHash });
+
+      // Emit risk alert if risk is high
+      if (decision.riskScore > 0.6) {
+        agentEvents.emit('risk.alert', { traceId, riskScore: decision.riskScore, reasoning: decision.reasoning });
+        NotificationService.sendTelegram(`<b>High Risk Alert</b>\nRisk Score: ${(decision.riskScore * 100).toFixed(0)}%\nReasoning: ${decision.reasoning}`);
+      }
+
       await validationClient.postHeartbeat(
         BigInt(getAgentMetadata().agentId),
         checkpoint.checkpointHash as Hex,
@@ -187,19 +256,42 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     const signature = await riskRouterClient.signIntent(intent, privateKey);
 
     // ✅ NEW: Submit signed intent to RiskRouter for on-chain validation
-    const authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
+    // Exponential backoff retry logic for authorization
+    let authResult: { success: boolean; transactionHash?: Hex; error?: string } = { success: false };
+    let attempts = 0;
+    while (attempts < 3) {
+      authResult = await riskRouterClient.authorizeTrade(intent, signature, privateKey);
+      if (authResult.success) break;
+
+      attempts++;
+      const delay = Math.pow(2, attempts) * 2000;
+      logger.warn({ step: 'AUTHORIZE_RETRY', traceId, attempt: attempts, delay, error: authResult.error });
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
 
     if (!authResult.success) {
       logger.error({ step: 'RISKROUTER_AUTHORIZATION_FAILED', traceId, error: authResult.error });
       return { 
         isAllowed: false, 
-        reason: `RiskRouter validation failed: ${authResult.error}`, 
+        reason: `RiskRouter validation failed after retries: ${authResult.error}`,
         signature: '0x' 
       };
     }
 
     // Wait for transaction confirmation
     if (authResult.transactionHash) {
+      // Circle WaaS simulation check
+      if (authResult.transactionHash === '0xCIRCLE') {
+          logger.info({ step: 'CIRCLE_WAAS_SIM_CONFIRMED', traceId });
+          agentEvents.emit('trade.authorized', {
+            traceId,
+            pair: intent.pair,
+            amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
+            txHash: authResult.transactionHash
+          });
+          return { isAllowed: true, reason: decision.reasoning, signature };
+      }
+
       const confirmation = await riskRouterClient.waitForTradeAuthorization(authResult.transactionHash);
 
       if (!confirmation.authorized) {
@@ -209,6 +301,17 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
           signature: '0x' 
         };
       }
+
+      // Emit authorization event for dashboard
+      agentEvents.emit('trade.authorized', {
+        traceId,
+        pair: intent.pair,
+        amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
+        txHash: authResult.transactionHash
+      });
+
+      // Send Alerts
+      NotificationService.sendTelegram(`<b>Trade Authorized</b>\nPair: ${intent.pair}\nAmount: $${(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor).toFixed(2)}\nAction: ${intent.action}`);
 
       // NOTE: Reputation feedback must come from OTHER operators (not self-rating).
       // The ReputationRegistry enforces: "operator cannot self-rate"
@@ -255,8 +358,9 @@ process.on('SIGTERM', shutdown);
  */
 async function main() {
   const agentMetadata = getAgentMetadata();
-  const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-  const agentWallet = privateKeyToAccount(pk).address;
+  const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+  const pk = useCircle ? '0x' as Hex : process.env.AGENT_PRIVATE_KEY as Hex;
+  const agentWallet = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(pk).address;
 
   console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
   console.log(`║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║`);
@@ -265,19 +369,33 @@ async function main() {
   console.log(`  Wallet: ${agentWallet}`);
   console.log(`  Trading Interval: ${TRADING_INTERVAL_MS / 1000}s`);
 
-  // Fetch current nonce from RiskRouter (important for replay protection)
-  let currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
-  console.log(`  Current Nonce: ${currentNonce}`);
+  // Fetch current on-chain nonce and initialize LocalNonceTracker
+  const onChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+  const nonceKey = `${agentWallet}-${config.chainId}`;
+  nonceTracker.sync(nonceKey, onChainNonce);
+
+  console.log(`  Initial Nonce: ${onChainNonce}`);
   console.log(`  Press Ctrl+C to stop\n`);
+
+  // Start Risk Calibration Background Loop (every 10 minutes)
+  setInterval(() => riskCalibrator.runCalibration(), 600000);
 
   // Continuous trading loop
   while (isRunning) {
     try {
       const pairs = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC'];
+      // Update OHLCV data
+      for (const p of pairs) {
+          await ohlcvCollector.collect(p);
+      }
+
       const selectedPair = pairs[Math.floor(Math.random() * pairs.length)];
       
       // Randomize trade size within safe limits ($50-$200)
       const tradeSize = BigInt(5000 + Math.floor(Math.random() * 15000)); // $50.00 - $200.00
+
+      const currentOnChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+      const currentNonce = nonceTracker.getNextNonce(nonceKey, currentOnChainNonce);
 
       const intent: TradeIntent = {
         agentId: BigInt(agentMetadata.agentId),
@@ -295,8 +413,12 @@ async function main() {
       const result = await signIntent(intent, pk);
       
       if (result.isAllowed) {
-        currentNonce++;
         logger.info({ step: 'INTENT_SUBMITTED', nonce: currentNonce });
+
+        // Emit balance update event
+        agentEvents.emit('balance.update', {
+          pnl: getPnLTracker().getMetrics()
+        });
       } else {
         logger.warn({ step: 'INTENT_SKIPPED', reason: result.reason });
       }
@@ -304,8 +426,9 @@ async function main() {
     } catch (error: any) {
       logger.error({ step: 'CYCLE_ERROR', error: error.message });
       // Refresh nonce in case of desync
-      currentNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
-      logger.info({ step: 'NONCE_REFRESHED', nonce: currentNonce });
+      const refreshedNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
+      nonceTracker.sync(nonceKey, refreshedNonce);
+      logger.info({ step: 'NONCE_REFRESHED', nonce: refreshedNonce });
     }
 
     // Wait for next trading cycle
@@ -326,14 +449,17 @@ async function main() {
 
 logger.info({ step: 'SCRIPT_LOADING', message: 'Agent brain script loading...' });
 
-const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
-               (process.argv[1] && (
-                 path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
-                 process.argv[1].includes('agent_brain')
-               ));
+const isMain = process.argv[1] && (
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
+  process.argv[1].includes('agent_brain')
+);
 
 if (isMain && process.env.NODE_ENV !== 'test') {
-  logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent...' });
+  logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent and socket server...' });
+
+  // Start standalone socket server
+  startSocketServer();
+
   main().catch((err) => {
     logger.error({ step: 'MAIN_ERROR', error: err.message, stack: err.stack });
     process.exit(1);

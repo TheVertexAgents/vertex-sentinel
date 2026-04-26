@@ -15,10 +15,11 @@ describe('Execution Proxy Unit Tests', function () {
         process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
         process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
         process.env.KRAKEN_API_KEY = 'test-kraken-key';
-        process.env.KRAKEN_SECRET = 'ZmFrZS1zZWNyZXQtZm9yLXRlc3Rpbmc=';
+        process.env.KRAKEN_SECRET = 'test-kraken-secret';
         process.env.INFURA_KEY = 'test-infura';
         process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
         process.env.NETWORK = 'local';
+        process.env.STRYKR_PRISM_API = 'test-prism-key';
 
         if (fs.existsSync(auditLogPath)) {
             fs.unlinkSync(auditLogPath);
@@ -41,7 +42,7 @@ describe('Execution Proxy Unit Tests', function () {
         expect(() => new ExecutionProxy('0x123' as any, 'local')).to.throw(/AGENT_PRIVATE_KEY is missing/);
     });
 
-    it('should throw CriticalSecurityException if network is sepolia and deployments file is missing', () => {
+    it('should use fallback RiskRouter address if network is sepolia and deployments file is missing', () => {
         const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
         let backupCreated = false;
         if (fs.existsSync(deploymentsPath)) {
@@ -50,7 +51,9 @@ describe('Execution Proxy Unit Tests', function () {
         }
 
         try {
-            expect(() => new ExecutionProxy(undefined, 'sepolia')).to.throw(/deployments_sepolia.json is missing/);
+            const proxySepolia = new ExecutionProxy(undefined, 'sepolia');
+            // Official Hackathon RiskRouter Address
+            expect((proxySepolia as any).contractAddress).to.equal('0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC');
         } finally {
             if (backupCreated) fs.renameSync(deploymentsPath + '.bak', deploymentsPath);
         }
@@ -72,7 +75,7 @@ describe('Execution Proxy Unit Tests', function () {
 
         try {
             // Using a minimum tiny volume for test
-            await proxy.executeOnKraken('BTC/USD', 1000000000000n, 'TEST-TRACE-REAL-123');
+            await proxy.executeOnKraken('BTC/USD', 1000000000000n, 'TEST-TRACE-REAL-123', 'buy', 100n);
         } catch (error) {
             // It may throw if the real execution fails, but we don't mock it so this is valid.
         }

@@ -20,9 +20,10 @@ describe("Sentinel Full Loop Integration", function () {
     process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
     process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
     process.env.KRAKEN_API_KEY = 'test-kraken-key';
-    process.env.KRAKEN_SECRET = 'ZmFrZS1zZWNyZXQtZm9yLXRlc3Rpbmc=';
+    process.env.KRAKEN_SECRET = 'test-kraken-secret';
     process.env.INFURA_KEY = 'test-infura';
     process.env.LUNARCRUSH_KEY = 'test-lunarcrush';
+    process.env.STRYKR_PRISM_API = 'test-prism-key';
     
     // 1. Validate Config
     const agentMetadata = loadAgentMetadata();
@@ -51,7 +52,7 @@ describe("Sentinel Full Loop Integration", function () {
 
     const traceId = `TEST-E2E-LOOP-${Date.now()}`;
     try {
-        await proxy.processAuthorizedTrade(decision.pair, decision.amountUsdScaled, traceId);
+        await proxy.processAuthorizedTrade(decision.pair, decision.amountUsdScaled, traceId, decision.action, 100n);
     } catch (e: any) {
         // May gracefully throw if real environment fails connection, which is valid execution
     }

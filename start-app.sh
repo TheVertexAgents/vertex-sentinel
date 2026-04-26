@@ -10,6 +10,16 @@ cd "$(dirname "$0")"
 # Best Practice: Ensure we have necessary directories
 mkdir -p logs pids
 
+# Load NVM and use Node 20
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    echo "⚙️  Loading NVM..."
+    . "$NVM_DIR/nvm.sh"
+    nvm use 20 || echo "⚠️  nvm use 20 failed, using system node"
+else
+    echo "⚠️  NVM not found at $NVM_DIR/nvm.sh, relying on system Node.js"
+fi
+
 echo "╔═══════════════════════════════════════════════════╗"
 echo "║          Starting Vertex Sentinel Services        ║"
 echo "╚═══════════════════════════════════════════════════╝"
@@ -62,5 +72,5 @@ echo ""
 echo "🔍 How to verify the services are running:"
 echo "  1. Monitor Agent Logs:      tail -f logs/agent.log"
 echo "  2. Monitor Dashboard Logs:  tail -f logs/dashboard.log"
-echo "  3. View Dashboard UI:       http://localhost:3000"
+echo "  3. View Dashboard UI:       http://localhost:3005/dashboard/index.html"
 echo "  4. Check process status:    ps -p \$(cat pids/agent.pid) \$(cat pids/dashboard.pid)"

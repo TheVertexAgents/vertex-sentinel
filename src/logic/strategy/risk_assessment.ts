@@ -8,6 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import path from 'path';
 import type { Ticker, Balance, TradeHistory } from '../../mcp/kraken/types.js';
 import { getNewsFeed } from './news_feed.js';
+import { AgentStackClient } from '../clients/agent_stack.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -22,6 +23,7 @@ export const TradeDecisionSchema = z.object({
   riskScore: z.number().min(0).max(1),
   reasoning: z.string(),
   newsHighlights: z.array(z.string()),
+  arcL1Proof: z.string().optional(),
   breakdown: z.object({
     marketRisk: z.number(),
     portfolioRisk: z.number(),
@@ -290,7 +292,32 @@ Output your response in valid JSON format:
       };
     }
 
-    // 6. Hybrid Enforcement (Fail-Closed)
+    // 6. Arc L1 Verification Layer (Milestone 3 Integration)
+    // The Sentinel MUST "hire" the AgentStack Orchestrator to verify local data.
+    const verification = await AgentStackClient.verifyTrade(
+      manualPenalty > 0.8 || aiResult.riskScore > 0.8 ? 'HOLD' : 'BUY', // Simplified intent for verification
+      Math.max(manualPenalty, aiResult.riskScore),
+      pair
+    );
+
+    const agentStackRequired = process.env.AGENTSTACK_REQUIRED === 'true';
+    if (!verification.verified && agentStackRequired) {
+      return {
+        action: 'HOLD',
+        pair,
+        amountUsdScaled: 0n,
+        confidence: 0,
+        riskScore: 1.0,
+        reasoning: `Security Halt: Verification Gateway Unreachable. Market Data Integrity cannot be guaranteed via Arc L1. Error: ${verification.error}`,
+        newsHighlights: [],
+        arcL1Proof: undefined,
+        breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
+      };
+    } else if (!verification.verified) {
+      logger.warn({ module: 'RISK_ASSESSMENT', message: 'AgentStack unreachable. Using local risk assessment only.', error: verification.error });
+    }
+
+    // 7. Hybrid Enforcement (Fail-Closed)
     // If either manual penalty or AI score exceeds 0.8, we HOLD.
     const riskScore = Math.max(manualPenalty, aiResult.riskScore);
     const confidence = 1.0 - riskScore;
@@ -321,6 +348,7 @@ Output your response in valid JSON format:
       riskScore,
       reasoning: reasons.join(" | "),
       newsHighlights,
+      arcL1Proof: verification.proof,
       breakdown: {
         marketRisk: aiResult.marketRisk,
         portfolioRisk: aiResult.portfolioRisk,

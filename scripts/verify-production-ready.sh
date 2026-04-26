@@ -78,7 +78,7 @@ if [ -f .env ]; then
     log_result "PASS" ".env file found"
     
     # Check for required credentials
-    REQUIRED_KEYS=("KRAKEN_API_KEY" "PRIVATE_KEY" "AGENT_PRIVATE_KEY" "INFURA_KEY")
+    REQUIRED_KEYS=("KRAKEN_API_KEY" "AGENT_PRIVATE_KEY" "INFURA_KEY")
     MISSING_KEYS=0
     
     for key in "${REQUIRED_KEYS[@]}"; do

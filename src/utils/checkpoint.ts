@@ -2,8 +2,10 @@ import { createWalletClient, http, keccak256, stringToBytes, hashTypedData } fro
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
+import { CircleSigner } from '../onchain/circle_signer.js';
 import type { TradeDecision } from '../logic/strategy/risk_assessment.js';
 import type { AgentMetadata } from '../logic/config.js';
+import type { PnLMetrics } from '../logic/pnl/types.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -26,6 +28,7 @@ const TYPES = {
     { name: 'amountUsdScaled', type: 'uint256' },
     { name: 'reasoningHash', type: 'bytes32' },
     { name: 'confidenceScaled', type: 'uint256' },
+    { name: 'arcL1Proof', type: 'string' },
   ],
 } as const;
 
@@ -34,6 +37,7 @@ export interface SignedCheckpoint {
   signature: string;
   checkpointHash: string;
   reasoning: string;
+  arcL1Proof?: string;
   pnl?: any;
 }
 
@@ -46,21 +50,16 @@ export async function createSignedCheckpoint(
   decision: TradeDecision,
   privateKey: string,
   chainId: number = 11155111,
-  pnl?: any
+  pnl?: PnLMetrics
 ): Promise<SignedCheckpoint> {
-    if (!privateKey) {
-      throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint. Check your environment configuration.");
-    }
     try {
+      const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+      if (!useCircle && !privateKey) {
+          throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint when Circle WaaS is disabled.");
+      }
+
       const timestamp = BigInt(Math.floor(Date.now() / 1000));
     const reasoningHash = keccak256(stringToBytes(decision.reasoning));
-
-    const account = privateKeyToAccount(privateKey as `0x${string}`);
-    const client = createWalletClient({
-      account,
-      chain: sepolia,
-      transport: http(),
-    });
 
     const message = {
       agentId: BigInt(agent.agentId),
@@ -70,6 +69,7 @@ export async function createSignedCheckpoint(
       amountUsdScaled: decision.amountUsdScaled,
       reasoningHash,
       confidenceScaled: BigInt(Math.round(decision.confidence * 1000)),
+      arcL1Proof: decision.arcL1Proof || "",
     };
 
     const checkpointHash = hashTypedData({
@@ -79,12 +79,24 @@ export async function createSignedCheckpoint(
       message,
     });
 
-    const signature = await client.signTypedData({
-      domain: getDomain(chainId),
-      types: TYPES,
-      primaryType: 'TradeCheckpoint',
-      message,
-    });
+    let signature: string;
+    if (useCircle) {
+        const signer = new CircleSigner();
+        signature = await signer.signTypedData(getDomain(chainId), TYPES, 'TradeCheckpoint', message);
+    } else {
+        const account = privateKeyToAccount(privateKey as `0x${string}`);
+        const client = createWalletClient({
+          account,
+          chain: sepolia,
+          transport: http(),
+        });
+        signature = await client.signTypedData({
+          domain: getDomain(chainId),
+          types: TYPES,
+          primaryType: 'TradeCheckpoint',
+          message,
+        });
+    }
 
     const checkpoint: SignedCheckpoint = {
       message: {
@@ -97,7 +109,8 @@ export async function createSignedCheckpoint(
       signature,
       checkpointHash,
       reasoning: decision.reasoning,
-      pnl: pnl
+      arcL1Proof: decision.arcL1Proof,
+      pnl: pnl || null
     };
 
     // Save to audit log

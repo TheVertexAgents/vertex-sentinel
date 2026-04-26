@@ -41,4 +41,28 @@ describe('PnLCalculator', () => {
   it('should return zero win rate for no trades', () => {
     expect(PnLCalculator.calculateWinRate([])).to.equal(0);
   });
+
+  it('should calculate win/loss ratio correctly', () => {
+    const results = [100, -50, 200, -100, 300];
+    // Avg Win: (100 + 200 + 300) / 3 = 200
+    // Avg Loss: (50 + 100) / 2 = 75
+    // Ratio: 200 / 75 = 2.666...
+    expect(PnLCalculator.calculateWinLossRatio(results)).to.be.closeTo(2.67, 0.01);
+  });
+
+  it('should calculate max drawdown correctly', () => {
+    const curve = [0, 100, 80, 120, 90, 150];
+    // Peak 100 -> 80 (20% drawdown)
+    // Peak 120 -> 90 (25% drawdown)
+    // Max DD: 25%
+    expect(PnLCalculator.calculateMaxDrawdown(curve)).to.equal(25);
+  });
+
+  it('should calculate sharpe ratio correctly', () => {
+    const results = [10, 20, 10, 20];
+    // Mean: 15
+    // StdDev: 5.77...
+    // Sharpe: 15 / 5.77 = 2.598...
+    expect(PnLCalculator.calculateSharpeRatio(results)).to.be.closeTo(2.6, 0.1);
+  });
 });

@@ -10,6 +10,11 @@ module.exports = {
   solidity: {
     version: "0.8.24",
     settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      },
+      viaIR: true,
       evmVersion: "cancun"
     }
   },
@@ -27,8 +32,20 @@ module.exports = {
       url: "http://127.0.0.1:8545",
     },
     sepolia: {
-      url: `https://sepolia.infura.io/v3/${INFURA_KEY}`,
-      accounts: AGENT_PRIVATE_KEY ? [AGENT_PRIVATE_KEY] : [],
+      url: process.env.RPC_URL || `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: process.env.AGENT_PRIVATE_KEY ? [process.env.AGENT_PRIVATE_KEY] : [],
+    },
+    mainnet: {
+      url: process.env.MAINNET_RPC || `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: process.env.AGENT_PRIVATE_KEY ? [process.env.AGENT_PRIVATE_KEY] : [],
+    },
+    base: {
+      url: process.env.BASE_RPC || "https://mainnet.base.org",
+      accounts: process.env.AGENT_PRIVATE_KEY ? [process.env.AGENT_PRIVATE_KEY] : [],
+    },
+    arbitrum: {
+      url: process.env.ARBITRUM_RPC || `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: process.env.AGENT_PRIVATE_KEY ? [process.env.AGENT_PRIVATE_KEY] : [],
     },
   },
 };

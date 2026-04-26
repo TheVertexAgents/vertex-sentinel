@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Hex } from 'viem';
+import { createPublicClient, http, fallback, type Hex } from 'viem';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { logger } from '../utils/logger.js';
@@ -20,6 +20,22 @@ export class IdentityClient {
    * @dev Checks if the agent is registered in the registry.
    * Tries multiple methods to support different AgentRegistry implementations.
    */
+  private getTransport() {
+    if (this.chainId === 31337) return http();
+
+    const transports = [];
+    if (process.env.INFURA_KEY) {
+      transports.push(http(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`));
+    }
+    if (process.env.ALCHEMY_KEY) {
+      transports.push(http(`https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`));
+    }
+
+    if (transports.length === 0) return http();
+
+    return fallback(transports);
+  }
+
   async isAgentRegistered(agentAddress: Hex): Promise<boolean> {
     // Fail-Closed: Remove registry bypass and zero-address guards.
     if (this.registryAddress === '0x0000000000000000000000000000000000000000') {
@@ -31,7 +47,7 @@ export class IdentityClient {
 
       const publicClient = createPublicClient({
         chain: chain,
-        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
+        transport: this.getTransport(),
       });
 
       // Try method 1: walletToAgentId (shared hackathon registry)
