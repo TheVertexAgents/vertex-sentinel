@@ -59,3 +59,7 @@ python3 -m http.server 12000
 - Contract deployed on Sepolia: `0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC`
 - Agent Address: `0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9`
 - Audit trail stored in `logs/audit.json`
+
+## Current Development Phase
+- **Focus**: Performance, Reliability, and Institutional Scalability.
+- **Key Initiative**: WebSocket Migration and Sepolia Congestion Hardening.
