@@ -55,8 +55,12 @@ export function startSocketServer() {
 
 // Start server if this is the main module
 import { fileURLToPath } from 'url';
+import path from 'path';
 
-const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}`;
+const isMain = process.argv[1] && (
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
+);
+
 if (isMain && process.env.NODE_ENV !== 'test') {
   startSocketServer();
 }

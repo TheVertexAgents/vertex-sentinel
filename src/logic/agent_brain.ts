@@ -405,11 +405,10 @@ async function main() {
 
 logger.info({ step: 'SCRIPT_LOADING', message: 'Agent brain script loading...' });
 
-const isMain = import.meta.url === `file://${fileURLToPath(import.meta.url)}` ||
-               (process.argv[1] && (
-                 path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
-                 process.argv[1].includes('agent_brain')
-               ));
+const isMain = process.argv[1] && (
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) ||
+  process.argv[1].includes('agent_brain')
+);
 
 if (isMain && process.env.NODE_ENV !== 'test') {
   logger.info({ step: 'MAIN_START', message: 'Main entry point detected. Starting agent and socket server...' });
