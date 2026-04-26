@@ -3,9 +3,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { logger } from '../utils/logger.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
-import { loadAgentMetadata } from './config.js';
 import type { Hex } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
 
 const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],
