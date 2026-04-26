@@ -2,6 +2,7 @@ import { createWalletClient, http, keccak256, stringToBytes, hashTypedData } fro
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
+import { CircleSigner } from '../onchain/circle_signer.js';
 import type { TradeDecision } from '../logic/strategy/risk_assessment.js';
 import type { AgentMetadata } from '../logic/config.js';
 import type { PnLMetrics } from '../logic/pnl/types.js';
@@ -51,19 +52,14 @@ export async function createSignedCheckpoint(
   chainId: number = 11155111,
   pnl?: PnLMetrics
 ): Promise<SignedCheckpoint> {
-    if (!privateKey) {
-      throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint. Check your environment configuration.");
-    }
     try {
+      const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+      if (!useCircle && !privateKey) {
+          throw new CriticalSecurityException("Fail-Closed: privateKey is required for signing checkpoint when Circle WaaS is disabled.");
+      }
+
       const timestamp = BigInt(Math.floor(Date.now() / 1000));
     const reasoningHash = keccak256(stringToBytes(decision.reasoning));
-
-    const account = privateKeyToAccount(privateKey as `0x${string}`);
-    const client = createWalletClient({
-      account,
-      chain: sepolia,
-      transport: http(),
-    });
 
     const message = {
       agentId: BigInt(agent.agentId),
@@ -83,12 +79,24 @@ export async function createSignedCheckpoint(
       message,
     });
 
-    const signature = await client.signTypedData({
-      domain: getDomain(chainId),
-      types: TYPES,
-      primaryType: 'TradeCheckpoint',
-      message,
-    });
+    let signature: string;
+    if (useCircle) {
+        const signer = new CircleSigner();
+        signature = await signer.signTypedData(getDomain(chainId), TYPES, 'TradeCheckpoint', message);
+    } else {
+        const account = privateKeyToAccount(privateKey as `0x${string}`);
+        const client = createWalletClient({
+          account,
+          chain: sepolia,
+          transport: http(),
+        });
+        signature = await client.signTypedData({
+          domain: getDomain(chainId),
+          types: TYPES,
+          primaryType: 'TradeCheckpoint',
+          message,
+        });
+    }
 
     const checkpoint: SignedCheckpoint = {
       message: {

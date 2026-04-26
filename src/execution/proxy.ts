@@ -71,11 +71,16 @@ class ExecutionProxy {
       ),
     });
 
-    const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-    if (!pk) {
-        throw new CriticalSecurityException('AGENT_PRIVATE_KEY is missing from environment');
+    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+    if (useCircle) {
+        this.agentAddress = process.env.AGENT_WALLET_ADDRESS as Hex;
+    } else {
+        const pk = process.env.AGENT_PRIVATE_KEY as Hex;
+        if (!pk) {
+            throw new CriticalSecurityException('AGENT_PRIVATE_KEY is missing from environment');
+        }
+        this.agentAddress = privateKeyToAccount(pk).address;
     }
-    this.agentAddress = privateKeyToAccount(pk).address;
 
     this.log('INFO', 'Execution Layer Proxy Initialized', {
         network,
@@ -251,7 +256,8 @@ class ExecutionProxy {
       return;
     }
 
-    this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString() });
+    const paperMode = process.env.KRAKEN_PAPER_MODE === 'true';
+    this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString(), paperMode });
     
     try {
       const config = loadAgentMetadata();

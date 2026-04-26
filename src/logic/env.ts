@@ -8,7 +8,8 @@ import { logger } from '../utils/logger.js';
  */
 const envSchema = z.object({
   GOOGLE_GENAI_API_KEY: z.string().min(1, "GOOGLE_GENAI_API_KEY is required"),
-  AGENT_PRIVATE_KEY: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "AGENT_PRIVATE_KEY must be a valid 0x-prefixed 64-character hex string"),
+  AGENT_PRIVATE_KEY: z.string().regex(/^0x[a-fA-F0-9]{64}$/).optional(),
+  AGENT_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "AGENT_WALLET_ADDRESS must be a valid Ethereum address").optional(),
   KRAKEN_API_KEY: z.string().min(1, "KRAKEN_API_KEY is required"),
   KRAKEN_SECRET: z.string().min(1, "KRAKEN_SECRET is required"),
   INFURA_KEY: z.string().min(1, "INFURA_KEY is required"),
@@ -23,7 +24,11 @@ const envSchema = z.object({
   AGENTSTACK_REQUIRED: z.enum(['true', 'false']).default('true'),
   CIRCLE_API_KEY: z.string().optional(),
   CIRCLE_ENTITY_SECRET: z.string().optional(),
+  AGENT_WALLET_ID: z.string().optional(),
   USE_CIRCLE_WAAS: z.enum(['true', 'false']).default('false'),
+  MAINNET_RPC: z.string().url().optional(),
+  BASE_RPC: z.string().url().optional(),
+  ARBITRUM_RPC: z.string().url().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
@@ -36,6 +41,17 @@ const envSchema = z.object({
  */
 export function validateEnv() {
   const result = envSchema.safeParse(process.env);
+
+  if (result.success) {
+    const data = result.data;
+    if (data.USE_CIRCLE_WAAS === 'true') {
+        if (!data.CIRCLE_API_KEY || !data.CIRCLE_ENTITY_SECRET || !data.AGENT_WALLET_ID || !data.AGENT_WALLET_ADDRESS) {
+            throw new CriticalSecurityException("Circle WaaS is enabled but CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, AGENT_WALLET_ID, or AGENT_WALLET_ADDRESS is missing.");
+        }
+    } else if (!data.AGENT_PRIVATE_KEY) {
+        throw new CriticalSecurityException("AGENT_PRIVATE_KEY is required when Circle WaaS is disabled.");
+    }
+  }
 
   if (!result.success) {
     const errorMessages = result.error.errors

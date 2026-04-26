@@ -60,14 +60,42 @@ export class CircleSigner {
   /**
    * @dev Signs a transaction using Circle WaaS.
    */
-  async executeContractCall(params: {
-    abi: any;
-    contractAddress: Hex;
-    functionName: string;
-    args: any[];
-    blockchain: string;
-  }): Promise<Hex> {
-      console.log(params); // avoid unused param warning
-      throw new Error("Circle WaaS direct contract call execution not yet implemented. Use EIP-712 signing for now.");
+  async signTransaction(transaction: any): Promise<Hex> {
+    try {
+      logger.info({ module: 'CircleSigner', step: 'SIGN_TRANSACTION' });
+      const response = await this.client.signTransaction({
+        walletId: this.walletId,
+        transaction: JSON.stringify(transaction)
+      });
+      const signature = response.data?.signature;
+      if (!signature) {
+        throw new Error('Circle WaaS returned no transaction signature');
+      }
+      return signature as Hex;
+    } catch (error: any) {
+      logger.error({ module: 'CircleSigner', step: 'SIGN_TRANSACTION_FAILED', error: error.message });
+      throw new CriticalSecurityException(`Circle WaaS transaction signing failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * @dev Signs a message using Circle WaaS.
+   */
+  async signMessage(message: string): Promise<Hex> {
+    try {
+      logger.info({ module: 'CircleSigner', step: 'SIGN_MESSAGE' });
+      const response = await this.client.signMessage({
+        walletId: this.walletId,
+        message
+      });
+      const signature = response.data?.signature;
+      if (!signature) {
+        throw new Error('Circle WaaS returned no message signature');
+      }
+      return signature as Hex;
+    } catch (error: any) {
+      logger.error({ module: 'CircleSigner', step: 'SIGN_MESSAGE_FAILED', error: error.message });
+      throw new CriticalSecurityException(`Circle WaaS message signing failed: ${error.message}`);
+    }
   }
 }

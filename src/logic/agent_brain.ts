@@ -141,11 +141,19 @@ async function getAssetResolution(pair: string) {
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
   const traceId = getTraceId();
   try {
-    const account = privateKeyToAccount(privateKey);
+    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+    const agentAddress = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(privateKey).address;
+
+    // 0. Geographic Restriction Check
+    // In a real scenario, this would use a GeoIP service or user-provided attestations.
+    // For now, we simulate a check to prevent unauthorized access.
+    if (process.env.SIMULATE_RESTRICTED_REGION === 'true') {
+        throw new CriticalSecurityException(`Fail-Closed: Vertex Sentinel is not available in your region.`);
+    }
 
     // 1. Check Identity (ERC-8004 Alignment) - non-blocking, informational only
     // RiskRouter performs final authorization regardless of registry status
-    await identityClient.isAgentRegistered(account.address);
+    await identityClient.isAgentRegistered(agentAddress);
 
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
@@ -206,17 +214,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     };
 
     // 4. Create and Sign Audit Checkpoint (Verifiable Execution)
-    // Check if we should use Circle for checkpoint signing
-    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
-    let checkpoint;
-    if (useCircle) {
-      // For now, createSignedCheckpoint uses the local PK.
-      // In a full implementation, this utility would also be Circle-aware.
-      // Since it's an internal audit log, we'll keep it as-is for now but note the potential improvement.
-      checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
-    } else {
-      checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
-    }
+    const checkpoint = await createSignedCheckpoint(getAgentMetadata(), decision, privateKey, config.chainId, currentPnL);
 
     // ✅ NEW: Automated Heartbeat Attestation to ValidationRegistry
     // Strategic: Always post 100 to counteract competitor zero-scores.
@@ -348,8 +346,9 @@ process.on('SIGTERM', shutdown);
  */
 async function main() {
   const agentMetadata = getAgentMetadata();
-  const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-  const agentWallet = privateKeyToAccount(pk).address;
+  const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+  const pk = useCircle ? '0x' as Hex : process.env.AGENT_PRIVATE_KEY as Hex;
+  const agentWallet = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(pk).address;
 
   console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
   console.log(`║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║`);
