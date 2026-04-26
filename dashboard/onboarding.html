@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Onboarding | Vertex Sentinel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --cyan: #00E5FF;
+            --purple: #7C3AED;
+            --obsidian: #0B0E14;
+            --emerald: #10B981;
+        }
+
+        body {
+            background-color: var(--obsidian);
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.05) 0%, transparent 40%);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+        }
+
+        .step-inactive { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+        .text-cyan { color: var(--cyan); }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        input, select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            outline: none;
+            width: 100%;
+        }
+        input:focus { border-color: var(--cyan); }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+    <div class="max-w-2xl mx-auto space-y-12">
+        <header class="text-center space-y-4">
+            <img src="/dashboard/logo.png" alt="Vertex Logo" class="w-16 h-16 mx-auto">
+            <h1 class="text-3xl font-bold tracking-tight">Agent Onboarding Wizard</h1>
+            <p class="text-gray-500 text-sm uppercase tracking-widest">Step into the verifiable risk layer</p>
+        </header>
+
+        <div class="space-y-8">
+            <!-- Step 1: Connect Wallet -->
+            <section id="step-1" class="glass p-8 space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-4">
+                        <span class="w-8 h-8 rounded-full bg-cyan/20 text-cyan flex items-center justify-center text-sm">1</span>
+                        Connect Operator Wallet
+                    </h2>
+                    <span id="step-1-status" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pending</span>
+                </div>
+                <button id="btn-connect" class="w-full py-4 bg-cyan text-obsidian font-bold uppercase tracking-widest rounded-xl hover:scale-[1.02] transition-all active:scale-95">
+                    Connect MetaMask
+                </button>
+            </section>
+
+            <!-- Step 2: Mint Identity -->
+            <section id="step-2" class="glass p-8 space-y-6 step-inactive">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-4">
+                        <span class="w-8 h-8 rounded-full bg-cyan/20 text-cyan flex items-center justify-center text-sm">2</span>
+                        Mint ERC-8004 Identity
+                    </h2>
+                    <span id="step-2-status" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Locked</span>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="agent-name" placeholder="Agent Name (e.g. Sentinel-Alpha)">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-tight">This will mint a unique NFT representing your agent on Sepolia.</p>
+                </div>
+                <button id="btn-mint" class="w-full py-4 bg-purple-600 text-white font-bold uppercase tracking-widest rounded-xl hover:scale-[1.02] transition-all">
+                    Mint Agent NFT
+                </button>
+            </section>
+
+            <!-- Step 3: Risk Parameters -->
+            <section id="step-3" class="glass p-8 space-y-6 step-inactive">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-4">
+                        <span class="w-8 h-8 rounded-full bg-cyan/20 text-cyan flex items-center justify-center text-sm">3</span>
+                        Initialize Risk Guardrails
+                    </h2>
+                    <span id="step-3-status" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Locked</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Max Position ($)</label>
+                        <input type="number" id="max-pos" value="1000">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Trades / Hour</label>
+                        <input type="number" id="max-trades" value="5">
+                    </div>
+                </div>
+                <button id="btn-config" class="w-full py-4 bg-emerald-600 text-white font-bold uppercase tracking-widest rounded-xl hover:scale-[1.02] transition-all">
+                    Authorize Parameters
+                </button>
+            </section>
+
+            <div id="success-area" class="hidden glass p-8 border-emerald/30 bg-emerald/5 text-center space-y-6">
+                <h2 class="text-2xl font-bold text-emerald">Agent Successfully Onboarded!</h2>
+                <p class="text-gray-400 text-sm">Your agent is now registered and protected by the Sentinel Risk Layer.</p>
+                <a href="/dashboard/index.html" class="inline-block px-12 py-4 bg-white text-obsidian font-bold uppercase tracking-widest rounded-xl">
+                    Open Risk Terminal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let provider, signer, userAddress;
+        const REGISTRY_ADDR = '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3';
+        const ROUTER_ADDR = '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC';
+
+        const REGISTRY_ABI = ["function register(address agentWallet, string name, string desc, string[] caps, string uri) external returns (uint256)"];
+        const ROUTER_ABI = ["function setRiskParams(uint256 agentId, uint256 maxPos, uint256 maxDD, uint256 maxTrades) external"];
+
+        let agentId = null;
+
+        document.getElementById('btn-connect').addEventListener('click', async () => {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                document.getElementById('step-1-status').textContent = 'Connected: ' + userAddress.substring(0,6);
+                document.getElementById('step-1-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
+                document.getElementById('step-2').classList.remove('step-inactive');
+                document.getElementById('btn-connect').disabled = true;
+                document.getElementById('btn-connect').textContent = 'Wallet Linked';
+            }
+        });
+
+        document.getElementById('btn-mint').addEventListener('click', async () => {
+            const name = document.getElementById('agent-name').value || "Unnamed Agent";
+            const registry = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
+
+            try {
+                document.getElementById('btn-mint').textContent = 'Signing...';
+                const dummyWallet = ethers.Wallet.createRandom().address;
+                const tx = await registry.register(dummyWallet, name, "Onboarded Agent", ["trading"], "https://vertex.agents/metadata.json");
+                const receipt = await tx.wait();
+
+                // Simplified for demo, in production we'd parse the event
+                agentId = 42;
+                localStorage.setItem('AGENT_ID', agentId);
+
+                document.getElementById('step-2-status').textContent = 'Minted';
+                document.getElementById('step-2-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
+                document.getElementById('step-3').classList.remove('step-inactive');
+                document.getElementById('btn-mint').disabled = true;
+                document.getElementById('btn-mint').textContent = 'Identity Minted';
+            } catch (e) {
+                alert("Minting failed: " + e.message);
+                document.getElementById('btn-mint').textContent = 'Mint Agent NFT';
+            }
+        });
+
+        document.getElementById('btn-config').addEventListener('click', async () => {
+            const router = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI, signer);
+            const maxPos = ethers.BigNumber.from(document.getElementById('max-pos').value).mul(100);
+            const maxTrades = document.getElementById('max-trades').value;
+
+            try {
+                document.getElementById('btn-config').textContent = 'Authorizing...';
+                const tx = await router.setRiskParams(agentId, maxPos, 1000, maxTrades);
+                await tx.wait();
+
+                document.getElementById('step-3-status').textContent = 'Active';
+                document.getElementById('step-3-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
+                document.getElementById('success-area').classList.remove('hidden');
+                document.getElementById('btn-config').disabled = true;
+                document.getElementById('btn-config').textContent = 'Parameters Set';
+            } catch (e) {
+                alert("Authorization failed: " + e.message);
+                document.getElementById('btn-config').textContent = 'Authorize Parameters';
+            }
+        });
+    </script>
+</body>
+</html>

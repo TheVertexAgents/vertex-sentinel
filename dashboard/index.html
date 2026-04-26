@@ -320,11 +320,11 @@
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center border-b border-white/5 pb-3">
                                     <span class="text-[10px] text-gray-400">ARC Balance</span>
-                                    <span class="text-sm font-bold mono">420.69 ARC</span>
+                                    <span id="arc-balance" class="text-sm font-bold mono">— ARC</span>
                                 </div>
                                 <div class="flex justify-between items-center border-b border-white/5 pb-3">
                                     <span class="text-[10px] text-gray-400">Next Payment</span>
-                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">in 12 hours</span>
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest" id="arc-next-payment">N/A</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-[10px] text-gray-400">Agent Reputation</span>
@@ -502,6 +502,7 @@
 
         // Multi-Tenancy State
         let currentAgentId = localStorage.getItem('AGENT_ID') || 42;
+        document.getElementById('agent-id-display').textContent = 'Agent #' + currentAgentId;
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {

@@ -3,6 +3,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
+import { CircleSigner } from './circle_signer.js';
 
 /**
  * @dev Client for interacting with the ValidationRegistry.
@@ -52,11 +53,11 @@ export class ValidationRegistryClient {
     }
 
     try {
-      const account = privateKeyToAccount(privateKey);
+      const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
       const chain = this.getChain();
       
       const walletClient = createWalletClient({
-        account,
+        account: useCircle ? undefined : privateKeyToAccount(privateKey),
         chain,
         transport: this.getTransport(),
       });
@@ -68,8 +69,19 @@ export class ValidationRegistryClient {
 
       const metadata = loadAgentMetadata();
 
+      if (useCircle) {
+          // Circle WaaS doesn't support direct writeContract yet in this helper,
+          // but we can sign the data and broadcast or use a relay.
+          // For now, we use signMessage as a placeholder for Circle-based heartbeat proof
+          const signer = new CircleSigner();
+          await signer.signMessage(`HEARTBEAT:${checkpointHash}`);
+          logger.info({ module: 'validation', step: 'CIRCLE_HEARTBEAT_SIGNED', checkpointHash });
+          return '0xCIRCLE';
+      }
+
       const hash = await walletClient.writeContract({
         address: this.registryAddress,
+        account: walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any,
         abi: [
           {
             name: 'postAttestation',

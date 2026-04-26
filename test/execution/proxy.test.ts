@@ -75,7 +75,7 @@ describe('Execution Proxy Unit Tests', function () {
 
         try {
             // Using a minimum tiny volume for test
-            await proxy.executeOnKraken('BTC/USD', 1000000000000n, 'TEST-TRACE-REAL-123');
+            await proxy.executeOnKraken('BTC/USD', 1000000000000n, 'TEST-TRACE-REAL-123', 'buy', 100n);
         } catch (error) {
             // It may throw if the real execution fails, but we don't mock it so this is valid.
         }

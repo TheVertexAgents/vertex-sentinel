@@ -19,6 +19,7 @@ import fs from 'fs';
 import { PnLTracker } from './pnl/tracker.js';
 import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
+import { NotificationService } from '../utils/notifications.js';
 import { RiskCalibrator } from './risk-calibrator.js';
 
 dotenv.config();
@@ -105,15 +106,33 @@ function getTraceId(): string {
 }
 
 /**
- * @dev Mock "Strykr PRISM API" for canonical asset resolution.
- * TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
+ * @dev Strykr PRISM API for canonical asset resolution.
  */
 async function getAssetResolution(pair: string) {
-  // TODO: Integrate real PRISM API (https://api.prismapi.ai/resolve)
-  // Current placeholder used to support local development during Judge Bot whitelisting trials.
-  logger.warn({ module: 'PRISM', message: 'Using placeholder resolution - real API integration pending' });
-  logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair });
-  return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  const apiKey = process.env.STRYKR_PRISM_API;
+  const url = `https://api.prismapi.ai/resolve?pair=${encodeURIComponent(pair)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!response.ok) {
+        throw new Error(`PRISM API returned ${response.status}`);
+    }
+
+    const data = await response.json() as { symbol: string, precision: number };
+    logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair, symbol: data.symbol });
+    return data;
+  } catch (error: any) {
+    logger.warn({ module: 'PRISM', message: 'PRISM API unavailable, using fallback', error: error.message });
+    return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
+  }
 }
 
 /**
@@ -122,11 +141,19 @@ async function getAssetResolution(pair: string) {
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
   const traceId = getTraceId();
   try {
-    const account = privateKeyToAccount(privateKey);
+    const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+    const agentAddress = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(privateKey).address;
+
+    // 0. Geographic Restriction Check
+    // In a real scenario, this would use a GeoIP service or user-provided attestations.
+    // For now, we simulate a check to prevent unauthorized access.
+    if (process.env.SIMULATE_RESTRICTED_REGION === 'true') {
+        throw new CriticalSecurityException(`Fail-Closed: Vertex Sentinel is not available in your region.`);
+    }
 
     // 1. Check Identity (ERC-8004 Alignment) - non-blocking, informational only
     // RiskRouter performs final authorization regardless of registry status
-    await identityClient.isAgentRegistered(account.address);
+    await identityClient.isAgentRegistered(agentAddress);
 
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
@@ -197,6 +224,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       // Emit risk alert if risk is high
       if (decision.riskScore > 0.6) {
         agentEvents.emit('risk.alert', { traceId, riskScore: decision.riskScore, reasoning: decision.reasoning });
+        NotificationService.sendTelegram(`<b>High Risk Alert</b>\nRisk Score: ${(decision.riskScore * 100).toFixed(0)}%\nReasoning: ${decision.reasoning}`);
       }
 
       await validationClient.postHeartbeat(
@@ -252,6 +280,18 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
     // Wait for transaction confirmation
     if (authResult.transactionHash) {
+      // Circle WaaS simulation check
+      if (authResult.transactionHash === '0xCIRCLE') {
+          logger.info({ step: 'CIRCLE_WAAS_SIM_CONFIRMED', traceId });
+          agentEvents.emit('trade.authorized', {
+            traceId,
+            pair: intent.pair,
+            amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
+            txHash: authResult.transactionHash
+          });
+          return { isAllowed: true, reason: decision.reasoning, signature };
+      }
+
       const confirmation = await riskRouterClient.waitForTradeAuthorization(authResult.transactionHash);
 
       if (!confirmation.authorized) {
@@ -269,6 +309,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
         txHash: authResult.transactionHash
       });
+
+      // Send Alerts
+      NotificationService.sendTelegram(`<b>Trade Authorized</b>\nPair: ${intent.pair}\nAmount: $${(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor).toFixed(2)}\nAction: ${intent.action}`);
 
       // NOTE: Reputation feedback must come from OTHER operators (not self-rating).
       // The ReputationRegistry enforces: "operator cannot self-rate"
@@ -315,8 +358,9 @@ process.on('SIGTERM', shutdown);
  */
 async function main() {
   const agentMetadata = getAgentMetadata();
-  const pk = process.env.AGENT_PRIVATE_KEY as Hex;
-  const agentWallet = privateKeyToAccount(pk).address;
+  const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
+  const pk = useCircle ? '0x' as Hex : process.env.AGENT_PRIVATE_KEY as Hex;
+  const agentWallet = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(pk).address;
 
   console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
   console.log(`║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║`);

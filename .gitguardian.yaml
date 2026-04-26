@@ -1,6 +1,6 @@
 version: 2
 secret:
-  ignored-paths:
+  ignored_paths:
     - ".git"
     - "node_modules"
     - "dist"
@@ -9,8 +9,8 @@ secret:
     - ".next"
     - "test/**"
     - "scripts/**"
-  ignore-known-secrets: true
-  ignored-matches:
+  ignore_known_secrets: true
+  ignored_matches:
     - name: "Mock Secret for Testing"
       match: "ZmFrZS1zZWNyZXQtZm9yLXRlc3Rpbmc="
     - name: "Detected Secret SHA 1"
