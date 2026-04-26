@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, keccak256, encodeAbiParameters, parseAbiParameters, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, fallback, keccak256, encodeAbiParameters, parseAbiParameters, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
@@ -20,6 +20,23 @@ export class RiskRouterClient {
 
   private getChain() {
     return this.chainId === 31337 ? hardhat : sepolia;
+  }
+
+  private getTransport() {
+    if (this.chainId === 31337) return http();
+
+    const transports = [];
+    if (process.env.INFURA_KEY) {
+      transports.push(http(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`));
+    }
+    if (process.env.ALCHEMY_KEY) {
+      transports.push(http(`https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`));
+    }
+
+    // Fallback to default http if no keys provided, though validateEnv should catch this
+    if (transports.length === 0) return http();
+
+    return fallback(transports);
   }
 
   /**
@@ -58,13 +75,9 @@ export class RiskRouterClient {
     }
 
     try {
-      const rpcUrl = process.env.INFURA_KEY
-        ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
-        : undefined;
-
       const publicClient = createPublicClient({
         chain: this.getChain(),
-        transport: http(rpcUrl),
+        transport: this.getTransport(),
       });
 
       const nonce = await publicClient.readContract({
@@ -93,13 +106,9 @@ export class RiskRouterClient {
    * @dev Fetches risk parameters for an agent.
    */
   async riskParams(agentId: bigint): Promise<any> {
-    const rpcUrl = process.env.INFURA_KEY
-      ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`
-      : undefined;
-
     const publicClient = createPublicClient({
       chain: this.getChain(),
-      transport: http(rpcUrl),
+      transport: this.getTransport(),
     });
 
     return await publicClient.readContract({
@@ -197,7 +206,7 @@ export class RiskRouterClient {
       const walletClient = createWalletClient({
         account,
         chain,
-        transport: http(),
+        transport: this.getTransport(),
       });
 
       const RISK_ROUTER_ABI = [
@@ -273,7 +282,7 @@ export class RiskRouterClient {
       const chain = this.getChain();
       const publicClient = createPublicClient({
         chain,
-        transport: http(),
+        transport: this.getTransport(),
       });
 
       // Retry up to 3 times with increasing timeouts

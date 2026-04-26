@@ -6,6 +6,7 @@
     <title>Sentinel Risk Terminal | Agent Operations Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -108,13 +109,15 @@
                         VERTEX <span class="text-cyan glow-cyan">SENTINEL</span>
                     </h1>
                     <div class="flex items-center gap-3 mt-1">
+                        <span id="agent-id-display" class="text-[10px] font-bold uppercase tracking-widest text-cyan/70">Agent #42</span>
+                        <span class="w-1 h-1 rounded-full bg-gray-700"></span>
                         <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Professional Risk Terminal</span>
                         <span class="w-1 h-1 rounded-full bg-gray-700"></span>
                         <span id="network-badge" class="text-[10px] font-bold uppercase tracking-widest text-cyan/70">Sepolia Testnet</span>
                         <span class="w-1 h-1 rounded-full bg-gray-700"></span>
                         <div class="flex items-center gap-2">
-                             <span class="w-1.5 h-1.5 rounded-full bg-emerald animate-pulse-emerald"></span>
-                             <span class="text-[10px] font-bold uppercase tracking-widest text-emerald/80">System Live</span>
+                             <span id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-emerald"></span>
+                             <span id="status-text" class="text-[10px] font-bold uppercase tracking-widest text-emerald/80">System Idle</span>
                         </div>
                     </div>
                 </div>
@@ -485,13 +488,20 @@
             "function setRiskParams(uint256 agentId, uint256 maxPositionUsdScaled, uint256 maxDrawdownBps, uint256 maxTradesPerHour) external",
             "function riskParams(uint256) view returns (uint256 maxPositionUsdScaled, uint256 maxDrawdownBps, uint256 maxTradesPerHour, bool active)"
         ];
-        const AGENT_ID = 42; // Vertex Sentinel Hackathon Agent ID
+        const REGISTRY_ADDRESS = '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3';
+        const REGISTRY_ABI = [
+            "function register(address agentWallet, string memory name, string memory description, string[] memory capabilities, string memory agentURI) external returns (uint256)",
+            "function walletToAgentId(address) view returns (uint256)"
+        ];
 
         // Wallet Connection
         const connectBtn = document.getElementById('connect-wallet');
         let userAddress = null;
         let provider = null;
         let signer = null;
+
+        // Multi-Tenancy State
+        let currentAgentId = localStorage.getItem('AGENT_ID') || 42;
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
@@ -507,6 +517,7 @@
                     document.getElementById('wallet-status').classList.add('flex');
 
                     syncOnChainParams();
+                    document.getElementById('agent-id-display').textContent = 'Agent #' + currentAgentId;
                 } catch (err) {
                     console.error("Connection failed", err);
                 }
@@ -520,7 +531,7 @@
             if (!provider) return;
             const router = new ethers.Contract(RISK_ROUTER_ADDRESS, RISK_ROUTER_ABI, provider);
             try {
-                const params = await router.riskParams(AGENT_ID);
+                const params = await router.riskParams(currentAgentId);
                 document.getElementById('slider-max-pos').value = params.maxPositionUsdScaled.div(100).toNumber();
                 document.getElementById('slider-max-trades').value = params.maxTradesPerHour.toNumber();
 
@@ -549,7 +560,7 @@
             const maxDrawdown = 1000; // 10% default
 
             try {
-                const tx = await router.setRiskParams(AGENT_ID, maxPos, maxDrawdown, maxTrades);
+                const tx = await router.setRiskParams(currentAgentId, maxPos, maxDrawdown, maxTrades);
                 alert("Risk update transaction submitted: " + tx.hash);
                 await tx.wait();
                 alert("Risk parameters successfully updated on-chain!");
@@ -564,7 +575,7 @@
             const router = new ethers.Contract(RISK_ROUTER_ADDRESS, RISK_ROUTER_ABI, signer);
 
             try {
-                const tx = await router.setRiskParams(AGENT_ID, 0, 0, 0); // Setting limits to 0 effectively halts
+                const tx = await router.setRiskParams(currentAgentId, 0, 0, 0); // Setting limits to 0 effectively halts
                 alert("PANIC: De-Risking transaction submitted: " + tx.hash);
                 await tx.wait();
                 alert("Agent successfully halted and de-risked.");
@@ -588,21 +599,39 @@
             const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
 
             try {
-                // In a real scenario, we'd generate a new wallet for the agent
-                // For the demo, we use a placeholder or the connected wallet
+                // Institutional Flow: Real on-chain registration in AgentRegistry.sol
+                const name = "Vertex Sentinel Expansion Agent";
+                const desc = "Verifiable Risk Management Agent";
+                const caps = ["risk-assessment", "on-chain-guardrails"];
                 const metadataURI = "https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json";
-                const tx = await registry.registerAgent(userAddress, metadataURI);
 
-                document.getElementById('confirm-hire-btn').textContent = "Deploying...";
+                // For the demo, we use a generated address or the user's address as a proxy
+                const agentWallet = ethers.Wallet.createRandom().address;
+
+                const tx = await registry.register(agentWallet, name, desc, caps, metadataURI);
+
+                document.getElementById('confirm-hire-btn').textContent = "Minting Identity...";
                 document.getElementById('confirm-hire-btn').disabled = true;
 
                 alert("Hiring transaction submitted to Arc L1: " + tx.hash);
-                await tx.wait();
+                const receipt = await tx.wait();
 
-                alert("Agent successfully hired and registered on Arc L1!");
+                // Find agentId from events
+                const event = receipt.events?.find(e => e.event === 'AgentRegistered');
+                const newId = event ? event.args.agentId.toNumber() : 42;
+
+                alert("Agent successfully hired! Identity minted on-chain. New Agent ID: " + newId);
+
+                // Persistence
+                currentAgentId = newId;
+                localStorage.setItem('AGENT_ID', newId);
+                document.getElementById('agent-id-display').textContent = 'Agent #' + newId;
+
                 document.getElementById('hire-modal').classList.add('hidden');
                 document.getElementById('confirm-hire-btn').textContent = "Confirm Hiring";
                 document.getElementById('confirm-hire-btn').disabled = false;
+
+                syncOnChainParams();
             } catch (e) {
                 console.error(e);
                 alert("Hiring failed: " + (e.reason || e.message));
@@ -611,10 +640,50 @@
             }
         });
 
-        // Data Fetching & Rendering
-        async function fetchLogs() {
+        // WebSocket and Data Fetching
+        let socket;
+        function initWebSocket() {
+            socket = io('http://localhost:3006');
+
+            socket.on('connect', () => {
+                console.log('Connected to Sentinel WebSocket');
+                document.getElementById('status-indicator').classList.remove('bg-amber');
+                document.getElementById('status-indicator').classList.add('bg-emerald');
+                document.getElementById('status-text').textContent = 'System Live';
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from Sentinel WebSocket');
+                document.getElementById('status-indicator').classList.remove('bg-emerald');
+                document.getElementById('status-indicator').classList.add('bg-amber');
+                document.getElementById('status-text').textContent = 'System Offline';
+            });
+
+            socket.on('trade.authorized', (data) => {
+                console.log('New Trade Authorized:', data);
+                // Refresh data on new trade
+                fetchInitialData();
+            });
+
+            socket.on('risk.alert', (data) => {
+                console.warn('Risk Alert:', data);
+                // Highlight risk signals
+                const signals = document.getElementById('risk-signals');
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 text-[11px] font-bold text-crimson animate-pulse";
+                div.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-crimson shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span><span class="truncate">HIGH RISK: ${data.reasoning}</span>`;
+                signals.prepend(div);
+            });
+
+            socket.on('balance.update', (data) => {
+                console.log('Balance Update:', data);
+                updateStatsFromMetrics(data.pnl);
+            });
+        }
+
+        async function fetchInitialData() {
             try {
-                    const response = await fetch('/logs/audit.json');
+                const response = await fetch('/logs/audit.json');
                 if (!response.ok) throw new Error('Audit log not found');
                 const text = await response.text();
                 const lines = text.trim().split('\n').filter(l => l.length > 0);
@@ -628,6 +697,33 @@
             } catch (error) {
                 console.error('Fetch error:', error);
             }
+        }
+
+        function updateStatsFromMetrics(pnl) {
+            if (!pnl) return;
+            // Savings
+            const savingsEl = document.getElementById('metric-savings');
+            savingsEl.textContent = '$' + (pnl.sentinelSavings || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+            // Total PnL
+            const pnlEl = document.getElementById('metric-total-pnl');
+            const val = pnl.totalPnL || 0;
+            pnlEl.textContent = (val >= 0 ? '+' : '') + '$' + Math.abs(val).toFixed(2);
+            pnlEl.className = 'text-3xl font-bold ' + (val >= 0 ? 'text-emerald glow-emerald' : 'text-crimson');
+
+            // ROI
+            document.getElementById('metric-roi').textContent = (pnl.roiPercent || 0).toFixed(2) + '%';
+            document.getElementById('metric-roi').className = 'text-xs font-bold ' + (pnl.roiPercent >= 0 ? 'text-emerald' : 'text-crimson');
+
+            // MDD
+            document.getElementById('metric-mdd').textContent = (pnl.maxDrawdown || 0).toFixed(2) + '%';
+
+            // WinRate
+            document.getElementById('metric-winrate').textContent = (pnl.winRate || 0).toFixed(0) + '%';
+            document.getElementById('metric-winloss').textContent = (pnl.winLossRatio || 0).toFixed(2);
+
+            // Sharpe
+            document.getElementById('metric-sharpe').textContent = (pnl.sharpeRatio || 0).toFixed(2);
         }
 
         function updateStats(checkpoints) {
@@ -701,6 +797,7 @@
 
             // Position Limit
             const maxPos = parseFloat(risk.maxPositionUsdScaled) / 100;
+            if (isNaN(maxPos)) return;
             const currentPos = (pnl.totalExposureUsd || 0);
             const posPerc = Math.min(100, Math.max(5, (Math.abs(currentPos) / maxPos) * 100));
             document.getElementById('cb-pos-bar').style.width = posPerc + '%';
@@ -763,8 +860,8 @@
         }
 
         // Init
-        setInterval(fetchLogs, 5000);
-        fetchLogs();
+        initWebSocket();
+        fetchInitialData();
         initTradingView();
     </script>
 </body>

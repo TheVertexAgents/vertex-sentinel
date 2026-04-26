@@ -235,7 +235,10 @@ class ExecutionProxy {
       // Constitution Alignment: Unit conversion and symbol formatting.
       // Replace formatEther (10^18) with scaling factor based on config.usdScalingFactor.
       const amount = Number(volume) / config.usdScalingFactor;
-      const cleanSymbol = pair.replace('/', '');
+
+      // Multi-Asset Expansion: Normalize pairs for Kraken (e.g. BTC/USDC -> XBTUSDC)
+      let cleanSymbol = pair.replace('/', '').replace('USDC', 'USD').replace('USDT', 'USD');
+      if (cleanSymbol.startsWith('BTC')) cleanSymbol = cleanSymbol.replace('BTC', 'XBT');
 
       const result = await this.mcpClient.callTool({
         name: 'place_order',

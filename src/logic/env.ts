@@ -12,6 +12,7 @@ const envSchema = z.object({
   KRAKEN_API_KEY: z.string().min(1, "KRAKEN_API_KEY is required"),
   KRAKEN_SECRET: z.string().min(1, "KRAKEN_SECRET is required"),
   INFURA_KEY: z.string().min(1, "INFURA_KEY is required"),
+  ALCHEMY_KEY: z.string().optional(),
   STRYKR_PRISM_API: z.string().min(1, "STRYKR_PRISM_API is required"),
   NETWORK: z.string().min(1, "NETWORK is required"),
   TX_CONFIRMATION_TIMEOUT: z.coerce.number().int().positive().default(90000),
