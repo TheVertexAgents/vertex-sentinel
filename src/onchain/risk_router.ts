@@ -171,7 +171,7 @@ export class RiskRouterClient {
       const client = createWalletClient({
         account,
         chain: this.getChain(),
-        transport: http(),
+        transport: http(process.env.INFURA_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}` : undefined),
       });
 
       const signature = await client.signTypedData({

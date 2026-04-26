@@ -1,4 +1,11 @@
 #!/bin/bash
+# Pre-process arguments to handle -o json
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) shift; shift ;;
+    *) break ;;
+  esac
+done
 
 # Handle global flags like -o json
 while [[ $# -gt 0 ]]; do
