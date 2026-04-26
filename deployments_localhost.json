@@ -1,0 +1,11 @@
+{
+  "network": "localhost",
+  "chainId": 31337,
+  "agentRegistry": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+  "riskRouter": "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6",
+  "reputationRegistry": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+  "validationRegistry": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+  "owner": "0x0000000000000000000000000000000000000001",
+  "deployer": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  "timestamp": "2026-04-26T17:03:48.779Z"
+}
