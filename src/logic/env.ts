@@ -25,6 +25,7 @@ const envSchema = z.object({
   CIRCLE_API_KEY: z.string().optional(),
   CIRCLE_ENTITY_SECRET: z.string().optional(),
   AGENT_WALLET_ID: z.string().optional(),
+  ORCHESTRATOR_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
   USE_CIRCLE_WAAS: z.enum(['true', 'false']).default('false'),
   MAINNET_RPC: z.string().url().optional(),
   BASE_RPC: z.string().url().optional(),
@@ -45,8 +46,8 @@ export function validateEnv() {
   if (result.success) {
     const data = result.data;
     if (data.USE_CIRCLE_WAAS === 'true') {
-        if (!data.CIRCLE_API_KEY || !data.CIRCLE_ENTITY_SECRET || !data.AGENT_WALLET_ID || !data.AGENT_WALLET_ADDRESS) {
-            throw new CriticalSecurityException("Circle WaaS is enabled but CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, AGENT_WALLET_ID, or AGENT_WALLET_ADDRESS is missing.");
+        if (!data.CIRCLE_API_KEY || !data.CIRCLE_ENTITY_SECRET || !data.AGENT_WALLET_ID || !data.AGENT_WALLET_ADDRESS || !data.ORCHESTRATOR_WALLET_ADDRESS) {
+            throw new CriticalSecurityException("Circle WaaS is enabled but CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, AGENT_WALLET_ID, AGENT_WALLET_ADDRESS, or ORCHESTRATOR_WALLET_ADDRESS is missing.");
         }
     } else if (!data.AGENT_PRIVATE_KEY) {
         throw new CriticalSecurityException("AGENT_PRIVATE_KEY is required when Circle WaaS is disabled.");

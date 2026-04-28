@@ -320,9 +320,12 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     return { isAllowed: true, reason: decision.reasoning, signature };
   } catch (error: any) {
     if (error instanceof CriticalSecurityException) {
+      haltSystem(error.message);
       throw error;
     }
-    throw new CriticalSecurityException(`Critical error during signIntent: ${error.message}`);
+    const msg = `Critical error during signIntent: ${error.message}`;
+    haltSystem(msg);
+    throw new CriticalSecurityException(msg);
   }
 }
 
@@ -351,30 +354,62 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 /**
+ * @dev Halt the system persistently.
+ */
+function haltSystem(reason: string) {
+  logger.error({ module: 'AGENT_BRAIN', step: 'SYSTEM_HALT', reason });
+  const haltPath = path.join(process.cwd(), 'logs/HALTED');
+  if (!fs.existsSync(path.dirname(haltPath))) {
+    fs.mkdirSync(path.dirname(haltPath), { recursive: true });
+  }
+  fs.writeFileSync(haltPath, JSON.stringify({
+    reason,
+    timestamp: new Date().toISOString()
+  }, null, 2));
+
+  process.exit(1);
+}
+
+/**
  * @dev Continuous trading loop with proper nonce management.
  * Fetches current nonce from RiskRouter on startup.
  * Submits intents at regular intervals to build validation score.
  */
 async function main() {
+  const haltPath = path.join(process.cwd(), 'logs/HALTED');
+  if (fs.existsSync(haltPath)) {
+    const haltData = JSON.parse(fs.readFileSync(haltPath, 'utf8'));
+    logger.error({
+      module: 'AGENT_BRAIN',
+      step: 'STARTUP_PREVENTED',
+      message: 'System is in a persistent HALTED state. Manual intervention required.',
+      reason: haltData.reason,
+      haltedAt: haltData.timestamp
+    });
+    console.error(`\n❌ SYSTEM HALTED: ${haltData.reason}\nRemove ${haltPath} to restart.\n`);
+    process.exit(1);
+  }
+
   const agentMetadata = getAgentMetadata();
   const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
   const pk = useCircle ? '0x' as Hex : process.env.AGENT_PRIVATE_KEY as Hex;
   const agentWallet = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(pk).address;
 
-  console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║`);
-  console.log(`╚══════════════════════════════════════════════════════════════╝`);
-  console.log(`  Agent ID: ${agentMetadata.agentId}`);
-  console.log(`  Wallet: ${agentWallet}`);
-  console.log(`  Trading Interval: ${TRADING_INTERVAL_MS / 1000}s`);
+  logger.info({
+    module: 'AGENT_BRAIN',
+    step: 'STARTUP_BANNER',
+    message: 'VERTEX SENTINEL — LIVE TRADING AGENT',
+    agentId: agentMetadata.agentId,
+    wallet: agentWallet,
+    interval: `${TRADING_INTERVAL_MS / 1000}s`
+  });
 
   // Fetch current on-chain nonce and initialize LocalNonceTracker
   const onChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
   const nonceKey = `${agentWallet}-${config.chainId}`;
   nonceTracker.sync(nonceKey, onChainNonce);
 
-  console.log(`  Initial Nonce: ${onChainNonce}`);
-  console.log(`  Press Ctrl+C to stop\n`);
+  logger.info({ module: 'AGENT_BRAIN', step: 'INITIAL_NONCE', nonce: onChainNonce.toString() });
 
   // Start Risk Calibration Background Loop (every 10 minutes)
   setInterval(() => riskCalibrator.runCalibration(), 600000);

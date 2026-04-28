@@ -4,7 +4,6 @@ import { sepolia, hardhat, mainnet, base, arbitrum } from 'viem/chains';
 import { CriticalSecurityException } from '../logic/errors.js';
 import type { TradeIntent } from '../logic/types.js';
 import { logger } from '../utils/logger.js';
-import { CircleSigner } from './circle_signer.js';
 
 /**
  * @dev RiskRouter integration layer.
@@ -163,6 +162,7 @@ export class RiskRouterClient {
       };
 
       if (useCircle) {
+        const { CircleSigner } = await import('./circle_signer.js');
         const signer = new CircleSigner();
         return await signer.signTypedData(domain, types.TradeIntent, 'TradeIntent', message);
       }
@@ -258,13 +258,18 @@ export class RiskRouterClient {
       ] as const;
 
       if (useCircle) {
-          const signer = new CircleSigner();
-          // For now, we simulate the submission for Circle WaaS
-          // as it's not fully wired for direct contract execution in this POC.
-          // Real implementation would use the Circle SDK's transaction execution.
-          const sig = await signer.signMessage(`AUTHORIZE_TRADE:${intent.nonce}`);
-          logger.info({ module: 'RiskRouter', step: 'CIRCLE_TRADE_AUTHORIZED_SIGNED', nonce: intent.nonce, sig });
-          return { success: true, transactionHash: '0xCIRCLE' as Hex };
+          // Circle WaaS Activation: Represent authorization via USDC nanopayment on Arc L1
+          const { CirclePayments } = await import('./circle.js');
+          const destinationWallet = process.env.ORCHESTRATOR_WALLET_ADDRESS!;
+
+          const txHash = await CirclePayments.sendPayment({
+            destinationWallet,
+            amount: "0.001", // Symbolic nanopayment for authorization
+            invoiceId: `AUTH-${intent.nonce}-${intent.pair.replace('/', '-')}`
+          });
+
+          logger.info({ module: 'RiskRouter', step: 'CIRCLE_TRADE_AUTHORIZED_ARC_L1', nonce: intent.nonce, txHash });
+          return { success: true, transactionHash: txHash as Hex };
       }
 
       const txHash = await walletClient.writeContract({

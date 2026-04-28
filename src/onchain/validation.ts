@@ -70,13 +70,18 @@ export class ValidationRegistryClient {
       const metadata = loadAgentMetadata();
 
       if (useCircle) {
-          // Circle WaaS doesn't support direct writeContract yet in this helper,
-          // but we can sign the data and broadcast or use a relay.
-          // For now, we use signMessage as a placeholder for Circle-based heartbeat proof
-          const signer = new CircleSigner();
-          await signer.signMessage(`HEARTBEAT:${checkpointHash}`);
-          logger.info({ module: 'validation', step: 'CIRCLE_HEARTBEAT_SIGNED', checkpointHash });
-          return '0xCIRCLE';
+          // Circle WaaS Activation: Represent heartbeat via USDC nanopayment on Arc L1
+          const { CirclePayments } = await import('./circle.js');
+          const destinationWallet = process.env.ORCHESTRATOR_WALLET_ADDRESS!;
+
+          const txHash = await CirclePayments.sendPayment({
+            destinationWallet,
+            amount: "0.001", // Symbolic nanopayment for heartbeat
+            invoiceId: `HB-${checkpointHash.substring(0, 12)}`
+          });
+
+          logger.info({ module: 'validation', step: 'CIRCLE_HEARTBEAT_ARC_L1', checkpointHash, txHash });
+          return txHash as Hex;
       }
 
       const hash = await walletClient.writeContract({

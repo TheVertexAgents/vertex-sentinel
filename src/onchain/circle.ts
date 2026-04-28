@@ -18,15 +18,11 @@ export class CirclePayments {
     invoiceId: string;
   }) {
     const apiKey = process.env.CIRCLE_API_KEY;
-    const isSimulated = process.env.CIRCLE_SIMULATE === 'true' || !apiKey;
+    const walletId = process.env.AGENT_WALLET_ID;
+    const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
 
-    if (isSimulated) {
-      logger.info({ 
-        module: 'CirclePayments', 
-        message: 'SIMULATION MODE: Generating mock payment proof', 
-        invoice: params.invoiceId 
-      });
-      return `0x_sim_payment_${Math.random().toString(36).substring(7)}`;
+    if (!apiKey || !walletId || !entitySecret) {
+      throw new Error('Missing CIRCLE_API_KEY, AGENT_WALLET_ID, or CIRCLE_ENTITY_SECRET in environment. CirclePayments requires real credentials for verifiable handshakes.');
     }
 
     try {
@@ -36,13 +32,6 @@ export class CirclePayments {
         invoice: params.invoiceId,
         amount: params.amount 
       });
-
-      const walletId = process.env.AGENT_WALLET_ID;
-      const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
-      
-      if (!walletId || !entitySecret) {
-        throw new Error('Missing AGENT_WALLET_ID or CIRCLE_ENTITY_SECRET in environment');
-      }
 
       const client = initiateDeveloperControlledWalletsClient({
         apiKey,

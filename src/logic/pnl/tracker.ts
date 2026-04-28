@@ -1,6 +1,7 @@
 import { PnLCalculator } from './calculator.js';
 import { PnLTrackerConfig, Trade, Position, PnLMetrics, PnLSummary } from './types.js';
 import { logger } from '../../utils/logger.js';
+import crypto from 'node:crypto';
 
 export class PnLTracker {
   private config: Required<PnLTrackerConfig>;
@@ -131,7 +132,7 @@ export class PnLTracker {
   getSummary(): PnLSummary {
     return {
       timestamp: new Date().toISOString(),
-      sessionId: 'session-' + Math.random().toString(36).substring(2, 10),
+      sessionId: 'session-' + crypto.randomUUID(),
       summary: this.getMetrics(),
       positions: Object.fromEntries(this.positions),
       trades: this.trades

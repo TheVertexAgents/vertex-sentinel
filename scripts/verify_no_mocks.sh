@@ -44,6 +44,12 @@ if grep -r "process.env.DEMO_MODE === 'true'" src/onchain/ | grep -v "test" | gr
     FAIL=1
 fi
 
+# 5b. Check for 0xCIRCLE placeholders
+if grep -r "0xCIRCLE" src/onchain/ | grep -v "test" | grep -v ".ts:.*//"; then
+    echo '❌ FAIL: 0xCIRCLE placeholder still exists in src/onchain/'
+    FAIL=1
+fi
+
 # 6. Check for zero-address bypasses in production source
 if grep -r "registryAddress === '0x0000000000000000000000000000000000000000'" src/onchain/ | grep -q "return true"; then
     echo '❌ FAIL: zero-address registration bypass still exists'
@@ -59,6 +65,17 @@ fi
 # Brain uses Math.random() for trade randomization which is intended, but we check other places
 if grep -r "Math.random()" src/ | grep -v "agent_brain.ts" | grep -v "test" | grep -v "circle.ts"; then
     echo '❌ FAIL: Unexpected Math.random() found in source (possible mock/simulation)'
+    FAIL=1
+fi
+
+# 9. Log Paper Mode status
+if grep -q "KRAKEN_PAPER_MODE=true" .env 2>/dev/null; then
+    echo 'ℹ️  INFO: KRAKEN_PAPER_MODE is enabled in .env (Acceptable for Demo)'
+fi
+
+# 10. Check live execution entry point (replaces legacy live_kraken_cli.js)
+if [ ! -f "src/execution/proxy.ts" ]; then
+    echo '❌ FAIL: Missing live execution entry point src/execution/proxy.ts'
     FAIL=1
 fi
 
