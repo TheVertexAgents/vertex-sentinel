@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { analyzeRisk } from '../../../src/logic/strategy/risk_assessment.js';
+import { analyzeRisk, closeMcpClient } from '../../../src/logic/strategy/risk_assessment.js';
 
 describe('Risk Assessment Strategy Unit Tests', function () {
   let sandbox: sinon.SinonSandbox;
@@ -10,8 +10,9 @@ describe('Risk Assessment Strategy Unit Tests', function () {
     sandbox = sinon.createSandbox();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     sandbox.restore();
+    await closeMcpClient();
   });
 
   it('Should return BUY for standard market parameters', async function () {
