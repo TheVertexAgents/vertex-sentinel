@@ -384,6 +384,7 @@ async function main() {
   const proxy = new ExecutionProxy(config.riskRouter as Hex, network);
   const reconciler = new EventReconciler(config.riskRouter as Hex, network, proxy);
   reconciler.start();
+  proxy.startListener();
 
   // Continuous trading loop
   while (isRunning) {
