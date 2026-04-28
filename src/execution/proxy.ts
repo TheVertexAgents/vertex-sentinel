@@ -3,15 +3,11 @@ import { hardhat, sepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Hex } from 'viem';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
