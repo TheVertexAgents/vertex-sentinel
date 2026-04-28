@@ -1,57 +1,67 @@
-# ERC-8004 Cleanliness Audit: Vertex Sentinel Agent
+# Vertex Sentinel: Comprehensive Mock & Simulation Audit Report
 
-## Executive Summary
-This audit was performed to identify hardcoded logic, mock data, and placeholder integrations within the Vertex Sentinel codebase. The audit reveals a significant "Verifiability Gap" where production-path code utilizes hardcoded fallbacks and registry bypasses that undermine the agent's standing on the ERC-8004 standard. While the agent maintains a strong fail-closed architecture in theory, several implementation-level "mocks" allow it to bypass cryptographic rigor for the sake of development convenience.
+**Date:** April 28, 2026
+**Auditor:** Jules (AI Software Engineer)
+**Status:** Audit Complete - Action Required for Production Readiness
 
-## Methodology
-The audit utilized a multi-stage discovery process:
-1.  **Automated Scan**: Recursive grep-based discovery for keywords (`mock`, `placeholder`, `todo`, `hardcoded`, `fake`, `fallback`) and patterns (zero addresses, magic numbers).
-2.  **Strategic Partitioning**: Filtering findings to distinguish between legitimate unit test mocks (`test/`) and high-stakes production vulnerabilities (`src/`, `contracts/`).
-3.  **Path Scrutiny**: Manual code review of core controllers (`agent_brain.ts`), on-chain clients (`validation.ts`, `identity.ts`), and the execution layer (`proxy.ts`).
-4.  **Impact Modeling**: Analysis of each finding against the ERC-8004 pillars: Reputation Integrity, Cryptographic Verifiability, and Sybil Resistance.
+## 1. Verification Script Results (`scripts/verify_no_mocks.sh`)
+The verification script was updated to target current codebase patterns and executed with the following results:
 
-## Critical Findings
-
-### 1. Validation Layer
-| Finding | File Path | Line | Snippet | Explanation |
-|:--- |:--- |:--- |:--- |:--- |
-| **Hardcoded Score** | `src/onchain/validation.ts` | 72 | `args: [agentId, checkpointHash, 100, 1, '0x', notes]` | Always submits a perfect validation score of 100 to the registry without real proof. |
-| **Empty Proof** | `src/onchain/validation.ts` | 72 | `'0x'` | Submits an empty byte string instead of the required EIP-712 proof for heartbeats. |
-
-### 2. Identity Layer
-| Finding | File Path | Line | Snippet | Explanation |
-|:--- |:--- |:--- |:--- |:--- |
-| **Registry Bypass** | `src/onchain/identity.ts` | 23 | `if (this.registryAddress === '0x00...00' \|\| process.env.DEMO_MODE === 'true')` | Allows the agent to claim "Registered" status even when no registry is present. |
-| **Submission Bypass** | `src/onchain/risk_router.ts` | 150 | `if (this.routerAddress === '0x00...00' \|\| process.env.DEMO_MODE === 'true')` | Skips on-chain intent submission, effectively disabling the Sentinel guardrail. |
-
-### 3. Strategy & Strategy Layer
-| Finding | File Path | Line | Snippet | Explanation |
-|:--- |:--- |:--- |:--- |:--- |
-| **Fallback Price** | `src/logic/agent_brain.ts` | 133 | `realPrice = 67000;` | Uses a hardcoded BTC price if the Kraken API ticker fails, invalidating PnL logs. |
-| **Magic Numbers** | `src/logic/strategy/risk_assessment.ts` | 189 | `(spread / 0.02) * 0.5` | Hardcoded risk thresholds that should be dynamic or agent-specific. |
-| **Asset Placeholder**| `src/logic/agent_brain.ts` | 118 | `// TODO: Integrate real PRISM API` | Uses a placeholder function for asset resolution instead of a verifiable API. |
-
-## Impact Analysis Table
-| Finding Category | ERC-8004 Impact | Severity |
-|:--- |:--- |:--- |
-| **Validation** | **Reputation Inflation**: Undermines the anti-sybil and reputation metrics of the ERC-8004 ecosystem. | **High** |
-| **Identity** | **Verifiability Failure**: Prevents actors from proving the agent is authorized by the registered operator. | **High** |
-| **Strategy** | **PnL Fraud Risk**: Hardcoded prices allow for "mocked" performance reporting that cannot be verified on-chain. | **Medium** |
-| **Execution** | **Intent Mismatch**: Scaling bugs (18 vs 2 decimals) mean execution does not match authorized intent. | **High** |
-
-## Remediation Roadmap
-1.  **Immediate (High Priority)**:
-    *   Implement real EIP-712 proof submission in `validation.ts` instead of `0x`.
-    *   Connect `agent_brain.ts` to dynamic configuration for all registry addresses.
-    *   Fix the decimal scaling bug in `proxy.ts` to ensure USD values match Kraken expectations.
-2.  **Short Term (Medium Priority)**:
-    *   Remove `DEMO_MODE` guards from production paths; move them to a dedicated `MockIdentityClient` used only in tests.
-    *   Replace hardcoded fallback prices with a "Fail-Closed" halt if market data is unavailable.
-3.  **Long Term (Architectural)**:
-    *   Migrate risk parameters from `risk_assessment.ts` magic numbers to an on-chain `ConfigRegistry` or the `agent-id.json` manifest.
-
-## Appendix: Raw Scan Logs
 ```
-$(cat logs/audit_scan_raw.log | head -n 100)
-... [Logs truncated for brevity, full logs available in logs/audit_scan_raw.log]
+🔍 Verifying no mocks or bypasses in production paths...
+❌ FAIL: circle.ts still contains isSimulated bypass logic
+❌ FAIL: circle.ts still contains mock payment hash generation
+⚠️  WARN: MockRegistry.sol found in contracts/test/ directory
+src/logic/pnl/tracker.ts:      sessionId: 'session-' + Math.random().toString(36).substring(2, 10),
+❌ FAIL: Unexpected Math.random() found in source (possible mock/simulation)
+❌ Some checks failed. The agent is not production-ready.
 ```
+
+---
+
+## 2. Detailed Mock Categorization
+
+### Category A: Production Blockers (Simulation Bypasses)
+These logic paths bypass real on-chain or external service interactions and must be addressed before a "Live" mainnet release.
+
+1.  **`src/onchain/circle.ts`**:
+    - `isSimulated` flag defaults to `true` if `CIRCLE_API_KEY` is missing.
+    - Generates a mock payment proof `0x_sim_payment_...` using `Math.random()`.
+2.  **`src/onchain/risk_router.ts`**:
+    - `authorizeTrade` returns a hardcoded `0xCIRCLE` transaction hash when `USE_CIRCLE_WAAS` is enabled, simulating contract execution.
+3.  **`src/onchain/validation.ts`**:
+    - `postHeartbeat` uses a `signMessage` placeholder for Circle-based proofs instead of a real EIP-712 attestation.
+
+### Category B: Acceptable Simulation Logic (Approved)
+These are intentional "simulation" features maintained for the hackathon/demo phase.
+
+1.  **`KRAKEN_PAPER_MODE`**: Properly implemented across `agent_brain.ts` and `KrakenMcpServer`. It honors the toggle by using `paper` subcommands in the Kraken CLI.
+2.  **`src/utils/compliance-report.ts`**: Generates structured text files instead of PDFs. User confirmed this is acceptable for the current release.
+
+### Category C: Hardcoded Fallbacks & Degraded Modes
+Logic that provides "safe" default values when external APIs are unreachable.
+
+1.  **`src/logic/strategy/news_feed.ts`**: `getNeutralFallback` returns 0.5 sentiment for all assets if LunarCrush is unreachable.
+2.  **`src/logic/strategy/risk_assessment.ts`**: `LOCAL_FALLBACK` returns a `HOLD` decision with 1.0 risk score if the AI/MCP engine fails outside of Sepolia.
+3.  **`src/logic/agent_brain.ts`**: Deployment configuration has a hardcoded fallback to official hackathon addresses if `deployments_sepolia.json` is missing.
+
+### Category D: Infrastructure Mocks
+Files intended for testing or development environments.
+
+1.  **`scripts/mock_kraken.sh`**: A shell-script mock of the Kraken CLI. Used by the MCP server when the real binary is unavailable.
+2.  **`contracts/test/MockRegistry.sol`**: A test contract located in the `contracts/test/` subdirectory.
+
+---
+
+## 3. "Fail-Closed" Integrity Audit
+An audit of `try/catch` blocks was performed to ensure failures lead to a HALT (Fail-Closed) rather than a mock success (Fail-Open).
+
+- **`src/logic/agent_brain.ts`**: Verified that the hardcoded `realPrice = 67000` fallback was removed. It now throws a `CriticalSecurityException` if the price cannot be fetched.
+- **`src/onchain/risk_router.ts`**: Correctly throws `CriticalSecurityException` on uninitialized addresses or signing failures.
+- **`src/logic/strategy/risk_assessment.ts`**: AI failures trigger a "Degraded Mode" that relies on hardware/manual rules, but critical assessment failures throw a `CriticalSecurityException`.
+- **`src/onchain/circle.ts`**: While it has a simulation bypass, its `catch` block correctly logs the error and rethrows, preventing silent failures in the "real" path.
+
+## 4. Actionable Recommendations
+1.  **Refine `circle.ts`**: Replace the `isSimulated` bypass with a strict environment check that halts if keys are missing in production.
+2.  **Wire Circle WaaS Execution**: Transition the `0xCIRCLE` placeholder in `risk_router.ts` to real transaction broadcasting via the Circle SDK.
+3.  **Audit `Math.random()`**: While used safely for `sessionId` in `tracker.ts`, it should be replaced with `crypto.randomUUID()` for production-grade uniqueness.
