@@ -1,0 +1,20 @@
+
+> vertex-sentinel@1.0.0 dashboard
+> serve . -p 3005
+
+ INFO  Accepting connections at http://localhost:38779 HTTP  4/28/2026 6:49:15 AM ::1 HEAD /dashboard/index.html
+ HTTP  4/28/2026 6:49:15 AM ::1 Returned 301 in 17 ms
+ HTTP  4/28/2026 6:49:15 AM ::1 HEAD /dashboard/index
+ HTTP  4/28/2026 6:49:15 AM ::1 Returned 301 in 1 ms
+ HTTP  4/28/2026 6:49:15 AM ::1 HEAD /dashboard
+ HTTP  4/28/2026 6:49:15 AM ::1 Returned 200 in 5 ms
+ HTTP  4/28/2026 6:53:41 AM ::1 GET /dashboard/index.html
+ HTTP  4/28/2026 6:53:41 AM ::1 Returned 301 in 4 ms
+ HTTP  4/28/2026 6:53:41 AM ::1 GET /dashboard/index
+ HTTP  4/28/2026 6:53:41 AM ::1 Returned 301 in 1 ms
+ HTTP  4/28/2026 6:53:41 AM ::1 GET /dashboard
+ HTTP  4/28/2026 6:53:41 AM ::1 Returned 200 in 4 ms
+ HTTP  4/28/2026 6:53:41 AM ::1 GET /dashboard/logo.png
+ HTTP  4/28/2026 6:53:41 AM ::1 Returned 200 in 12 ms
+
+ INFO  Gracefully shutting down. Please wait...

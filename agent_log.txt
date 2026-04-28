@@ -1,0 +1,227 @@
+
+> vertex-sentinel@1.0.0 start
+> npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts
+
+
+> vertex-sentinel@1.0.0 generate:types
+> node scripts/generate_types.js
+
+✅ Generated types in src/logic/generated_types.ts
+◇ injected env (15) from .env // tip: ⌘ override existing { override: true }
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-04-28T06:46:50.793Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:50.796Z"}
+{"level":"info","message":"Agent brain script loading...","service":"vertex-sentinel","step":"SCRIPT_LOADING","timestamp":"2026-04-28T06:46:50.796Z"}
+{"level":"info","message":"Main entry point detected. Starting agent and socket server...","service":"vertex-sentinel","step":"MAIN_START","timestamp":"2026-04-28T06:46:50.797Z"}
+
+╔══════════════════════════════════════════════════════════════╗
+║         ⚡ VERTEX SENTINEL — LIVE TRADING AGENT ⚡           ║
+╚══════════════════════════════════════════════════════════════╝
+  Agent ID: 1
+  Wallet: 0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9
+  Trading Interval: 300s
+{"level":"info","message":{"module":"SOCKET_SERVER","port":3006,"step":"SERVER_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:50.880Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.022Z"}
+  Initial Nonce: 1
+  Press Ctrl+C to stop
+
+{"agentAddress":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9","chainId":11155111,"contractAddress":"0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"sepolia","service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.025Z"}
+{"level":"info","message":"Starting event reconciliation loop","module":"Reconciler","service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.026Z"}
+{"level":"info","message":"Connecting to Kraken MCP server...","module":"MCP_INITIALIZE","service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.027Z"}
+{"level":"info","message":{"module":"MCP_INITIALIZE","serverPath":"/app/src/mcp/kraken/index.ts","step":"SPAWN_SERVER"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.028Z"}
+{"level":"info","message":"Connected successfully","module":"MCP_INITIALIZE","service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.615Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.699Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.753Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.753Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.794Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:46:51.794Z"}
+{"level":"info","message":{"fromBlock":"10747443","module":"Reconciler","step":"POLLING","toBlock":"10747548"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:47:51.343Z"}
+{"level":"info","message":{"fromBlock":"10747549","module":"Reconciler","step":"POLLING","toBlock":"10747551"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:48:51.429Z"}
+{"level":"info","message":{"fromBlock":"10747552","module":"Reconciler","step":"POLLING","toBlock":"10747556"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:49:51.398Z"}
+{"level":"info","message":{"fromBlock":"10747557","module":"Reconciler","step":"POLLING","toBlock":"10747560"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:50:51.309Z"}
+{"level":"info","message":{"fromBlock":"10747561","module":"Reconciler","step":"POLLING","toBlock":"10747565"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.321Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.866Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.921Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.921Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.962Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:51:51.962Z"}
+{"level":"info","message":{"fromBlock":"10747566","module":"Reconciler","step":"POLLING","toBlock":"10747569"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:52:51.372Z"}
+{"level":"info","message":{"fromBlock":"10747570","module":"Reconciler","step":"POLLING","toBlock":"10747572"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:53:51.439Z"}
+{"level":"info","message":{"fromBlock":"10747573","module":"Reconciler","step":"POLLING","toBlock":"10747576"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:54:51.362Z"}
+{"level":"info","message":{"fromBlock":"10747577","module":"Reconciler","step":"POLLING","toBlock":"10747580"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:55:51.437Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:51.031Z"}
+{"level":"info","message":{"fromBlock":"10747581","module":"Reconciler","step":"POLLING","toBlock":"10747585"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:51.403Z"}
+{"level":"info","message":{"pair":"ETH/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:52.044Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:52.096Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:52.097Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:52.134Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:52.134Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"Trailing volatility is currently 0.0000% as indicated by constant closing prices across the sampled historical period. Given the extremely stable market conditions, I am recommending a 20% increase to both the maximum position size and the trade frequency to capitalize on the low-risk environment, adhering to the 20% adjustment limit.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T06:56:55.755Z"}
+{"level":"info","message":{"fromBlock":"10747586","module":"Reconciler","step":"POLLING","toBlock":"10747590"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:57:51.541Z"}
+{"level":"info","message":{"fromBlock":"10747591","module":"Reconciler","step":"POLLING","toBlock":"10747595"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:58:51.571Z"}
+{"level":"info","message":{"fromBlock":"10747596","module":"Reconciler","step":"POLLING","toBlock":"10747599"},"service":"vertex-sentinel","timestamp":"2026-04-28T06:59:51.602Z"}
+{"level":"info","message":{"fromBlock":"10747600","module":"Reconciler","step":"POLLING","toBlock":"10747604"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:00:51.616Z"}
+{"level":"info","message":{"fromBlock":"10747605","module":"Reconciler","step":"POLLING","toBlock":"10747608"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:51.660Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:52.208Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:52.260Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:52.260Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:52.305Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:01:52.306Z"}
+{"level":"info","message":{"fromBlock":"10747609","module":"Reconciler","step":"POLLING","toBlock":"10747613"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:02:51.631Z"}
+{"level":"info","message":{"fromBlock":"10747614","module":"Reconciler","step":"POLLING","toBlock":"10747617"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:03:51.673Z"}
+{"level":"info","message":{"fromBlock":"10747618","module":"Reconciler","step":"POLLING","toBlock":"10747621"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:04:51.717Z"}
+{"level":"info","message":{"fromBlock":"10747622","module":"Reconciler","step":"POLLING","toBlock":"10747625"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:05:51.742Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:51.031Z"}
+{"level":"info","message":{"fromBlock":"10747626","module":"Reconciler","step":"POLLING","toBlock":"10747628"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:51.643Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:52.371Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:52.421Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:52.422Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:52.462Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:52.462Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"Analysis of the last four intervals shows zero price movement and zero volatility. Following the risk mandate for low-volatility environments, we are increasing the position limit and trade frequency by 20% while remaining within institutional safety bounds.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T07:06:54.711Z"}
+{"level":"info","message":{"fromBlock":"10747629","module":"Reconciler","step":"POLLING","toBlock":"10747632"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:07:51.785Z"}
+{"level":"info","message":{"fromBlock":"10747633","module":"Reconciler","step":"POLLING","toBlock":"10747637"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:08:51.780Z"}
+{"level":"info","message":{"fromBlock":"10747638","module":"Reconciler","step":"POLLING","toBlock":"10747642"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:09:51.849Z"}
+{"level":"info","message":{"fromBlock":"10747643","module":"Reconciler","step":"POLLING","toBlock":"10747647"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:10:51.871Z"}
+{"level":"info","message":{"fromBlock":"10747648","module":"Reconciler","step":"POLLING","toBlock":"10747652"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:51.877Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:52.531Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:52.587Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:52.587Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:52.651Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:11:52.652Z"}
+{"level":"info","message":{"fromBlock":"10747653","module":"Reconciler","step":"POLLING","toBlock":"10747786"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:40:18.307Z"}
+{"level":"info","message":{"fromBlock":"10747787","module":"Reconciler","step":"POLLING","toBlock":"10747791"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:41:18.242Z"}
+{"level":"info","message":{"fromBlock":"10747792","module":"Reconciler","step":"POLLING","toBlock":"10747796"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:42:18.054Z"}
+{"level":"info","message":{"fromBlock":"10747797","module":"Reconciler","step":"POLLING","toBlock":"10747801"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:43:18.070Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:17.081Z"}
+{"level":"info","message":{"fromBlock":"10747802","module":"Reconciler","step":"POLLING","toBlock":"10747806"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:17.972Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:18.973Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:19.047Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:19.048Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:19.092Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:19.092Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"The provided historical data shows zero price movement and zero volatility across the last six intervals. Given this extreme stability, a 10% increase in both position limits and trading frequency is recommended to capitalize on the quiet market regime. This adjustment remains well within the 20% maximum change constraint and far below the 2x absolute limit cap.","step":"CALIBRATION_RESULT","suggested":11000},"service":"vertex-sentinel","timestamp":"2026-04-28T07:44:23.326Z"}
+{"level":"info","message":{"fromBlock":"10747807","module":"Reconciler","step":"POLLING","toBlock":"10747811"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:45:18.111Z"}
+{"level":"info","message":{"fromBlock":"10747812","module":"Reconciler","step":"POLLING","toBlock":"10747816"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:46:18.120Z"}
+{"level":"info","message":{"fromBlock":"10747817","module":"Reconciler","step":"POLLING","toBlock":"10747821"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:47:18.240Z"}
+{"level":"info","message":{"fromBlock":"10747822","module":"Reconciler","step":"POLLING","toBlock":"10747825"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:48:18.175Z"}
+{"level":"info","message":{"fromBlock":"10747826","module":"Reconciler","step":"POLLING","toBlock":"10747830"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:18.205Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:19.230Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:19.290Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:19.291Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:19.354Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:49:19.354Z"}
+{"level":"info","message":{"fromBlock":"10747831","module":"Reconciler","step":"POLLING","toBlock":"10747835"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:50:18.228Z"}
+{"level":"info","message":{"fromBlock":"10747836","module":"Reconciler","step":"POLLING","toBlock":"10747839"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:51:18.298Z"}
+{"level":"info","message":{"fromBlock":"10747840","module":"Reconciler","step":"POLLING","toBlock":"10747843"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:52:18.318Z"}
+{"level":"info","message":{"fromBlock":"10747844","module":"Reconciler","step":"POLLING","toBlock":"10747848"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:53:18.359Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:17.089Z"}
+{"level":"info","message":{"fromBlock":"10747849","module":"Reconciler","step":"POLLING","toBlock":"10747853"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:18.243Z"}
+{"level":"info","message":{"pair":"ETH/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:19.436Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:19.489Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:19.490Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:19.533Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:19.533Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"The market exhibits zero price volatility over the analyzed interval, with the close price remaining constant at 50000. Given this extremely stable environment, position limits and trade frequency are increased by the maximum allowed 20% to optimize capital utilization while staying within institutional risk bounds.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T07:54:24.992Z"}
+{"level":"info","message":{"fromBlock":"10747854","module":"Reconciler","step":"POLLING","toBlock":"10747858"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:55:18.379Z"}
+{"level":"info","message":{"fromBlock":"10747859","module":"Reconciler","step":"POLLING","toBlock":"10747863"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:56:18.379Z"}
+{"level":"info","message":{"fromBlock":"10747864","module":"Reconciler","step":"POLLING","toBlock":"10747868"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:57:18.432Z"}
+{"level":"info","message":{"fromBlock":"10747869","module":"Reconciler","step":"POLLING","toBlock":"10747873"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:58:18.466Z"}
+{"level":"info","message":{"fromBlock":"10747874","module":"Reconciler","step":"POLLING","toBlock":"10747878"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:18.511Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:19.611Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:19.666Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:19.667Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:19.709Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T07:59:19.709Z"}
+{"level":"info","message":{"fromBlock":"10747879","module":"Reconciler","step":"POLLING","toBlock":"10747883"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:00:18.543Z"}
+{"level":"info","message":{"fromBlock":"10747884","module":"Reconciler","step":"POLLING","toBlock":"10747888"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:01:18.553Z"}
+{"level":"info","message":{"fromBlock":"10747889","module":"Reconciler","step":"POLLING","toBlock":"10747893"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:02:18.602Z"}
+{"level":"info","message":{"fromBlock":"10747894","module":"Reconciler","step":"POLLING","toBlock":"10747897"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:03:18.630Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:17.119Z"}
+{"level":"info","message":{"fromBlock":"10747898","module":"Reconciler","step":"POLLING","toBlock":"10747902"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:18.509Z"}
+{"level":"info","message":{"pair":"ETH/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:19.818Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:19.869Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:19.870Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:19.911Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:19.911Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"The market is showing zero price movement and extremely low volatility (0.00%) over the last 10 minutes. Given the high stability, I am recommending a maximum 20% increase to the position limit and trade frequency to optimize for efficiency within the defined safety bounds.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T08:04:20.099Z"}
+{"level":"info","message":{"fromBlock":"10747903","module":"Reconciler","step":"POLLING","toBlock":"10747907"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:05:18.659Z"}
+{"level":"info","message":{"fromBlock":"10747908","module":"Reconciler","step":"POLLING","toBlock":"10747912"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:06:18.697Z"}
+{"level":"info","message":{"fromBlock":"10747913","module":"Reconciler","step":"POLLING","toBlock":"10747916"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:07:18.699Z"}
+{"level":"info","message":{"fromBlock":"10747917","module":"Reconciler","step":"POLLING","toBlock":"10747920"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:08:18.738Z"}
+{"level":"info","message":{"fromBlock":"10747921","module":"Reconciler","step":"POLLING","toBlock":"10747925"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:18.761Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:19.981Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:20.036Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:20.036Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:20.097Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:09:20.097Z"}
+{"level":"info","message":{"fromBlock":"10747926","module":"Reconciler","step":"POLLING","toBlock":"10747930"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:10:18.794Z"}
+{"level":"info","message":{"fromBlock":"10747931","module":"Reconciler","step":"POLLING","toBlock":"10747935"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:11:18.844Z"}
+{"level":"info","message":{"fromBlock":"10747936","module":"Reconciler","step":"POLLING","toBlock":"10747940"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:12:18.849Z"}
+{"level":"info","message":{"fromBlock":"10747941","module":"Reconciler","step":"POLLING","toBlock":"10747944"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:13:18.845Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:17.147Z"}
+{"level":"info","message":{"fromBlock":"10747945","module":"Reconciler","step":"POLLING","toBlock":"10747949"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:18.789Z"}
+{"level":"info","message":{"pair":"ETH/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:20.164Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:20.216Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:20.216Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:20.258Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:20.258Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"The market is exhibiting zero volatility based on the historical data provided, where the price has remained static at 50,000. Following the mandate to increase limits during low volatility periods, I have applied the maximum permitted 20% increase to both the position limit and trades per hour. The new position limit of $12,000 remains well below the $20,000 initial deployment cap.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T08:14:21.729Z"}
+{"level":"info","message":{"fromBlock":"10747950","module":"Reconciler","step":"POLLING","toBlock":"10747954"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:15:18.911Z"}
+{"level":"info","message":{"fromBlock":"10747955","module":"Reconciler","step":"POLLING","toBlock":"10747958"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:16:18.932Z"}
+{"level":"info","message":{"fromBlock":"10747959","module":"Reconciler","step":"POLLING","toBlock":"10747963"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:17:18.961Z"}
+{"level":"info","message":{"fromBlock":"10747964","module":"Reconciler","step":"POLLING","toBlock":"10747967"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:18:18.993Z"}
+{"level":"info","message":{"fromBlock":"10747968","module":"Reconciler","step":"POLLING","toBlock":"10747970"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:19.012Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:20.362Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:20.419Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:20.420Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:20.463Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:19:20.464Z"}
+{"level":"info","message":{"fromBlock":"10747971","module":"Reconciler","step":"POLLING","toBlock":"10747974"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:20:19.059Z"}
+{"level":"info","message":{"fromBlock":"10747975","module":"Reconciler","step":"POLLING","toBlock":"10747979"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:21:19.107Z"}
+{"level":"info","message":{"fromBlock":"10747980","module":"Reconciler","step":"POLLING","toBlock":"10747984"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:22:19.093Z"}
+{"level":"info","message":{"fromBlock":"10747985","module":"Reconciler","step":"POLLING","toBlock":"10747989"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:23:19.130Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:17.176Z"}
+{"level":"info","message":{"fromBlock":"10747990","module":"Reconciler","step":"POLLING","toBlock":"10747994"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:19.051Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:20.535Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:20.587Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:20.588Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:20.629Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:20.630Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"Analysis of the historical data shows zero price volatility with a constant close price of 50000. Given the extremely stable market conditions, I am recommending a 20% increase to both the maximum position limit and the trades per hour limit, staying within the strict safety bounds of the mandate.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T08:24:35.078Z"}
+{"level":"info","message":{"fromBlock":"10747995","module":"Reconciler","step":"POLLING","toBlock":"10747998"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:25:19.184Z"}
+{"level":"info","message":{"fromBlock":"10747999","module":"Reconciler","step":"POLLING","toBlock":"10748003"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:26:19.201Z"}
+{"level":"info","message":{"fromBlock":"10748004","module":"Reconciler","step":"POLLING","toBlock":"10748008"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:27:19.236Z"}
+{"level":"info","message":{"fromBlock":"10748009","module":"Reconciler","step":"POLLING","toBlock":"10748013"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:28:19.281Z"}
+{"level":"info","message":{"fromBlock":"10748014","module":"Reconciler","step":"POLLING","toBlock":"10748018"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:19.265Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:20.701Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:20.756Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:20.757Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:20.797Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:29:20.797Z"}
+{"level":"info","message":{"fromBlock":"10748019","module":"Reconciler","step":"POLLING","toBlock":"10748022"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:30:19.338Z"}
+{"level":"info","message":{"fromBlock":"10748023","module":"Reconciler","step":"POLLING","toBlock":"10748026"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:31:19.334Z"}
+{"level":"info","message":{"fromBlock":"10748027","module":"Reconciler","step":"POLLING","toBlock":"10748030"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:32:19.361Z"}
+{"level":"info","message":{"fromBlock":"10748031","module":"Reconciler","step":"POLLING","toBlock":"10748035"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:33:19.403Z"}
+{"level":"info","message":{"agentId":"1","module":"RiskCalibrator","step":"START_CALIBRATION"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:17.203Z"}
+{"level":"info","message":{"fromBlock":"10748036","module":"Reconciler","step":"POLLING","toBlock":"10748040"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:19.288Z"}
+{"level":"info","message":{"pair":"SOL/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:20.879Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:20.932Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:20.932Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:20.974Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:20.974Z"}
+{"level":"info","message":{"final":"800000","module":"RiskCalibrator","reasoning":"Historical data indicates zero price movement across all data points, representing a period of extreme stability. According to the mandate, position limits and trade frequency are increased by the maximum permitted 20% to optimize capital deployment during this low-volatility regime.","step":"CALIBRATION_RESULT","suggested":12000},"service":"vertex-sentinel","timestamp":"2026-04-28T08:34:21.579Z"}
+{"level":"info","message":{"fromBlock":"10748041","module":"Reconciler","step":"POLLING","toBlock":"10748044"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:35:19.414Z"}
+{"level":"info","message":{"fromBlock":"10748045","module":"Reconciler","step":"POLLING","toBlock":"10748048"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:36:19.449Z"}
+{"level":"info","message":{"fromBlock":"10748049","module":"Reconciler","step":"POLLING","toBlock":"10748053"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:37:19.447Z"}
+{"level":"info","message":{"fromBlock":"10748054","module":"Reconciler","step":"POLLING","toBlock":"10748058"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:38:19.483Z"}
+{"level":"info","message":{"fromBlock":"10748059","module":"Reconciler","step":"POLLING","toBlock":"10748062"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:19.547Z"}
+{"level":"info","message":{"pair":"BTC/USDC","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:21.048Z"}
+{"level":"info","message":{"country":"US","ip":"34.27.142.64","module":"GEO_RESTRICT","step":"CHECK"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:21.103Z"}
+{"level":"error","message":{"error":"Fail-Closed: Vertex Sentinel is not available in US.","step":"CYCLE_ERROR"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:21.103Z"}
+{"level":"info","message":{"key":"0x5367F88E7B24bFa34A453CF24f7BE741CF3276c9-11155111","module":"NonceTracker","nonce":"1","step":"SYNCED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:21.147Z"}
+{"level":"info","message":{"nonce":"1","step":"NONCE_REFRESHED"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:39:21.148Z"}
+{"level":"info","message":{"fromBlock":"10748063","module":"Reconciler","step":"POLLING","toBlock":"10748067"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:40:19.551Z"}
+{"level":"info","message":{"fromBlock":"10748068","module":"Reconciler","step":"POLLING","toBlock":"10748072"},"service":"vertex-sentinel","timestamp":"2026-04-28T08:41:19.602Z"}
+{"level":"info","message":"Received shutdown signal. Initiating graceful shutdown...","service":"vertex-sentinel","step":"SHUTDOWN_INITIATED","timestamp":"2026-04-28T08:42:06.683Z"}
+{"level":"info","message":"Closing connection...","module":"MCP_CLIENT","service":"vertex-sentinel","timestamp":"2026-04-28T08:42:06.684Z"}
+{"level":"info","message":"Agent shutdown complete.","service":"vertex-sentinel","step":"SHUTDOWN_COMPLETE","timestamp":"2026-04-28T08:42:06.687Z"}
