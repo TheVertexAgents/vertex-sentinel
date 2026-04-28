@@ -48,49 +48,55 @@ const ai = genkit({
  * @dev Simple MCP Client Singleton for Ticker and Account Data.
  */
 let mcpClient: Client | null = null;
-let isConnecting = false;
+let connectionPromise: Promise<Client> | null = null;
 let connectionFailed = false;
 
 export async function getMcpClient() {
   if (mcpClient) return mcpClient;
   if (connectionFailed) throw new Error('MCP connection previously failed');
-  if (isConnecting) throw new Error('MCP connection already in progress');
-
-  isConnecting = true;
-  logger.info({ module: 'MCP_INITIALIZE', message: 'Connecting to Kraken MCP server...' });
-
-  try {
-    const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
-    logger.info({ module: 'MCP_INITIALIZE', step: 'SPAWN_SERVER', serverPath });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: ['--import', 'tsx', '--no-warnings', serverPath],
-      env: {
-        ...process.env,
-        NODE_ENV: process.env.NODE_ENV || 'development',
-        KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
-      } as Record<string, string>
-    });
-
-    mcpClient = new Client(
-      { name: 'sentinel-strategy-client', version: '1.0.0' },
-      { capabilities: {} }
-    );
-
-    await Promise.race([
-      mcpClient.connect(transport),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 15000))
-    ]);
-
-    isConnecting = false;
-    logger.info({ module: 'MCP_INITIALIZE', message: 'Connected successfully' });
-    return mcpClient;
-  } catch (err: any) {
-    isConnecting = false;
-    connectionFailed = true;
-    logger.error({ module: 'MCP_INITIALIZE', step: 'CONNECTION_FAILED', error: err.message });
-    throw err;
+  
+  if (connectionPromise) {
+    return connectionPromise;
   }
+
+  connectionPromise = (async () => {
+    logger.info({ module: 'MCP_INITIALIZE', message: 'Connecting to Kraken MCP server...' });
+
+    try {
+      const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
+      logger.info({ module: 'MCP_INITIALIZE', step: 'SPAWN_SERVER', serverPath });
+      const transport = new StdioClientTransport({
+        command: process.execPath,
+        args: ['--import', 'tsx', '--no-warnings', serverPath],
+        env: {
+          ...process.env,
+          NODE_ENV: process.env.NODE_ENV || 'development',
+          KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
+        } as Record<string, string>
+      });
+
+      const client = new Client(
+        { name: 'sentinel-strategy-client', version: '1.0.0' },
+        { capabilities: {} }
+      );
+
+      await Promise.race([
+        client.connect(transport),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 15000))
+      ]);
+
+      mcpClient = client;
+      logger.info({ module: 'MCP_INITIALIZE', message: 'Connected successfully' });
+      return mcpClient;
+    } catch (err: any) {
+      connectionFailed = true;
+      connectionPromise = null; // Allow retry if it failed? Or keep failed?
+      logger.error({ module: 'MCP_INITIALIZE', step: 'CONNECTION_FAILED', error: err.message });
+      throw err;
+    }
+  })();
+
+  return connectionPromise;
 }
 
 /**

@@ -399,13 +399,22 @@ export class KrakenMcpServer {
 
 // Entry point only if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new KrakenMcpServer();
-  server.run().catch((error: Error) => {
+  try {
+    const server = new KrakenMcpServer();
+    server.run().catch((error: Error) => {
+      logger.error({
+        event: 'runtime_error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      process.exit(1);
+    });
+  } catch (error: any) {
     logger.error({
-      event: 'startup_error',
+      event: 'initialization_error',
       error: error.message,
       timestamp: new Date().toISOString()
     });
     process.exit(1);
-  });
+  }
 }

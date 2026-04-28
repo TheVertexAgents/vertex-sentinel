@@ -16,7 +16,9 @@ export const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'vertex-sentinel' },
   transports: [
-    new winston.transports.Console(),
+    new winston.transports.Console({
+      stderrLevels: ['info', 'error', 'warn', 'debug', 'critical'],
+    }),
     new winston.transports.File({
       filename: path.join(logDir, 'app.log'),
       maxsize: 10 * 1024 * 1024, // 10MB

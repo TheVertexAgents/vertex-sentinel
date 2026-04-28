@@ -141,35 +141,13 @@ class ExecutionProxy {
 
   /**
    * @dev Initializes the connection to the Kraken MCP server.
+   * Uses the shared singleton from risk_assessment.ts to avoid double-spawning.
    */
   async initMcp() {
-    this.log('INFO', 'Initializing Kraken MCP Client connection...');
-    
-    // Path to the modular MCP server implementation
-    const serverPath = path.join(__dirname, '../mcp/kraken/index.ts');
-    
-    const transport = new StdioClientTransport({
-      command: 'node',
-      args: ['--loader', 'ts-node/esm', '--no-warnings', serverPath],
-      env: {
-          ...process.env,
-          NODE_ENV: process.env.NODE_ENV || 'development',
-          KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
-      } as Record<string, string>
-    });
-
-    this.mcpClient = new Client(
-      {
-        name: 'sentinel-execution-proxy',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {},
-      }
-    );
-
-    await this.mcpClient.connect(transport);
-    this.log('INFO', 'Successfully connected to Kraken MCP Server.');
+    this.log('INFO', 'Initializing shared Kraken MCP Client...');
+    const { getMcpClient } = await import('../logic/strategy/risk_assessment.js');
+    this.mcpClient = await getMcpClient();
+    this.log('INFO', 'Successfully connected to shared Kraken MCP Server.');
   }
 
   /**

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinel Risk Terminal | Agent Operations Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <script src="https://unpkg.com/ethers@5.2.0/dist/ethers.umd.min.js" type="application/javascript"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -586,11 +586,7 @@
             }
         });
 
-        // Modal & Hiring Logic
-        const REGISTRY_ADDRESS = '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3';
-        const REGISTRY_ABI = [
-            "function registerAgent(address agentWallet, string memory metadataURI) external"
-        ];
+        // Modal & Hiring Logic — uses REGISTRY_ADDRESS / REGISTRY_ABI declared above
 
         document.getElementById('hire-agent-btn').addEventListener('click', () => document.getElementById('hire-modal').classList.remove('hidden'));
         document.getElementById('close-modal').addEventListener('click', () => document.getElementById('hire-modal').classList.add('hidden'));
