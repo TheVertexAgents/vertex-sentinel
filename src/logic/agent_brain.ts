@@ -380,8 +380,9 @@ async function main() {
   setInterval(() => riskCalibrator.runCalibration(), 600000);
 
   // Initialize Execution Proxy and Event Reconciler for Institutional Reliability
-  const proxy = new ExecutionProxy(config.riskRouter as Hex, process.env.NETWORK || 'local');
-  const reconciler = new EventReconciler(config.riskRouter as Hex, process.env.NETWORK || 'local', proxy);
+  const network = (process.env.NETWORK === 'sepolia' ? 'sepolia' : 'local') as 'local' | 'sepolia';
+  const proxy = new ExecutionProxy(config.riskRouter as Hex, network);
+  const reconciler = new EventReconciler(config.riskRouter as Hex, network, proxy);
   reconciler.start();
 
   // Continuous trading loop
