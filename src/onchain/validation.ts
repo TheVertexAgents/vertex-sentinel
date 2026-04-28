@@ -3,7 +3,6 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, hardhat } from 'viem/chains';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
-import { CircleSigner } from './circle_signer.js';
 
 /**
  * @dev Client for interacting with the ValidationRegistry.
