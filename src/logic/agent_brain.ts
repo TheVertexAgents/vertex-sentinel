@@ -22,6 +22,8 @@ import { OHLCVCollector } from './strategy/ohlcv_collector.js';
 import { NotificationService } from '../utils/notifications.js';
 import { RiskCalibrator } from './risk-calibrator.js';
 import { checkGeographicRestrictions } from '../utils/geo-restrict.js';
+import { EventReconciler } from '../execution/reconciler.js';
+import ExecutionProxy from '../execution/proxy.js';
 
 dotenv.config();
 
@@ -376,6 +378,11 @@ async function main() {
 
   // Start Risk Calibration Background Loop (every 10 minutes)
   setInterval(() => riskCalibrator.runCalibration(), 600000);
+
+  // Initialize Execution Proxy and Event Reconciler for Institutional Reliability
+  const proxy = new ExecutionProxy(config.riskRouter as Hex, process.env.NETWORK || 'local');
+  const reconciler = new EventReconciler(config.riskRouter as Hex, process.env.NETWORK || 'local', proxy);
+  reconciler.start();
 
   // Continuous trading loop
   while (isRunning) {
