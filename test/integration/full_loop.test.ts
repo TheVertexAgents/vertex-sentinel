@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
-import { analyzeRisk } from '../../src/logic/strategy/risk_assessment.js';
+import { analyzeRisk, closeMcpClient } from '../../src/logic/strategy/risk_assessment.js';
 import { createSignedCheckpoint } from '../../src/utils/checkpoint.js';
 import { loadAgentMetadata } from '../../src/logic/config.js';
 import ExecutionProxy from '../../src/execution/proxy.js';
@@ -10,6 +10,10 @@ import type { Hex } from 'viem';
 
 describe("Sentinel Full Loop Integration", function () {
   this.timeout(30000); // 30s timeout because AI and MCP execution take time
+
+  after(async () => {
+    await closeMcpClient();
+  });
 
   it("Should assessment, sign, authorize on-chain, and execute on Kraken", async function () {
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');

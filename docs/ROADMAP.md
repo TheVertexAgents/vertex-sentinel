@@ -7,7 +7,7 @@
 | :--- | :--- | :--- |
 | **[BUG]** Fix hardcoded `verifyingContract` in `agent_brain.ts` | `P0: Critical` | `DONE` ✅ |
 | **[REFACTOR]** Extract `SentinelClient` into reusable SDK structure | `P1: Feature` | `DONE` ✅ |
-| **[TECH DEBT]** Implement automatic type generation from YAML specs | `P2: DevEx` | `IN PROGRESS` |
+| **[TECH DEBT]** Implement automatic type generation from YAML specs | `P2: DevEx` | `DONE` ✅ |
 
 ## Milestone 2: Intelligent Verifiability (Genkit + Audit)
 *Goal: Enhance the risk engine and provide verifiable "proofs" of security.*
@@ -16,7 +16,7 @@
 | :--- | :--- | :--- |
 | **[FEATURE]** Implement "Security Audit Trail" generator (JSON/Markdown) | `P1: Demo` | `DONE` ✅ |
 | **[ENHANCEMENT]** Strengthen Genkit risk assessment flow with market context | `P2: Research` | `DONE` ✅ |
-| **[FEATURE]** Integration of real-time ERC-8004 Identity Verification | `P2: Strategic` | `ACTIVE` ⚡ |
+| **[FEATURE]** Integration of real-time ERC-8004 Identity Verification | `P2: Strategic` | `DONE` ✅ |
 
 ## Milestone 3: Productization & Marketing (GTM)
 *Goal: Positioning the Sentinel Layer as a "Security SDK" for the OpenServ ecosystem.*
@@ -26,7 +26,7 @@
 | **[DOCS]** Create `LITEPAPER.md` (Security Strategy & Value Prop) | `P1: Marketing` | `DONE` ✅ |
 | **[DOCS]** Draft "Developer Quick-Start" Guide for SDK | `P2: Marketing` | `DONE` ✅ |
 | **[RESEARCH]** OpenServ SDK Integration & Conceptual API Design | `P1: Research` | `DONE` ✅ |
-| **[DEMO]** Create "One-Click Fail-Closed" simulation script | `P1: Demo` | `TODO` |
+| **[DEMO]** Create "One-Click Fail-Closed" simulation script | `P1: Demo` | `DONE` ✅ |
 
 ---
 
@@ -47,9 +47,10 @@
 
 | Issue | Priority | Status |
 | :--- | :--- | :--- |
-| **[PERF]** Sepolia Stability & Nonce Management Optimization | `High` | `TODO` |
-| **[PERF]** Dashboard WebSocket Migration (Socket.io) | `High` | `TODO` |
-| **[FEATURE]** Dynamic Agent Identity & Multi-Tenancy | `Medium` | `TODO` |
-| **[FEATURE]** Genkit-Powered Dynamic Risk Sizing | `Medium` | `TODO` |
+| **[PERF]** Sepolia Stability & Nonce Management Optimization | `High` | `DONE` ✅ |
+| **[PERF]** Dashboard WebSocket Migration (Socket.io) | `High` | `DONE` ✅ |
+| **[FEATURE]** Dynamic Agent Identity & Multi-Tenancy | `Medium` | `DONE` ✅ |
+| **[FEATURE]** Genkit-Powered Dynamic Risk Sizing | `Medium` | `DONE` ✅ |
 | **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `TODO` |
-| **[ANALYTICS]** Compliance Report Generation (PDF Audit Logs) | `Low` | `TODO` |
+| **[ANALYTICS]** Compliance Report Generation (PDF Audit Logs) | `Low` | `DONE` ✅ |
+| **[TECH DEBT]** Fix dangling MCP Server connections in tests | `Medium` | `DONE` ✅ |

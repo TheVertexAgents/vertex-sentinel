@@ -4,6 +4,7 @@ import sinon from 'sinon';
 import fs from 'fs';
 import path from 'path';
 import ExecutionProxy from '../../src/execution/proxy.js';
+import { closeMcpClient } from '../../src/logic/strategy/risk_assessment.js';
 
 describe('Execution Proxy Unit Tests', function () {
     this.timeout(30000); // 30s timeout for binary execution
@@ -28,9 +29,10 @@ describe('Execution Proxy Unit Tests', function () {
         proxy = new ExecutionProxy('0x1234567890123456789012345678901234567890' as `0x${string}`, 'local');
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         process.env = { ...originalEnv };
         sinon.restore();
+        await closeMcpClient();
     });
 
     it('should initialize correctly with given address', () => {
