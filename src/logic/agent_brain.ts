@@ -291,12 +291,11 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
           return { isAllowed: true, reason: decision.reasoning, signature };
       }
 
-      const confirmation = await riskRouterClient.waitForTradeAuthorization(authResult.transactionHash);
-
-      if (!confirmation.authorized) {
+      // authResult.success being true means it was already confirmed by authorizeTrade's internal resubmission logic
+      if (!authResult.success) {
         return { 
           isAllowed: false, 
-          reason: `RiskRouter did not authorize trade: ${confirmation.reason}`, 
+          reason: `RiskRouter did not authorize trade: ${authResult.error}`,
           signature: '0x' 
         };
       }
@@ -411,6 +410,12 @@ async function main() {
 
   logger.info({ module: 'AGENT_BRAIN', step: 'INITIAL_NONCE', nonce: onChainNonce.toString() });
 
+  // Initialize Market Data Subscriptions via WebSocket (#147)
+  const pairs = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC'];
+  for (const p of pairs) {
+    ohlcvCollector.subscribe(p);
+  }
+
   // Start Risk Calibration Background Loop (every 10 minutes)
   setInterval(() => riskCalibrator.runCalibration(), 600000);
 
@@ -424,11 +429,6 @@ async function main() {
   // Continuous trading loop
   while (isRunning) {
     try {
-      const pairs = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC'];
-      // Update OHLCV data
-      for (const p of pairs) {
-          await ohlcvCollector.collect(p);
-      }
 
       const selectedPair = pairs[Math.floor(Math.random() * pairs.length)];
       

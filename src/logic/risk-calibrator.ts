@@ -1,13 +1,10 @@
-import { genkit, z } from 'genkit';
+import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { generateWithRetry } from '../utils/ai.js';
 import { logger } from '../utils/logger.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
 import type { Hex } from 'viem';
-
-const ai = genkit({
-  plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],
-});
 
 /**
  * @dev Dynamic Risk Calibrator.
@@ -46,7 +43,7 @@ export class RiskCalibrator {
       const volatility = this.collector.calculateVolatility('BTC/USDC');
 
       // 3. Genkit Analysis
-      const aiResponse = await ai.generate({
+      const suggestion = await generateWithRetry('RiskCalibrator', {
         model: googleAI.model('gemini-flash-latest'),
         prompt: `You are the Vertex Sentinel Institutional Risk Officer.
         Analyze the current market volatility and suggest adjustments to the RiskRouter position limits.
@@ -82,7 +79,6 @@ export class RiskCalibrator {
         }
       });
 
-      const suggestion = aiResponse.output;
       if (!suggestion) throw new Error('AI failed to provide suggestion');
 
       // 4. Enforce Strict Bounds

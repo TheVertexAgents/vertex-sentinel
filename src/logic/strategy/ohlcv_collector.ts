@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger.js';
-import { getMcpClient } from './risk_assessment.js';
+import { KrakenWSClient } from '../../utils/kraken-ws.js';
 
 export interface OHLCV {
   timestamp: number;
@@ -29,41 +29,54 @@ export class OHLCVCollector {
   }
 
   /**
-   * @dev Collects the latest 1m data for a pair.
-   * Since the current MCP doesn't have a direct OHLCV tool, we approximate
-   * by sampling the ticker or using the get_ticker data.
+   * @dev Subscribes to real-time market data via WebSocket (#147).
    */
-  public async collect(pair: string) {
-    try {
-      const client = await getMcpClient();
-      const response = await client.callTool({
-        name: 'get_ticker',
-        arguments: { symbol: pair }
-      }) as { content: Array<{ type: string; text: string }> };
-
-      const ticker = JSON.parse(response.content[0].text);
-
+  public subscribe(pair: string) {
+    const wsClient = KrakenWSClient.getInstance();
+    wsClient.subscribeTicker(pair, (tickerData: any) => {
       const latest: OHLCV = {
         timestamp: Date.now(),
-        open: parseFloat(ticker.o || ticker.c[0]), // Using open or last trade as fallback
-        high: parseFloat(ticker.h[0]),
-        low: parseFloat(ticker.l[0]),
-        close: parseFloat(ticker.c[0]),
-        volume: parseFloat(ticker.v[0])
+        open: tickerData.open || tickerData.last,
+        high: tickerData.high,
+        low: tickerData.low,
+        close: tickerData.last,
+        volume: tickerData.volume
       };
 
       const pairHistory = this.history.get(pair) || [];
-      pairHistory.push(latest);
+
+      // Update or push based on 1m window
+      const lastCandle = pairHistory[pairHistory.length - 1];
+      const now = Date.now();
+      const oneMinute = 60000;
+
+      if (lastCandle && now - lastCandle.timestamp < oneMinute) {
+        // Update current candle
+        lastCandle.high = Math.max(lastCandle.high, latest.high);
+        lastCandle.low = Math.min(lastCandle.low, latest.low);
+        lastCandle.close = latest.close;
+        lastCandle.volume += latest.volume;
+      } else {
+        // New candle
+        pairHistory.push(latest);
+      }
 
       if (pairHistory.length > this.MAX_HISTORY) {
         pairHistory.shift();
       }
 
       this.history.set(pair, pairHistory);
-      logger.debug({ module: 'OHLCVCollector', step: 'COLLECTED', pair, count: pairHistory.length });
-    } catch (error) {
-      logger.warn({ module: 'OHLCVCollector', step: 'COLLECTION_FAILED', pair, error: error instanceof Error ? error.message : String(error) });
-    }
+      logger.debug({ module: 'OHLCVCollector', step: 'WS_UPDATED', pair, price: latest.close });
+    });
+  }
+
+  /**
+   * @dev Manual collection fallback (optional).
+   * Polling is now deprecated in favor of WebSocket subscriptions.
+   */
+  public async collect(pair: string) {
+     // No-op or log warning as it is replaced by subscribe
+     logger.debug({ module: 'OHLCVCollector', step: 'COLLECT_DEPRECATED', pair });
   }
 
   public getHistory(pair: string): OHLCV[] {

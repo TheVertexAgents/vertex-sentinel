@@ -272,12 +272,32 @@ export class RiskRouterClient {
           return { success: true, transactionHash: txHash as Hex };
       }
 
+      const publicClient = createPublicClient({
+        chain,
+        transport: this.getTransport(),
+      });
+
+      // Sepolia Hardening: Dynamic Gas Price (#148)
+      let gasConfig: any = {};
+      try {
+        const priorityFee = await publicClient.estimateMaxPriorityFeePerGas();
+        // Add 20% buffer to priority fee for congestion
+        const bufferedPriorityFee = (priorityFee * 120n) / 100n;
+        gasConfig = {
+          maxPriorityFeePerGas: bufferedPriorityFee,
+        };
+        logger.info({ module: 'RiskRouter', step: 'GAS_ESTIMATED', priorityFee: priorityFee.toString(), buffered: bufferedPriorityFee.toString() });
+      } catch (e) {
+        logger.warn({ module: 'RiskRouter', step: 'GAS_ESTIMATION_FAILED', error: String(e) });
+      }
+
       const txHash = await walletClient.writeContract({
         address: this.routerAddress,
         account: walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any,
         abi: RISK_ROUTER_ABI,
         functionName: 'submitTradeIntent',
         chain,
+        ...gasConfig,
         args: [
           {
             agentId: BigInt(intent.agentId),
@@ -293,9 +313,73 @@ export class RiskRouterClient {
         ],
       });
 
+      // Transaction Resubmission Logic (#148)
+      const STUCK_TIMEOUT = 60000; // 60 seconds
+      let confirmed = false;
+      let currentTxHash = txHash;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          logger.info({ module: 'RiskRouter', step: 'WAITING_FOR_CONFIRMATION', txHash: currentTxHash, attempt });
+          const receipt = await publicClient.waitForTransactionReceipt({
+            hash: currentTxHash,
+            timeout: STUCK_TIMEOUT,
+          });
+          if (receipt.status === 'success') {
+            confirmed = true;
+            return { success: true, transactionHash: currentTxHash };
+          } else {
+            throw new Error(`Transaction reverted: ${currentTxHash}`);
+          }
+        } catch (error: any) {
+          if (attempt < 3 && (error.name === 'WaitForTransactionReceiptTimeoutError' || error.message?.includes('timeout'))) {
+             logger.warn({ module: 'RiskRouter', step: 'TX_STUCK', txHash: currentTxHash, attempt });
+
+             // Bump gas for resubmission
+             try {
+                const priorityFee = await publicClient.estimateMaxPriorityFeePerGas();
+                // Bump by 20% + attempt factor
+                const bumpedFee = (priorityFee * BigInt(120 + attempt * 10)) / 100n;
+
+                logger.info({ module: 'RiskRouter', step: 'RESUBMITTING_TX', nonce: intent.nonce, bumpedFee: bumpedFee.toString() });
+
+                currentTxHash = await walletClient.writeContract({
+                  address: this.routerAddress,
+                  account: walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any,
+                  abi: RISK_ROUTER_ABI,
+                  functionName: 'submitTradeIntent',
+                  chain,
+                  maxPriorityFeePerGas: bumpedFee,
+                  nonce: Number(intent.nonce), // Re-use same nonce for replacement
+                  args: [
+                    {
+                      agentId: BigInt(intent.agentId),
+                      agentWallet: intent.agentWallet as Hex,
+                      pair: intent.pair,
+                      action: intent.action,
+                      amountUsdScaled: BigInt(intent.amountUsdScaled),
+                      maxSlippageBps: BigInt(intent.maxSlippageBps),
+                      nonce: BigInt(intent.nonce),
+                      deadline: BigInt(intent.deadline),
+                    },
+                    signature,
+                  ],
+                });
+             } catch (resubmitError: any) {
+                logger.error({ module: 'RiskRouter', step: 'RESUBMISSION_FAILED', error: resubmitError.message });
+                // If resubmission fails (e.g. nonce already used), try to wait for the original tx one more time?
+                // Or just break and fail.
+                break;
+             }
+          } else {
+            return { success: false, error: error.message, transactionHash: currentTxHash };
+          }
+        }
+      }
+
       return {
-        success: true,
-        transactionHash: txHash,
+        success: confirmed,
+        transactionHash: currentTxHash,
       };
     } catch (error) {
       if (error instanceof CriticalSecurityException) throw error;
