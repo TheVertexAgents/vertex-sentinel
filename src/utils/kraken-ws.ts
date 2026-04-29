@@ -59,6 +59,8 @@ export class KrakenWSClient {
         this.handleReconnect();
       });
     });
+
+    return this.connectionPromise;
   }
 
   private handleReconnect() {
