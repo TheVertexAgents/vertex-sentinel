@@ -54,6 +54,9 @@ export class KrakenMcpServer {
     this.exchange = new KrakenExchange({
       apiKey: this.apiKey,
       secret: this.apiSecret,
+      enableRateLimit: true,
+      // Kraken requires increasing nonces. Microseconds are standard.
+      nonce: () => Date.now() * 1000
     });
 
     this.server = new Server(
@@ -177,11 +180,11 @@ export class KrakenMcpServer {
                 a: [ticker.ask?.toString() || '0', '0', '0'],
                 b: [ticker.bid?.toString() || '0', '0', '0'],
                 c: [ticker.last?.toString() || '0', '0'],
-                v: [ticker.baseVolume?.toString() || '0', '0'],
-                p: [ticker.vwap?.toString() || '0', '0'],
-                t: [Number((ticker as any).count || 0), 0],
-                l: [ticker.low?.toString() || '0', '0'],
-                h: [ticker.high?.toString() || '0', '0'],
+                v: [ticker.baseVolume?.toString() || '0', ticker.baseVolume?.toString() || '0'],
+                p: [ticker.vwap?.toString() || '0', ticker.vwap?.toString() || '0'],
+                t: [Number((ticker as any).count || 0), Number((ticker as any).count || 0)],
+                l: [ticker.low?.toString() || '0', ticker.low?.toString() || '0'],
+                h: [ticker.high?.toString() || '0', ticker.high?.toString() || '0'],
                 o: ticker.open?.toString() || '0'
             });
 
@@ -193,10 +196,19 @@ export class KrakenMcpServer {
           case 'get_balance': {
             this.log('tool_call', { tool: toolName });
             
-            // Migrated to CCXT (#144)
-            // Paper mode handles via environment but for local simulation we might want more.
-            // CCXT doesn't have a direct "paper" mode, it depends on the API keys.
-            // If KRAKEN_PAPER_MODE is true, we should probably warn or handle differently if keys are live.
+            if (this.isPaperMode()) {
+                // Institutional-grade mock balance for Paper Mode (#144)
+                const mockBalance = {
+                    "USDC": "100000.00",
+                    "BTC": "2.50",
+                    "ETH": "25.00",
+                    "SOL": "500.00"
+                };
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(mockBalance) }],
+                };
+            }
+
             const balance = await this.exchange.fetchBalance();
 
             let normalizedBalance: Record<string, string> = {};
@@ -214,12 +226,17 @@ export class KrakenMcpServer {
           case 'get_trade_history': {
             this.log('tool_call', { tool: toolName });
 
-            // Migrated to CCXT (#144)
+            if (this.isPaperMode()) {
+                return {
+                    content: [{ type: 'text', text: JSON.stringify({ trades: {}, count: 0 }) }],
+                };
+            }
+
             const trades = await this.exchange.fetchMyTrades();
 
             let tradesRecord: Record<string, Record<string, unknown>> = {};
             for (const trade of trades) {
-              const id = trade.id || `t-${Date.now()}-${Math.random()}`;
+              const id = trade.id || `t-${Date.now()}`;
               tradesRecord[id] = {
                 ordertxid: trade.order,
                 pair: trade.symbol,
@@ -247,7 +264,20 @@ export class KrakenMcpServer {
             const params = OrderParamsSchema.parse(request.params.arguments);
             this.log('tool_call', { tool: toolName, params: params as unknown as Record<string, unknown> });
 
-            // Migrated to CCXT (#144)
+            if (this.isPaperMode()) {
+                // Simulated execution for Paper Mode (#144)
+                return {
+                    content: [{ type: 'text', text: JSON.stringify({
+                        action: params.side,
+                        order_id: `PAPER-${Date.now()}`,
+                        pair: params.symbol,
+                        price: params.price || 0, // In market mode, price might be 0
+                        volume: params.amount,
+                        cost: (params.price || 0) * params.amount
+                    }) }],
+                };
+            }
+
             const order = await this.exchange.createOrder(
               params.symbol,
               params.type,

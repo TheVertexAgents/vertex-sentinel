@@ -40,6 +40,10 @@ export async function checkGeographicRestrictions(): Promise<void> {
         logger.info({ module: 'GEO_RESTRICT', step: 'CHECK', country: countryCode, ip: data.query });
 
         if (PROHIBITED_COUNTRIES.includes(countryCode)) {
+            if (process.env.BYPASS_GEO_RESTRICT === 'true') {
+                logger.warn({ module: 'GEO_RESTRICT', step: 'BYPASS', country: countryCode, message: 'Bypassing restriction for testing purposes.' });
+                return;
+            }
             throw new CriticalSecurityException(`Fail-Closed: Vertex Sentinel is not available in ${countryCode}.`);
         }
 

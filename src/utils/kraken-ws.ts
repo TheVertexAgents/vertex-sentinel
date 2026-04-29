@@ -8,6 +8,7 @@ import { logger } from './logger.js';
 export class KrakenWSClient {
   private static instance: KrakenWSClient;
   private ws: WebSocket | null = null;
+  private connectionPromise: Promise<void> | null = null;
   private subscriptions: Set<string> = new Set();
   private handlers: Map<string, (data: any) => void> = new Map();
   private reconnectAttempts = 0;
@@ -23,11 +24,15 @@ export class KrakenWSClient {
   }
 
   public connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        return resolve();
-      }
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      return Promise.resolve();
+    }
 
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    this.connectionPromise = new Promise((resolve, reject) => {
       logger.info({ module: 'KrakenWS', step: 'CONNECTING' });
       this.ws = new WebSocket('wss://ws.kraken.com/v2');
 
@@ -35,6 +40,7 @@ export class KrakenWSClient {
         logger.info({ module: 'KrakenWS', step: 'CONNECTED' });
         this.reconnectAttempts = 0;
         this.resubscribe();
+        this.connectionPromise = null;
         resolve();
       });
 
@@ -44,6 +50,7 @@ export class KrakenWSClient {
 
       this.ws.on('error', (err) => {
         logger.error({ module: 'KrakenWS', step: 'ERROR', error: err.message });
+        this.connectionPromise = null;
         reject(err);
       });
 
