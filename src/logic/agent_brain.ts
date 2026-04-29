@@ -16,6 +16,7 @@ import { ValidationRegistryClient } from "../onchain/validation.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'node:crypto';
 import { PnLTracker } from './pnl/tracker.js';
 import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
@@ -105,7 +106,7 @@ const nonceTracker = LocalNonceTracker.getInstance();
  * @dev Helper to get a unique trace ID.
  */
 function getTraceId(): string {
-  return Math.random().toString(36).substring(2, 15);
+  return crypto.randomUUID();
 }
 
 /**
@@ -279,18 +280,6 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 
     // Wait for transaction confirmation
     if (authResult.transactionHash) {
-      // Circle WaaS simulation check
-      if (authResult.transactionHash === '0xCIRCLE') {
-          logger.info({ step: 'CIRCLE_WAAS_SIM_CONFIRMED', traceId });
-          agentEvents.emit('trade.authorized', {
-            traceId,
-            pair: intent.pair,
-            amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor,
-            txHash: authResult.transactionHash
-          });
-          return { isAllowed: true, reason: decision.reasoning, signature };
-      }
-
       // authResult.success being true means it was already confirmed by authorizeTrade's internal resubmission logic
       if (!authResult.success) {
         return { 
