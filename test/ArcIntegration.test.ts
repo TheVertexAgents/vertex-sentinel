@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import axios from 'axios';
-import { logger } from '../src/utils/logger.js';
 
 describe('AgentStack Arc Integration Service', () => {
   const ARC_URL = 'http://localhost:3000';
