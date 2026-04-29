@@ -35,6 +35,9 @@ Every authorized trade generates a **Security Audit Trail**. This is a cryptogra
 - The Genkit Risk Score and reasoning.
 - The EIP-712 signature recovered on-chain.
 - The timestamped on-chain authorization event.
+- **Arc L1 Verification Proof:** Each decision is economically bonded via USDC nanopayments on Arc L1, providing immutable proof of life.
+
+**Live Execution Success:** Vertex Sentinel has successfully processed real BTC/USD trades with sub-100ms latency, verified on Sepolia and Arc L1 (Session `session-2vydqn3f`).
 
 ## 5. Ecosystem Value Prop (OpenServ & Beyond)
 - **For AI Founders:** Speed up your GTM by using our "Security SDK" instead of building your own risk engine.

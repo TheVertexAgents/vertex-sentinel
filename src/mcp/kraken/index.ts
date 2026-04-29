@@ -6,13 +6,11 @@ import {
   ErrorCode,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
-import { spawnSync } from 'child_process';
+import { kraken as KrakenExchange } from 'ccxt';
 import {
   TickerSchema,
-  BalanceSchema,
   OrderParamsSchema,
   OrderResultSchema,
-  TradeHistorySchema,
 } from './types.js';
 import { validateEnv } from '../../logic/env.js';
 import { CriticalSecurityException } from '../../logic/errors.js';
@@ -44,12 +42,22 @@ export class KrakenMcpServer {
   public server: Server; // Made public for testing
   private apiKey: string;
   private apiSecret: string;
+  private exchange: KrakenExchange;
 
   constructor() {
     // Validate Environment first (Fail-Closed)
     const env = validateEnv();
     this.apiKey = env.KRAKEN_API_KEY;
     this.apiSecret = env.KRAKEN_SECRET;
+
+    // Initialize CCXT Kraken client (#144)
+    this.exchange = new KrakenExchange({
+      apiKey: this.apiKey,
+      secret: this.apiSecret,
+      enableRateLimit: true,
+      // Kraken requires increasing nonces. Microseconds are standard.
+      nonce: () => Date.now() * 1000
+    });
 
     this.server = new Server(
       {
@@ -91,75 +99,6 @@ export class KrakenMcpServer {
    */
   private isPaperMode(): boolean {
     return process.env.KRAKEN_PAPER_MODE === 'true';
-  }
-
-  /**
-   * @dev Executes a command using the official Kraken Rust CLI binary.
-   * Implements "Fail-Closed" principle.
-   * Uses spawnSync with argument array to prevent command injection.
-   *
-   * @param commandParts - The command and its arguments (e.g., ['ticker', 'BTCUSD']
-   *   or ['order', 'buy', 'BTCUSD', '0.001', '--type', 'market']).
-   *   The global `-o json` flag is prepended automatically.
-   * @returns Parsed JSON output from the CLI.
-   * @throws Error if CLI execution fails, returns no output, or outputs invalid JSON.
-   */
-  private executeKrakenCli(commandParts: string[]): unknown {
-    const krakenPath = process.env.KRAKEN_CLI_PATH || 'kraken';
-
-    // Prepend the global JSON output flag
-    const finalArgs = ['-o', 'json', ...commandParts];
-
-    this.log('cli_exec', {
-      binary: krakenPath,
-      args: finalArgs,
-      paperMode: this.isPaperMode(),
-    });
-
-    const result = spawnSync(krakenPath, finalArgs, {
-        env: {
-            ...process.env,
-            KRAKEN_API_KEY: this.apiKey,
-            // Pass both variants for compatibility with the kraken binary
-            KRAKEN_API_SECRET: this.apiSecret,
-            KRAKEN_SECRET: this.apiSecret,
-        },
-        stdio: ['inherit', 'pipe', 'pipe'],
-        encoding: 'utf-8',
-        timeout: 30000, // 30s timeout to prevent hanging
-    });
-
-    if (result.error) {
-        throw new Error(`Failed to execute Kraken CLI: ${result.error.message}`);
-    }
-
-    // Capture stderr for rate-limit and error diagnostics
-    const stderrOutput = result.stderr?.trim() || '';
-
-    if (result.status !== null && result.status !== 0) {
-        const errorDetail = stderrOutput || result.stdout?.trim() || 'Unknown CLI error';
-        throw new Error(`Kraken CLI exited with code ${result.status}: ${errorDetail}`);
-    }
-
-    if (!result.stdout || !result.stdout.trim()) {
-        throw new Error(`Kraken CLI returned no output. Stderr: ${stderrOutput}`);
-    }
-
-    try {
-      const parsed = JSON.parse(result.stdout);
-
-      // Handle Kraken API-level errors embedded in JSON
-      if (parsed && typeof parsed === 'object' && 'error' in parsed && Array.isArray(parsed.error) && parsed.error.length > 0) {
-        throw new Error(`Kraken API Error: ${parsed.error.join(', ')}`);
-      }
-
-      return parsed;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-          throw error;
-      }
-      throw new Error(`Failed to parse Kraken CLI output: ${String(error)}`);
-    }
   }
 
   /**
@@ -233,24 +172,20 @@ export class KrakenMcpServer {
             
             this.log('tool_call', { tool: toolName, symbol });
 
-            // Ticker always uses real market data, even in paper mode
-            const cleanSymbol = symbol.replace('/', '');
-            const result = this.executeKrakenCli(['ticker', cleanSymbol]);
-
-            if (!result || typeof result !== 'object') {
-                throw new Error('Invalid ticker response from CLI');
-            }
-
-            const pairKey = Object.keys(result)[0];
-            const tickerData = (result as Record<string, unknown>)[pairKey];
-            
-            if (!tickerData || typeof tickerData !== 'object') {
-                throw new Error(`Ticker data not found for ${pairKey}`);
-            }
+            // Migrated to CCXT (#144)
+            const ticker = await this.exchange.fetchTicker(symbol);
 
             const validated = TickerSchema.parse({
-                symbol: pairKey,
-                ...tickerData
+                symbol: symbol,
+                a: [ticker.ask?.toString() || '0', '0', '0'],
+                b: [ticker.bid?.toString() || '0', '0', '0'],
+                c: [ticker.last?.toString() || '0', '0'],
+                v: [ticker.baseVolume?.toString() || '0', ticker.baseVolume?.toString() || '0'],
+                p: [ticker.vwap?.toString() || '0', ticker.vwap?.toString() || '0'],
+                t: [Number((ticker as any).count || 0), Number((ticker as any).count || 0)],
+                l: [ticker.low?.toString() || '0', ticker.low?.toString() || '0'],
+                h: [ticker.high?.toString() || '0', ticker.high?.toString() || '0'],
+                o: ticker.open?.toString() || '0'
             });
 
             return {
@@ -261,25 +196,25 @@ export class KrakenMcpServer {
           case 'get_balance': {
             this.log('tool_call', { tool: toolName });
             
-            // Paper mode: `paper balance` | Live mode: `balance`
-            const cmd = this.isPaperMode() ? ['paper', 'balance'] : ['balance'];
-            const result = this.executeKrakenCli(cmd);
-            const validated = BalanceSchema.parse(result);
+            if (this.isPaperMode()) {
+                // Institutional-grade mock balance for Paper Mode (#144)
+                const mockBalance = {
+                    "USDC": "100000.00",
+                    "BTC": "2.50",
+                    "ETH": "25.00",
+                    "SOL": "500.00"
+                };
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(mockBalance) }],
+                };
+            }
 
-            // Normalize paper balance format to flat key-value for consistent LLM output
-            // Paper: {balances: {BTC: {available, reserved, total}}, mode} → {BTC: "0.01", USD: "9290.56"}
-            let normalizedBalance: Record<string, string>;
-            if (validated && typeof validated === 'object' && 'balances' in validated) {
-              const paperData = validated as { balances: Record<string, { total: number }> };
-              normalizedBalance = {};
-              for (const [asset, info] of Object.entries(paperData.balances)) {
-                normalizedBalance[asset] = info.total.toString();
-              }
-            } else {
-              // Live format — already flat, normalize values to strings
-              normalizedBalance = {};
-              for (const [key, val] of Object.entries(validated as Record<string, string | number>)) {
-                normalizedBalance[key] = String(val);
+            const balance = await this.exchange.fetchBalance();
+
+            let normalizedBalance: Record<string, string> = {};
+            for (const [asset, info] of Object.entries(balance.total)) {
+              if (info !== undefined && info !== null && Number(info) > 0) {
+                normalizedBalance[asset] = info.toString();
               }
             }
 
@@ -291,48 +226,34 @@ export class KrakenMcpServer {
           case 'get_trade_history': {
             this.log('tool_call', { tool: toolName });
 
-            // Paper mode: `paper history` | Live mode: `trades-history`
-            const cmd = this.isPaperMode() ? ['paper', 'history'] : ['trades-history'];
-            const result = this.executeKrakenCli(cmd);
-            const validated = TradeHistorySchema.parse(result);
-
-            // Normalize paper trade history (array) to unified record format
-            // Paper: {trades: [{id, side, price(num), ...}]} → {trades: {id: {ordertxid, type, price(str), ...}}, count}
-            let normalizedHistory: { trades: Record<string, Record<string, unknown>>; count: number };
-
-            if (Array.isArray(validated.trades)) {
-              // Paper format — convert array to record with string-typed fields
-              const tradesRecord: Record<string, Record<string, unknown>> = {};
-              for (const trade of validated.trades) {
-                const key = (trade as Record<string, unknown>).id as string
-                  || (trade as Record<string, unknown>).order_id as string
-                  || `trade-${Date.now()}`;
-                const t = trade as Record<string, unknown>;
-                tradesRecord[key] = {
-                  ordertxid: t.order_id || t.id || '',
-                  pair: t.pair,
-                  time: typeof t.time === 'string' ? new Date(t.time as string).getTime() / 1000 : t.time,
-                  type: t.side || t.type,
-                  ordertype: t.ordertype || 'market',
-                  price: String(t.price),
-                  cost: String(t.cost),
-                  fee: String(t.fee),
-                  vol: String(t.volume || t.vol),
+            if (this.isPaperMode()) {
+                return {
+                    content: [{ type: 'text', text: JSON.stringify({ trades: {}, count: 0 }) }],
                 };
-              }
-              const rawData = validated as Record<string, unknown>;
-              normalizedHistory = {
-                trades: tradesRecord,
-                count: (rawData.filled_count as number) || Object.keys(tradesRecord).length,
-              };
-            } else {
-              // Live format — already a record
-              const rawData = validated as Record<string, unknown>;
-              normalizedHistory = {
-                trades: validated.trades as Record<string, Record<string, unknown>>,
-                count: (rawData.count as number) || 0,
+            }
+
+            const trades = await this.exchange.fetchMyTrades();
+
+            let tradesRecord: Record<string, Record<string, unknown>> = {};
+            for (const trade of trades) {
+              const id = trade.id || `t-${Date.now()}`;
+              tradesRecord[id] = {
+                ordertxid: trade.order,
+                pair: trade.symbol,
+                time: (trade.timestamp || Date.now()) / 1000,
+                type: trade.side,
+                ordertype: trade.type,
+                price: trade.price?.toString() || '0',
+                cost: trade.cost?.toString() || '0',
+                fee: trade.fee?.cost?.toString() || '0',
+                vol: trade.amount?.toString() || '0',
               };
             }
+
+            const normalizedHistory = {
+              trades: tradesRecord,
+              count: trades.length,
+            };
 
             return {
               content: [{ type: 'text', text: JSON.stringify(normalizedHistory) }],
@@ -343,20 +264,32 @@ export class KrakenMcpServer {
             const params = OrderParamsSchema.parse(request.params.arguments);
             this.log('tool_call', { tool: toolName, params: params as unknown as Record<string, unknown> });
 
-            const cleanSymbol = params.symbol.replace('/', '');
-
-            // Paper mode: `paper buy/sell <PAIR> <VOL> ...`
-            // Live mode:  `order buy/sell <PAIR> <VOL> ...`
-            const cliArgs: string[] = this.isPaperMode()
-              ? ['paper', params.side, cleanSymbol, params.amount.toString(), '--type', params.type]
-              : ['order', params.side, cleanSymbol, params.amount.toString(), '--type', params.type];
-            
-            if (params.price) {
-                cliArgs.push('--price', params.price.toString());
+            if (this.isPaperMode()) {
+                // Simulated execution for Paper Mode (#144)
+                return {
+                    content: [{ type: 'text', text: JSON.stringify({
+                        action: params.side,
+                        order_id: `PAPER-${Date.now()}`,
+                        pair: params.symbol,
+                        price: params.price || 0, // In market mode, price might be 0
+                        volume: params.amount,
+                        cost: (params.price || 0) * params.amount
+                    }) }],
+                };
             }
 
-            const result = this.executeKrakenCli(cliArgs);
-            const validated = OrderResultSchema.parse(result);
+            const order = await this.exchange.createOrder(
+              params.symbol,
+              params.type,
+              params.side,
+              params.amount,
+              params.price
+            );
+
+            const validated = OrderResultSchema.parse({
+              descr: { order: `${params.side} ${params.amount} ${params.symbol} @ ${params.type}` },
+              txid: [order.id]
+            });
 
             return {
               content: [{ type: 'text', text: JSON.stringify(validated) }],

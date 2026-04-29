@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger.js';
-import { genkit, z } from 'genkit';
+import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { getCachedAI, setCachedAI, generateWithRetry } from '../../utils/ai.js';
 import { CriticalSecurityException } from '../errors.js';
 import { loadAgentMetadata } from '../config.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -39,10 +40,6 @@ export const TradeDecisionSchema = z.object({
 
 export type TradeDecision = z.infer<typeof TradeDecisionSchema>;
 
-// Initialize Genkit
-const ai = genkit({
-  plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],
-});
 
 /**
  * @dev Simple MCP Client Singleton for Ticker and Account Data.
@@ -137,32 +134,30 @@ export async function closeMcpClient() {
 
 /**
  * @dev Live AI Sentiment API (Genkit)
+ * Updated with exponential backoff and caching (#143).
  */
 async function getSentiment(pair: string) {
-  try {
-    const aiResponse = await ai.generate({
-      model: googleAI.model('gemini-flash-latest'),
-      prompt: `Analyze the current real-world market sentiment for ${pair} crypto asset. Output JSON with headline, indicator (Bullish/Bearish/Neutral), and score (0.0 to 1.0).`,
-      output: {
-        format: 'json',
-        schema: z.object({
-          headline: z.string(),
-          indicator: z.string(),
-          score: z.number().min(0).max(1)
-        })
-      }
-    });
+  const cacheKey = `sentiment-${pair}`;
+  const cached = getCachedAI(cacheKey);
+  if (cached) return cached;
 
-    if (aiResponse.output) {
-      logger.info({ module: 'SENTIMENT', step: 'FETCH_SUCCESS', pair });
-      return aiResponse.output;
+  const output = await generateWithRetry('SENTIMENT', {
+    model: googleAI.model('gemini-flash-latest'),
+    prompt: `Analyze the current real-world market sentiment for ${pair} crypto asset. Output JSON with headline, indicator (Bullish/Bearish/Neutral), and score (0.0 to 1.0).`,
+    output: {
+      format: 'json',
+      schema: z.object({
+        headline: z.string(),
+        indicator: z.string(),
+        score: z.number().min(0).max(1)
+      })
     }
-  } catch (err: any) {
-    if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
-      logger.warn({ module: 'SENTIMENT', message: 'Service unavailable. Entering degraded mode for sentiment.' });
-    } else {
-      logger.warn({ module: 'SENTIMENT', message: 'Live sentiment API unreachable. Degraded mode active.' });
-    }
+  });
+
+  if (output) {
+    logger.info({ module: 'SENTIMENT', step: 'FETCH_SUCCESS', pair });
+    setCachedAI(cacheKey, output);
+    return output;
   }
 
   return {
@@ -216,13 +211,15 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     // 5. Genkit AI Risk Assessment
     const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
 
-    let aiResult = null;
-    let attempts = 0;
-    while (attempts < 3) {
-      try {
-        const aiResponse = await ai.generate({
-          model: googleAI.model('gemini-flash-latest'),
-          prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
+    // Caching AI Risk Assessment (#143)
+    // Key includes pair and rounded amount to allow some reuse
+    const aiRiskCacheKey = `risk-${pair}-${Math.floor(amountUsd / 10)}`;
+    let aiResult = getCachedAI(aiRiskCacheKey);
+
+    if (!aiResult) {
+      aiResult = await generateWithRetry('AI_RISK', {
+        model: googleAI.model('gemini-flash-latest'),
+        prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
 
 Analyze the provided data and evaluate:
 1. Market Risk: Based on Bid/Ask spread and volatility.
@@ -262,39 +259,30 @@ Output your response in valid JSON format:
   "sentimentRisk": number (0.0 to 1.0),
   "justification": "concise string citing specific headlines if relevant"
 }`,
-          output: {
-            format: 'json',
-            schema: z.object({
-              riskScore: z.number(),
-              marketRisk: z.number(),
-              portfolioRisk: z.number(),
-              sentimentRisk: z.number(),
-              justification: z.string(),
-            })
-          }
-        });
-        aiResult = aiResponse.output;
-        break; // Success, exit retry loop
-      } catch (err: any) {
-        attempts++;
-        if (err.message?.includes('UNAVAILABLE') || err.message?.includes('503')) {
-          logger.warn({ module: 'AI_RISK', step: 'RETRY_503', attempt: attempts });
-          await new Promise(r => setTimeout(r, attempts * 1000));
-        } else {
-          logger.error({ module: 'AI_RISK', step: 'API_FAILED', error: err.message });
-          break; // Don't retry on other errors
+        output: {
+          format: 'json',
+          schema: z.object({
+            riskScore: z.number(),
+            marketRisk: z.number(),
+            portfolioRisk: z.number(),
+            sentimentRisk: z.number(),
+            justification: z.string(),
+          })
         }
+      });
+      if (aiResult) {
+        setCachedAI(aiRiskCacheKey, aiResult);
       }
     }
 
     if (!aiResult) {
-      logger.warn({ module: 'AI_RISK', message: 'All AI attempts failed. Entering DEGRADED MODE (relying strictly on market data).' });
+      logger.warn({ module: 'AI_RISK', message: 'All AI attempts failed. Entering DEGRADED MODE (conservative baseline active).' });
       aiResult = {
-        riskScore: 0,
-        marketRisk: 0,
+        riskScore: 0.2, // Enhanced to conservative baseline (#143)
+        marketRisk: 0.2,
         portfolioRisk: 0,
-        sentimentRisk: 0,
-        justification: "Degraded Mode: Hardware rules override. AI Engine Unavailable.",
+        sentimentRisk: 0.2,
+        justification: "Degraded Mode: AI Engine Unavailable. Applying conservative risk baseline (0.2).",
       };
     }
 

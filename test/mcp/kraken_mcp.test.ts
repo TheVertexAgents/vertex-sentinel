@@ -3,16 +3,19 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import { KrakenMcpServer } from '../../src/mcp/kraken/index.js';
 import { CriticalSecurityException } from '../../src/logic/errors.js';
+import { kraken as KrakenExchange } from 'ccxt';
 
 describe('Kraken MCP Server (TDD)', () => {
   let sandbox: sinon.SinonSandbox;
-  let executeKrakenCliStub: sinon.SinonStub;
+  let fetchTickerStub: sinon.SinonStub;
+  let createOrderStub: sinon.SinonStub;
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
 
-    // Stub the private method on the prototype before instantiation
-    executeKrakenCliStub = sandbox.stub(KrakenMcpServer.prototype as any, 'executeKrakenCli');
+    // Stub the CCXT methods on the prototype (#144 migration)
+    fetchTickerStub = sandbox.stub(KrakenExchange.prototype, 'fetchTicker');
+    createOrderStub = sandbox.stub(KrakenExchange.prototype, 'createOrder');
     
     // Clear env for tests
     delete process.env.KRAKEN_API_KEY;
@@ -53,7 +56,7 @@ describe('Kraken MCP Server (TDD)', () => {
     expect(result.tools.some((t: any) => t.name === 'place_order')).to.be.true;
   });
 
-  it('should fetch ticker data correctly via Kraken CLI', async () => {
+  it('should fetch ticker data correctly via CCXT', async () => {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
@@ -62,20 +65,19 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
 
-    const mockTickerResult = {
-      "XXBTZUSD": {
-        "a": ["50010.0", "1", "1.000"],
-        "b": ["49990.0", "1", "1.000"],
-        "c": ["50000.0", "0.1"],
-        "v": ["100", "200"],
-        "p": ["50000.0", "50000.0"],
-        "t": [10, 20],
-        "l": ["49000.0", "48000.0"],
-        "h": ["51000.0", "52000.0"],
-        "o": "49500.0"
-      }
+    const mockCCXTResult = {
+      symbol: 'BTC/USD',
+      ask: 50010.0,
+      bid: 49990.0,
+      last: 50000.0,
+      baseVolume: 100,
+      vwap: 50000.0,
+      count: 10,
+      low: 49000.0,
+      high: 51000.0,
+      open: 49500.0
     };
-    executeKrakenCliStub.returns(mockTickerResult);
+    fetchTickerStub.resolves(mockCCXTResult);
     
     const server = new KrakenMcpServer();
     const handlers = (server.server as any)._requestHandlers;
@@ -91,8 +93,8 @@ describe('Kraken MCP Server (TDD)', () => {
     });
 
     const parsedContent = JSON.parse(result.content[0].text);
-    expect(parsedContent.symbol).to.equal('XXBTZUSD');
-    expect(parsedContent.c[0]).to.equal('50000.0');
+    expect(parsedContent.symbol).to.equal('BTC/USD');
+    expect(parsedContent.c[0]).to.equal('50000');
   });
 
   it('should throw CriticalSecurityException on exchange error during place_order', async () => {
@@ -104,8 +106,8 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
 
-    // Simulate CLI error
-    executeKrakenCliStub.throws(new Error('Command failed: kraken order ...'));
+    // Simulate CCXT error
+    createOrderStub.rejects(new Error('CCXT: Insufficient funds'));
     
     const server = new KrakenMcpServer();
     const handlers = (server.server as any)._requestHandlers;
@@ -136,7 +138,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
 
-    executeKrakenCliStub.throws(new Error('CLI connection lost'));
+    fetchTickerStub.rejects(new Error('CCXT: connection lost'));
 
     const server = new KrakenMcpServer();
     const handlers = (server.server as any)._requestHandlers;
@@ -156,6 +158,6 @@ describe('Kraken MCP Server (TDD)', () => {
     expect(result.isError).to.be.true;
     expect(result.content).to.be.an('array');
     expect(result.content[0].type).to.equal('text');
-    expect(result.content[0].text).to.contain('Exchange error: CLI connection lost');
+    expect(result.content[0].text).to.contain('Exchange error: CCXT: connection lost');
   });
 });
