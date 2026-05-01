@@ -84,6 +84,32 @@ export class KrakenMcpServer {
   }
 
   /**
+   * @dev Retry wrapper for CCXT calls with exponential backoff.
+   */
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        const isRetryable = error.message?.includes('ETIMEDOUT') ||
+                          error.message?.includes('502') ||
+                          error.message?.includes('503') ||
+                          error.name === 'RequestTimeout' ||
+                          error.name === 'ExchangeNotAvailable';
+
+        if (i < attempts && isRetryable) {
+          const delay = Math.pow(2, i) * 1000;
+          this.log('retry', { attempt: i, delay, error: error.message });
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw new Error('Max retry attempts reached');
+  }
+
+  /**
    * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
    */
   private log(event: string, data: Record<string, unknown>) {
@@ -172,8 +198,10 @@ export class KrakenMcpServer {
             
             this.log('tool_call', { tool: toolName, symbol });
 
-            // Migrated to CCXT (#144)
-            const ticker = await this.exchange.fetchTicker(symbol);
+            // Migrated to CCXT with Retry and Timeout (#148)
+            const ticker = await this.withRetry(() =>
+              this.exchange.fetchTicker(symbol, { 'timeout': 10000 })
+            );
 
             const validated = TickerSchema.parse({
                 symbol: symbol,
@@ -278,12 +306,15 @@ export class KrakenMcpServer {
                 };
             }
 
-            const order = await this.exchange.createOrder(
-              params.symbol,
-              params.type,
-              params.side,
-              params.amount,
-              params.price
+            const order = await this.withRetry(() =>
+              this.exchange.createOrder(
+                params.symbol,
+                params.type,
+                params.side,
+                params.amount,
+                params.price,
+                { 'timeout': 10000 }
+              )
             );
 
             const validated = OrderResultSchema.parse({

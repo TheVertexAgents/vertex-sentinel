@@ -277,26 +277,40 @@ export class RiskRouterClient {
         transport: this.getTransport(),
       });
 
+      // Sepolia Hardening: Nonce Safety (#148)
+      const account = walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any;
+      const txNonce = await publicClient.getTransactionCount({
+        address: typeof account === 'string' ? account : account.address,
+        blockTag: 'pending'
+      });
+
       // Sepolia Hardening: Dynamic Gas Price (#148)
       let gasConfig: any = {};
       try {
-        const priorityFee = await publicClient.estimateMaxPriorityFeePerGas();
-        // Add 20% buffer to priority fee for congestion
-        const bufferedPriorityFee = (priorityFee * 120n) / 100n;
+        const feeData = await publicClient.estimateFeesPerGas();
+        const priorityFee = feeData.maxPriorityFeePerGas;
+        const maxFee = feeData.maxFeePerGas;
+
+        // Add 50% buffer for initial submission to ensure fast inclusion
+        const bufferedPriorityFee = (priorityFee * 150n) / 100n;
+        const bufferedMaxFee = (maxFee * 150n) / 100n;
+
         gasConfig = {
           maxPriorityFeePerGas: bufferedPriorityFee,
+          maxFeePerGas: bufferedMaxFee,
         };
-        logger.info({ module: 'RiskRouter', step: 'GAS_ESTIMATED', priorityFee: priorityFee.toString(), buffered: bufferedPriorityFee.toString() });
+        logger.info({ module: 'RiskRouter', step: 'GAS_ESTIMATED', priorityFee: priorityFee.toString(), maxFee: maxFee.toString(), bufferedPriority: bufferedPriorityFee.toString(), bufferedMax: bufferedMaxFee.toString() });
       } catch (e) {
         logger.warn({ module: 'RiskRouter', step: 'GAS_ESTIMATION_FAILED', error: String(e) });
       }
 
       const txHash = await walletClient.writeContract({
         address: this.routerAddress,
-        account: walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any,
+        account,
         abi: RISK_ROUTER_ABI,
         functionName: 'submitTradeIntent',
         chain,
+        nonce: txNonce,
         ...gasConfig,
         args: [
           {
@@ -314,7 +328,7 @@ export class RiskRouterClient {
       });
 
       // Transaction Resubmission Logic (#148)
-      const STUCK_TIMEOUT = 60000; // 60 seconds
+      const STUCK_TIMEOUT = 45000; // Reduced to 45 seconds for first attempt
       let confirmed = false;
       let currentTxHash = txHash;
 
@@ -323,7 +337,7 @@ export class RiskRouterClient {
           logger.info({ module: 'RiskRouter', step: 'WAITING_FOR_CONFIRMATION', txHash: currentTxHash, attempt });
           const receipt = await publicClient.waitForTransactionReceipt({
             hash: currentTxHash,
-            timeout: STUCK_TIMEOUT,
+            timeout: attempt === 1 ? STUCK_TIMEOUT : 60000,
           });
           if (receipt.status === 'success') {
             confirmed = true;
@@ -337,20 +351,22 @@ export class RiskRouterClient {
 
              // Bump gas for resubmission
              try {
-                const priorityFee = await publicClient.estimateMaxPriorityFeePerGas();
-                // Bump by 20% + attempt factor
-                const bumpedFee = (priorityFee * BigInt(120 + attempt * 10)) / 100n;
+                const feeData = await publicClient.estimateFeesPerGas();
+                // Bump by 150% as per requirements
+                const bumpedPriorityFee = (feeData.maxPriorityFeePerGas * 150n) / 100n;
+                const bumpedMaxFee = (feeData.maxFeePerGas * 150n) / 100n;
 
-                logger.info({ module: 'RiskRouter', step: 'RESUBMITTING_TX', nonce: intent.nonce, bumpedFee: bumpedFee.toString() });
+                logger.info({ module: 'RiskRouter', step: 'RESUBMITTING_TX', intentNonce: intent.nonce, txNonce, bumpedPriorityFee: bumpedPriorityFee.toString(), bumpedMaxFee: bumpedMaxFee.toString() });
 
                 currentTxHash = await walletClient.writeContract({
                   address: this.routerAddress,
-                  account: walletClient.account || (useCircle ? (process.env.AGENT_WALLET_ADDRESS as Hex) : null) as any,
+                  account,
                   abi: RISK_ROUTER_ABI,
                   functionName: 'submitTradeIntent',
                   chain,
-                  maxPriorityFeePerGas: bumpedFee,
-                  nonce: Number(intent.nonce), // Re-use same nonce for replacement
+                  maxPriorityFeePerGas: bumpedPriorityFee,
+                  maxFeePerGas: bumpedMaxFee,
+                  nonce: txNonce, // Re-use same EOA nonce for replacement
                   args: [
                     {
                       agentId: BigInt(intent.agentId),
