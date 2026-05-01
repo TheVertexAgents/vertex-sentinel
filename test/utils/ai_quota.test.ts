@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { generateWithRetry } from '../../src/utils/ai.js';
-import { logger } from '../../src/utils/logger.js';
 import sinon from 'sinon';
 
 describe('AI Rate Limiter & Quota Management (#148)', function() {

@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import nock from 'nock';
-import { KrakenMcpServer } from '../../src/mcp/kraken/index.ts';
-import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { KrakenMcpServer } from '../../src/mcp/kraken/index.js';
 
 describe('Kraken MCP Stability (#148)', function() {
   this.timeout(40000); // Increase mocha timeout for retries
@@ -73,7 +72,7 @@ describe('Kraken MCP Stability (#148)', function() {
         onerror: () => {},
         onmessage: () => {},
         start: async () => {},
-        resolve: (val: any) => {}
+        resolve: (_val: any) => {}
     };
 
     const responsePromise = new Promise((resolve) => {
@@ -152,7 +151,7 @@ describe('Kraken MCP Stability (#148)', function() {
         onerror: () => {},
         onmessage: () => {},
         start: async () => {},
-        resolve: (val: any) => {}
+        resolve: (_val: any) => {}
     };
 
     const responsePromise = new Promise((resolve) => {
@@ -211,7 +210,7 @@ describe('Kraken MCP Stability (#148)', function() {
         onerror: () => {},
         onmessage: () => {},
         start: async () => {},
-        resolve: (val: any) => {}
+        resolve: (_val: any) => {}
     };
 
     const responsePromise = new Promise((resolve) => {

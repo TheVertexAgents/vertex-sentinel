@@ -14,7 +14,7 @@ class RateLimiter {
   private requests: number[] = [];
   private readonly maxRPM: number = 10;
 
-  async wait() {
+  async wait(): Promise<void> {
     const now = Date.now();
     this.requests = this.requests.filter(timestamp => now - timestamp < 60000);
 
