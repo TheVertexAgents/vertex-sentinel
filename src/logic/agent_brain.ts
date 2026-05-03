@@ -193,10 +193,16 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     return new Promise((resolve) => {
       pendingApprovals.set(traceId, { intent, pk: privateKey, resolve });
 
-      // Emit pending event for dashboard
+      // Emit pending event for dashboard (Serialize BigInts for Socket.io)
       agentEvents.emit('intent.pending', {
         traceId,
-        intent,
+        intent: {
+          ...intent,
+          agentId: intent.agentId.toString(),
+          amountUsdScaled: intent.amountUsdScaled.toString(),
+          nonce: intent.nonce.toString(),
+          deadline: intent.deadline.toString()
+        },
         reasoning: isExtremeVolatility ? `[VOLATILITY ALERT] ${decision.reasoning}` : decision.reasoning,
         riskScore: isExtremeVolatility ? 1.0 : decision.riskScore,
         isOverride: isExtremeVolatility

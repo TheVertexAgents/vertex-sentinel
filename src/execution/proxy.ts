@@ -235,11 +235,11 @@ class ExecutionProxy {
     return this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
   }
 
-  private async executeOnBinance(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint) {
+  private async executeOnBinance(pair: string, volume: bigint, traceId: string, action: string, _maxSlippageBps: bigint) {
     if (!this.binanceProxy) {
       this.binanceProxy = new BinanceProxy();
     }
-    this.log('INFO', 'Routing to Binance Proxy', { traceId, pair, volume: volume.toString() });
+    this.log('INFO', 'Routing to Binance Proxy', { traceId, pair, volume: volume.toString(), action });
     await this.binanceProxy.executeTrade(pair, volume, action);
   }
 
