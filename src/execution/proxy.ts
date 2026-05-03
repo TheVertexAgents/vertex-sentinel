@@ -8,6 +8,7 @@ import fs from 'fs';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
+import BinanceProxy from './binance_proxy.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -36,6 +37,7 @@ class ExecutionProxy {
   private client;
   private contractAddress: `0x${string}`;
   private mcpClient: Client | null = null;
+  private binanceProxy: BinanceProxy | null = null;
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
 
@@ -192,7 +194,7 @@ class ExecutionProxy {
               throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`);
           }
 
-          this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch(err => {
+          this.executeTrade(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch(err => {
               this.log('ERROR', 'Background trade execution failed', { error: err.message });
           });
         }
@@ -218,6 +220,27 @@ class ExecutionProxy {
         }
       },
     });
+  }
+
+  /**
+   * @dev Unified execution router for multiple exchanges.
+   */
+  private async executeTrade(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint) {
+    const exchange = process.env.PREFERRED_EXCHANGE || 'kraken';
+
+    if (exchange === 'binance') {
+      return this.executeOnBinance(pair, volume, traceId, action, maxSlippageBps);
+    }
+
+    return this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
+  }
+
+  private async executeOnBinance(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint) {
+    if (!this.binanceProxy) {
+      this.binanceProxy = new BinanceProxy();
+    }
+    this.log('INFO', 'Routing to Binance Proxy', { traceId, pair, volume: volume.toString() });
+    await this.binanceProxy.executeTrade(pair, volume, action);
   }
 
   /**
@@ -311,11 +334,11 @@ class ExecutionProxy {
    * @dev Process an authorized trade intent directly (non-event path, for testing).
    */
   async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
-    if (!this.mcpClient) {
+    if (process.env.PREFERRED_EXCHANGE !== 'binance' && !this.mcpClient) {
         await this.initMcp();
     }
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
-    await this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
+    await this.executeTrade(pair, volume, traceId, action, maxSlippageBps);
   }
 }
 

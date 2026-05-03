@@ -84,6 +84,24 @@ export class OHLCVCollector {
   }
 
   /**
+   * @dev Injects a tick manually (for simulations/tests).
+   */
+  public recordTick(pair: string, price: number) {
+    const pairHistory = this.history.get(pair) || [];
+    const latest: OHLCV = {
+      timestamp: Date.now(),
+      open: price,
+      high: price,
+      low: price,
+      close: price,
+      volume: 0
+    };
+    pairHistory.push(latest);
+    if (pairHistory.length > this.MAX_HISTORY) pairHistory.shift();
+    this.history.set(pair, pairHistory);
+  }
+
+  /**
    * @dev Calculates realized volatility over the collected period.
    */
   public calculateVolatility(pair: string): number {

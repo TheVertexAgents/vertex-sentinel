@@ -139,11 +139,86 @@ async function getAssetResolution(pair: string) {
   }
 }
 
+let aiAutomationEnabled = true;
+const pendingApprovals = new Map<string, { intent: TradeIntent, pk: Hex, resolve: (value: Authorization) => void }>();
+
+agentEvents.on('ai.config_changed', (data) => {
+  aiAutomationEnabled = data.enabled;
+  logger.info({ module: 'AGENT_BRAIN', step: 'AI_CONFIG_UPDATED', enabled: aiAutomationEnabled });
+});
+
+agentEvents.on('intent.approve', async (data) => {
+  const pending = pendingApprovals.get(data.traceId);
+  if (pending) {
+    logger.info({ module: 'AGENT_BRAIN', step: 'MANUAL_APPROVAL_RECEIVED', traceId: data.traceId });
+    try {
+      const auth = await signIntentInternal(pending.intent, pending.pk, data.traceId);
+      pending.resolve(auth);
+    } catch (error: any) {
+      logger.error({ module: 'AGENT_BRAIN', step: 'MANUAL_APPROVAL_FAILED', traceId: data.traceId, error: error.message });
+      pending.resolve({ isAllowed: false, reason: `Manual approval failed: ${error.message}`, signature: '0x' });
+    } finally {
+      pendingApprovals.delete(data.traceId);
+    }
+  }
+});
+
+agentEvents.on('intent.reject', (data) => {
+  const pending = pendingApprovals.get(data.traceId);
+  if (pending) {
+    logger.info({ module: 'AGENT_BRAIN', step: 'MANUAL_REJECTION_RECEIVED', traceId: data.traceId });
+    pending.resolve({ isAllowed: false, reason: 'Manual rejection by user', signature: '0x' });
+    pendingApprovals.delete(data.traceId);
+  }
+});
+
 /**
  * @dev The Intent Layer creates a signed TradeIntent after verifiable risk assessment.
  */
 async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authorization> {
   const traceId = getTraceId();
+
+  // High-Stakes HITL Override: Force manual if volatility is extreme (>5%)
+  const volatility = ohlcvCollector.calculateVolatility(intent.pair);
+  const isExtremeVolatility = volatility > 0.05;
+
+  if (!aiAutomationEnabled || isExtremeVolatility) {
+    const overrideReason = isExtremeVolatility ? 'EXTREME_VOLATILITY_HITL_OVERRIDE' : 'MANUAL_MODE_ACTIVE';
+    logger.info({ module: 'AGENT_BRAIN', step: 'HITL_REQUIRED', traceId, pair: intent.pair, reason: overrideReason });
+    logger.info({ module: 'AGENT_BRAIN', step: 'MANUAL_MODE_PENDING', traceId, pair: intent.pair });
+
+    // Preliminary risk assessment to show to user
+    const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
+
+    return new Promise((resolve) => {
+      pendingApprovals.set(traceId, { intent, pk: privateKey, resolve });
+
+      // Emit pending event for dashboard
+      agentEvents.emit('intent.pending', {
+        traceId,
+        intent,
+        reasoning: isExtremeVolatility ? `[VOLATILITY ALERT] ${decision.reasoning}` : decision.reasoning,
+        riskScore: isExtremeVolatility ? 1.0 : decision.riskScore,
+        isOverride: isExtremeVolatility
+      });
+
+      // Auto-reject after 30 seconds if no action
+      setTimeout(() => {
+        if (pendingApprovals.has(traceId)) {
+          logger.info({ module: 'AGENT_BRAIN', step: 'MANUAL_TIMEOUT', traceId });
+          const pending = pendingApprovals.get(traceId);
+          pending?.resolve({ isAllowed: false, reason: 'Manual approval timeout (30s)', signature: '0x' });
+          pendingApprovals.delete(traceId);
+          agentEvents.emit('intent.timeout', { traceId });
+        }
+      }, 30000);
+    });
+  }
+
+  return signIntentInternal(intent, privateKey, traceId);
+}
+
+async function signIntentInternal(intent: TradeIntent, privateKey: Hex, traceId: string): Promise<Authorization> {
   try {
     const useCircle = process.env.USE_CIRCLE_WAAS === 'true';
     const agentAddress = useCircle ? process.env.AGENT_WALLET_ADDRESS as Hex : privateKeyToAccount(privateKey).address;
