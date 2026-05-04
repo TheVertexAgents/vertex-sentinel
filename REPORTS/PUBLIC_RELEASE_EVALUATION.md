@@ -65,14 +65,20 @@ Despite the 90s timeout and gas buffers, Sepolia can still be slow. In a high-vo
 
 ---
 
-## 6. Recommendations for Public Beta
+## 6. MVP Specific Features
 
-1.  **Slippage Hardening**: Move slippage enforcement from "logging" to "enforcement" by using Kraken Limit orders calculated from ticker data instead of Market orders.
-2.  **User Onboarding**: Create a `setupwizard.ts` to help retail users configure their `.env` and register their agent in one flow.
-3.  **L2 Migration**: While Sepolia is good for beta, the gas costs of the `RiskRouter` make it more suitable for Base or Arbitrum in a real retail environment.
-4.  **Hardware Wallet Support**: Explore integrating Ledger/Trezor via the Execution Proxy for an even higher security tier.
+1.  **High-Stakes Human-in-the-Loop (HITL)**: A mandatory module that intercepts trades exceeding a configurable USD threshold, requiring manual operator approval via the Risk Terminal.
+2.  **Cryptographic Entropy**: Migration from standard pseudo-randomness to cryptographically secure entropy (`node:crypto`) for all production randomization paths.
+3.  **Zero-Simulation Mandate**: Removal of all mock bypasses in the execution path, ensuring the system only operates on real authenticated credentials.
 
 ---
 
-## 7. Conclusion
+## 7. Recommendations for Public Beta
+
+1.  **L2 Migration**: While Sepolia is good for beta, the gas costs of the `RiskRouter` make it more suitable for Base or Arbitrum in a real retail environment.
+2.  **Hardware Wallet Support**: Explore integrating Ledger/Trezor via the Execution Proxy for an even higher security tier.
+
+---
+
+## 8. Conclusion
 **Vertex Sentinel is ready for its Public Beta.** The architecture is sound, the "Fail-Closed" promises are kept, and the integration with AgentStack Arc provides a unique competitive advantage in the emerging agentic economy.
