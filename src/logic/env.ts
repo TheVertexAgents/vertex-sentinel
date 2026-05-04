@@ -34,6 +34,7 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
   KRAKEN_PAPER_MODE: z.enum(['true', 'false']).default('false'),
+  HITL_THRESHOLD_USD: z.coerce.number().int().positive().default(1000),
 });
 
 /**

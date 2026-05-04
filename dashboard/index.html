@@ -126,6 +126,10 @@
             <nav class="flex gap-1 p-1 bg-white/5 rounded-lg">
                 <button onclick="switchTab('terminal')" id="tab-terminal" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md tab-active">Risk Terminal</button>
                 <button onclick="switchTab('operations')" id="tab-operations" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300">Agent Operations</button>
+                <button onclick="switchTab('hitl')" id="tab-hitl" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300 flex items-center gap-2">
+                    HITL
+                    <span id="hitl-badge" class="hidden w-2 h-2 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse"></span>
+                </button>
                 <button onclick="switchTab('audit')" id="tab-audit" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300">Technical Audit</button>
             </nav>
 
@@ -259,6 +263,21 @@
                     <div id="reasoning-stream" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <!-- Cards injected here -->
                         <div class="text-gray-600 text-xs italic p-4">Awaiting execution reasoning...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: HITL APPROVAL -->
+            <section id="view-hitl" class="hidden space-y-6">
+                <div class="glass p-8">
+                    <h3 class="text-xl font-bold mb-2">High-Stakes Pending Approvals</h3>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Human-in-the-Loop Verification Module</p>
+
+                    <div id="hitl-container" class="space-y-4">
+                        <!-- Pending requests will appear here -->
+                        <div class="text-gray-600 text-xs italic p-12 text-center border border-dashed border-white/5 rounded-xl">
+                            No pending high-stakes trade authorizations...
+                        </div>
                     </div>
                 </div>
             </section>
@@ -443,7 +462,7 @@
     <script>
         // Tab Management
         function switchTab(tabId) {
-            ['terminal', 'operations', 'audit'].forEach(t => {
+            ['terminal', 'operations', 'audit', 'hitl'].forEach(t => {
                 document.getElementById('view-' + t).classList.add('hidden');
                 document.getElementById('tab-' + t).classList.remove('tab-active', 'text-cyan');
                 document.getElementById('tab-' + t).classList.add('text-gray-500');
@@ -453,6 +472,9 @@
             document.getElementById('tab-' + tabId).classList.remove('text-gray-500');
 
             if (tabId === 'terminal') initTradingView();
+            if (tabId === 'hitl') {
+                document.getElementById('hitl-badge').classList.add('hidden');
+            }
         }
 
         // TradingView Initialization
@@ -676,6 +698,68 @@
                 console.log('Balance Update:', data);
                 updateStatsFromMetrics(data.pnl);
             });
+
+            socket.on('hitl.pending', (data) => {
+                console.log('HITL Pending:', data);
+                renderHitlRequest(data);
+                document.getElementById('hitl-badge').classList.remove('hidden');
+            });
+        }
+
+        function renderHitlRequest(data) {
+            const container = document.getElementById('hitl-container');
+            // Remove empty placeholder if present
+            if (container.querySelector('div.italic')) {
+                container.innerHTML = '';
+            }
+
+            const card = document.createElement('div');
+            card.id = `hitl-${data.traceId}`;
+            card.className = "glass p-6 border-amber/20 flex flex-col md:flex-row justify-between items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-500";
+            card.innerHTML = `
+                <div class="flex-grow space-y-2">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 bg-amber/10 text-amber text-[9px] font-bold rounded border border-amber/20 uppercase tracking-widest">High Stakes</span>
+                        <h4 class="text-sm font-bold mono">${data.action} ${data.pair}</h4>
+                    </div>
+                    <p class="text-[11px] text-gray-400 leading-relaxed">${data.reasoning}</p>
+                    <div class="flex gap-4 text-[9px] text-gray-600 uppercase font-bold tracking-widest">
+                        <span>Amount: <span class="text-cyan">$${data.amountUsd.toFixed(2)}</span></span>
+                        <span>Trace ID: <span class="mono">${data.traceId.substring(0,8)}</span></span>
+                    </div>
+                </div>
+                <div class="flex gap-3 shrink-0">
+                    <button onclick="hitlReject('${data.traceId}')" class="px-6 py-2 bg-crimson/10 hover:bg-crimson/20 text-crimson text-[10px] font-bold uppercase tracking-widest rounded-lg border border-crimson/30 transition-all">Reject</button>
+                    <button onclick="hitlApprove('${data.traceId}')" class="px-6 py-2 bg-emerald/10 hover:bg-emerald/20 text-emerald text-[10px] font-bold uppercase tracking-widest rounded-lg border border-emerald/30 transition-all">Approve Trade</button>
+                </div>
+            `;
+            container.prepend(card);
+        }
+
+        function hitlApprove(traceId) {
+            console.log('Approving HITL:', traceId);
+            socket.emit('hitl.approve', { traceId });
+            removeHitlCard(traceId);
+        }
+
+        function hitlReject(traceId) {
+            console.log('Rejecting HITL:', traceId);
+            socket.emit('hitl.reject', { traceId, reason: 'Rejected by operator via dashboard' });
+            removeHitlCard(traceId);
+        }
+
+        function removeHitlCard(traceId) {
+            const card = document.getElementById(`hitl-${traceId}`);
+            if (card) {
+                card.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    card.remove();
+                    const container = document.getElementById('hitl-container');
+                    if (container.children.length === 0) {
+                        container.innerHTML = `<div class="text-gray-600 text-xs italic p-12 text-center border border-dashed border-white/5 rounded-xl">No pending high-stakes trade authorizations...</div>`;
+                    }
+                }, 300);
+            }
         }
 
         async function fetchInitialData() {

@@ -46,6 +46,23 @@ export function startSocketServer() {
     io.emit('balance.update', data);
   });
 
+  agentEvents.on('hitl.pending', (data) => {
+    logger.info({ module: 'SOCKET_SERVER', step: 'BROADCAST_HITL_PENDING', data });
+    io.emit('hitl.pending', data);
+  });
+
+  io.on('connection', (socket) => {
+    socket.on('hitl.approve', (data) => {
+      logger.info({ module: 'SOCKET_SERVER', step: 'HITL_APPROVED', data });
+      agentEvents.emit(`hitl.approve.${data.traceId}`, data);
+    });
+
+    socket.on('hitl.reject', (data) => {
+      logger.info({ module: 'SOCKET_SERVER', step: 'HITL_REJECTED', data });
+      agentEvents.emit(`hitl.reject.${data.traceId}`, data);
+    });
+  });
+
   httpServer.listen(PORT, () => {
     logger.info({ module: 'SOCKET_SERVER', step: 'SERVER_START', port: PORT });
   });

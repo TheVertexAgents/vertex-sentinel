@@ -16,7 +16,7 @@ import { ValidationRegistryClient } from "../onchain/validation.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import crypto from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { PnLTracker } from './pnl/tracker.js';
 import { startSocketServer, agentEvents } from '../orchestrator/socket-server.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
@@ -106,7 +106,7 @@ const nonceTracker = LocalNonceTracker.getInstance();
  * @dev Helper to get a unique trace ID.
  */
 function getTraceId(): string {
-  return crypto.randomUUID();
+  return randomUUID();
 }
 
 /**
@@ -253,6 +253,61 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     }
 
     // Sign the intent using EIP-712 via RiskRouterClient
+    // ✅ NEW: High-Stakes Human-in-the-Loop (HITL) Check
+    const hitlThreshold = parseInt(process.env.HITL_THRESHOLD_USD || '1000', 10);
+    const intentAmountUsd = Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor;
+
+    if (intentAmountUsd >= hitlThreshold) {
+      logger.info({ module: 'AGENT_BRAIN', step: 'HITL_INTERCEPT', traceId, amountUsd: intentAmountUsd, threshold: hitlThreshold });
+
+      agentEvents.emit('hitl.pending', {
+        traceId,
+        pair: intent.pair,
+        action: intent.action,
+        amountUsd: intentAmountUsd,
+        reasoning: decision.reasoning,
+        timestamp: Date.now()
+      });
+
+      NotificationService.sendTelegram(`<b>⚠️ High-Stakes Trade Pending Approval</b>\nPair: ${intent.pair}\nAmount: $${intentAmountUsd.toFixed(2)}\nAction: ${intent.action}\nReasoning: ${decision.reasoning}`);
+
+      // Wait for manual approval or rejection
+      const approvalPromise = new Promise<{ approved: boolean, reason?: string }>((resolve) => {
+        const onApprove = (data: any) => {
+          if (data.traceId === traceId) {
+            cleanup();
+            resolve({ approved: true });
+          }
+        };
+        const onReject = (data: any) => {
+          if (data.traceId === traceId) {
+            cleanup();
+            resolve({ approved: false, reason: data.reason || 'Manually rejected by operator' });
+          }
+        };
+        const cleanup = () => {
+          agentEvents.off(`hitl.approve.${traceId}`, onApprove);
+          agentEvents.off(`hitl.reject.${traceId}`, onReject);
+        };
+
+        agentEvents.on(`hitl.approve.${traceId}`, onApprove);
+        agentEvents.on(`hitl.reject.${traceId}`, onReject);
+
+        // Timeout after 10 minutes
+        setTimeout(() => {
+          cleanup();
+          resolve({ approved: false, reason: 'HITL approval timed out after 10 minutes' });
+        }, 600000);
+      });
+
+      const { approved, reason } = await approvalPromise;
+      if (!approved) {
+        logger.warn({ module: 'AGENT_BRAIN', step: 'HITL_REJECTED', traceId, reason });
+        return { isAllowed: false, reason: `HITL rejection: ${reason}`, signature: '0x' };
+      }
+      logger.info({ module: 'AGENT_BRAIN', step: 'HITL_APPROVED', traceId });
+    }
+
     const signature = await riskRouterClient.signIntent(intent, privateKey);
 
     // ✅ NEW: Submit signed intent to RiskRouter for on-chain validation
@@ -418,20 +473,23 @@ async function main() {
   // Continuous trading loop
   while (isRunning) {
     try {
-
-      const selectedPair = pairs[Math.floor(Math.random() * pairs.length)];
+      const entropy = randomBytes(4).readUInt32BE(0);
+      const selectedPair = pairs[entropy % pairs.length];
       
       // Randomize trade size within safe limits ($50-$200)
-      const tradeSize = BigInt(5000 + Math.floor(Math.random() * 15000)); // $50.00 - $200.00
+      const tradeSizeRange = 15000;
+      const tradeSizeOffset = randomBytes(4).readUInt32BE(0) % tradeSizeRange;
+      const tradeSize = BigInt(5000 + tradeSizeOffset); // $50.00 - $200.00
 
       const currentOnChainNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
       const currentNonce = nonceTracker.getNextNonce(nonceKey, currentOnChainNonce);
 
+      const actionEntropy = randomBytes(1)[0];
       const intent: TradeIntent = {
         agentId: BigInt(agentMetadata.agentId),
         agentWallet: agentWallet as Hex,
         pair: selectedPair,
-        action: Math.random() > 0.3 ? 'BUY' : 'SELL', // 70% BUY bias
+        action: actionEntropy > 76 ? 'BUY' : 'SELL', // Approximately 70% BUY bias (255 * 0.3 = 76.5)
         amountUsdScaled: tradeSize,
         maxSlippageBps: getAgentMetadata().defaultSlippageBps,
         nonce: currentNonce,

@@ -51,8 +51,8 @@
 | **[PERF]** Dashboard WebSocket Migration (Socket.io) | `High` | `DONE` ✅ |
 | **[FEATURE]** Dynamic Agent Identity & Multi-Tenancy | `Medium` | `DONE` ✅ |
 | **[FEATURE]** Genkit-Powered Dynamic Risk Sizing | `Medium` | `DONE` ✅ |
-| **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `TODO` |
-| **[INDUSTRY 5.0]** ESG & Sustainability Scoring in RiskCalibrator | `Medium` | `TODO` |
-| **[INDUSTRY 5.0]** High-Stakes Human-in-the-Loop Approval Module | `High` | `TODO` |
+| **[INDUSTRY 5.0]** High-Stakes Human-in-the-Loop Approval Module | `High` | `DONE` ✅ |
+| **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `STAGED` ⏳ |
+| **[INDUSTRY 5.0]** ESG & Sustainability Scoring in RiskCalibrator | `Medium` | `STAGED` ⏳ |
 | **[ANALYTICS]** Compliance Report Generation (PDF Audit Logs) | `Low` | `DONE` ✅ |
 | **[TECH DEBT]** Fix dangling MCP Server connections in tests | `Medium` | `DONE` ✅ |
