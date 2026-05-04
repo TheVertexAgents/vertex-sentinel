@@ -56,6 +56,10 @@
             <p class="text-gray-500 text-sm uppercase tracking-widest">Step into the verifiable risk layer</p>
         </header>
 
+        <div id="demo-banner" class="hidden glass p-4 border-amber/30 bg-amber/5 text-center">
+            <p class="text-amber text-xs font-bold uppercase tracking-widest">Demo Mode Active — Simulating Web3 Environment</p>
+        </div>
+
         <div class="space-y-8">
             <!-- Step 1: Connect Wallet -->
             <section id="step-1" class="glass p-8 space-y-6">
@@ -125,6 +129,7 @@
 
     <script>
         let provider, signer, userAddress;
+        let isDemoMode = false;
         const REGISTRY_ADDR = '0x97b07dDc405B0c28B17559aFFE63BdB3632d0ca3';
         const ROUTER_ADDR = '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC';
 
@@ -135,33 +140,54 @@
 
         document.getElementById('btn-connect').addEventListener('click', async () => {
             if (window.ethereum) {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                userAddress = await signer.getAddress();
-
-                document.getElementById('step-1-status').textContent = 'Connected: ' + userAddress.substring(0,6);
-                document.getElementById('step-1-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
-                document.getElementById('step-2').classList.remove('step-inactive');
-                document.getElementById('btn-connect').disabled = true;
-                document.getElementById('btn-connect').textContent = 'Wallet Linked';
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    isDemoMode = false;
+                } catch (e) {
+                    console.error("Wallet connection failed, falling back to demo", e);
+                    switchToDemo();
+                }
+            } else {
+                switchToDemo();
             }
+
+            function switchToDemo() {
+                isDemoMode = true;
+                userAddress = '0xDEMO' + Math.floor(Math.random()*1000000).toString(16).padStart(6, '0');
+                document.getElementById('demo-banner').classList.remove('hidden');
+                localStorage.setItem('DEMO_MODE', 'true');
+            }
+
+            document.getElementById('step-1-status').textContent = (isDemoMode ? 'Demo: ' : 'Connected: ') + userAddress.substring(0,6);
+            document.getElementById('step-1-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
+            document.getElementById('step-2').classList.remove('step-inactive');
+            document.getElementById('btn-connect').disabled = true;
+            document.getElementById('btn-connect').textContent = isDemoMode ? 'Demo Wallet Linked' : 'Wallet Linked';
+            localStorage.setItem('USER_ADDRESS', userAddress);
         });
 
         document.getElementById('btn-mint').addEventListener('click', async () => {
             const name = document.getElementById('agent-name').value || "Unnamed Agent";
-            const registry = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
 
             try {
-                document.getElementById('btn-mint').textContent = 'Signing...';
-                const dummyWallet = ethers.Wallet.createRandom().address;
-                const tx = await registry.register(dummyWallet, name, "Onboarded Agent", ["trading"], "https://vertex.agents/metadata.json");
-                const receipt = await tx.wait();
+                document.getElementById('btn-mint').textContent = 'Processing...';
 
-                // Simplified for demo, in production we'd parse the event
-                agentId = 42;
+                if (isDemoMode) {
+                    // Simulate network delay
+                    await new Promise(r => setTimeout(r, 1500));
+                    agentId = Math.floor(Math.random() * 1000) + 100;
+                } else {
+                    const registry = new ethers.Contract(REGISTRY_ADDR, REGISTRY_ABI, signer);
+                    const dummyWallet = ethers.Wallet.createRandom().address;
+                    const tx = await registry.register(dummyWallet, name, "Onboarded Agent", ["trading"], "https://vertex.agents/metadata.json");
+                    await tx.wait();
+                    agentId = 42; // Simplified
+                }
+
                 localStorage.setItem('AGENT_ID', agentId);
-
                 document.getElementById('step-2-status').textContent = 'Minted';
                 document.getElementById('step-2-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';
                 document.getElementById('step-3').classList.remove('step-inactive');
@@ -174,14 +200,20 @@
         });
 
         document.getElementById('btn-config').addEventListener('click', async () => {
-            const router = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI, signer);
-            const maxPos = ethers.BigNumber.from(document.getElementById('max-pos').value).mul(100);
-            const maxTrades = document.getElementById('max-trades').value;
+            const maxPosVal = document.getElementById('max-pos').value;
+            const maxTradesVal = document.getElementById('max-trades').value;
 
             try {
                 document.getElementById('btn-config').textContent = 'Authorizing...';
-                const tx = await router.setRiskParams(agentId, maxPos, 1000, maxTrades);
-                await tx.wait();
+
+                if (isDemoMode) {
+                    await new Promise(r => setTimeout(r, 1000));
+                } else {
+                    const router = new ethers.Contract(ROUTER_ADDR, ROUTER_ABI, signer);
+                    const maxPos = ethers.BigNumber.from(maxPosVal).mul(100);
+                    const tx = await router.setRiskParams(agentId, maxPos, 1000, maxTradesVal);
+                    await tx.wait();
+                }
 
                 document.getElementById('step-3-status').textContent = 'Active';
                 document.getElementById('step-3-status').className = 'text-[10px] font-bold text-emerald uppercase tracking-widest';

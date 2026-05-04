@@ -134,6 +134,9 @@
             </nav>
 
             <div class="flex items-center gap-4">
+                <button id="session-report-btn" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-purple-500/30 transition-all active:scale-95">
+                    Session Report
+                </button>
                 <button id="connect-wallet" class="px-6 py-2 bg-cyan/10 hover:bg-cyan/20 text-cyan text-[11px] font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all active:scale-95 shadow-[0_0_15px_rgba(0,229,255,0.1)]">
                     Connect Wallet
                 </button>
@@ -419,6 +422,62 @@
         </footer>
     </div>
 
+    <!-- Session Report Modal -->
+    <div id="pnl-modal" class="fixed inset-0 bg-obsidian/90 backdrop-blur-xl hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="glass max-w-4xl w-full p-8 border-purple-500/30 shadow-[0_0_50px_rgba(124,58,237,0.15)]">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h2 class="text-2xl font-black italic tracking-tighter text-white">VERTEX SENTINEL <span class="text-purple-500">— SESSION REPORT</span></h2>
+                    <p id="report-session-id" class="text-[10px] text-gray-500 mono uppercase mt-1">SESSION: —</p>
+                </div>
+                <div id="report-status-banner" class="px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs">
+                    LOADING...
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                    <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Realized PnL</p>
+                    <h4 id="report-realized" class="text-xl font-bold mono">—</h4>
+                </div>
+                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                    <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Win Rate</p>
+                    <h4 id="report-winrate" class="text-xl font-bold mono">—</h4>
+                </div>
+                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                    <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Max Drawdown</p>
+                    <h4 id="report-mdd" class="text-xl font-bold mono text-crimson">—</h4>
+                </div>
+                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                    <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Sentinel Saved</p>
+                    <h4 id="report-savings" class="text-xl font-bold mono text-cyan">—</h4>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8 max-h-64 overflow-y-auto pr-2">
+                <table class="w-full text-left text-[10px] uppercase font-bold mono">
+                    <thead class="text-gray-500 border-b border-white/10">
+                        <tr>
+                            <th class="py-2">Time</th>
+                            <th class="py-2">Pair</th>
+                            <th class="py-2">Side</th>
+                            <th class="py-2 text-right">Price</th>
+                            <th class="py-2 text-right">PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-trades-body" class="text-gray-400">
+                        <!-- Trades injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="close-pnl-modal" class="flex-1 py-4 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest rounded-xl transition-all">Close</button>
+                <button id="export-pnl-btn" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-purple-900/20">Export Report (.JSON)</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hire Agent Modal (Mock) -->
     <div id="hire-modal" class="fixed inset-0 bg-obsidian/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
         <div class="glass max-w-lg w-full p-8 border-cyan/30">
@@ -518,13 +577,27 @@
 
         // Wallet Connection
         const connectBtn = document.getElementById('connect-wallet');
-        let userAddress = null;
+        let userAddress = localStorage.getItem('USER_ADDRESS');
         let provider = null;
         let signer = null;
+        let isDemoMode = localStorage.getItem('DEMO_MODE') === 'true';
 
-        // Multi-Tenancy State
-        let currentAgentId = localStorage.getItem('AGENT_ID') || 42;
-        document.getElementById('agent-id-display').textContent = 'Agent #' + currentAgentId;
+        // Auto-connect if data exists
+        if (userAddress) {
+            updateWalletUI(userAddress);
+        }
+
+        function updateWalletUI(addr) {
+            document.getElementById('wallet-address').textContent = addr.substring(0, 6) + '...' + addr.substring(38);
+            connectBtn.classList.add('hidden');
+            document.getElementById('wallet-status').classList.remove('hidden');
+            document.getElementById('wallet-status').classList.add('flex');
+
+            if (addr.startsWith('0xDEMO')) {
+                document.getElementById('network-badge').textContent = 'DEMO MODE';
+                document.getElementById('network-badge').className = 'text-[10px] font-bold uppercase tracking-widest text-amber/70';
+            }
+        }
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
@@ -533,22 +606,97 @@
                     await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
                     userAddress = await signer.getAddress();
+                    isDemoMode = false;
+                    localStorage.setItem('DEMO_MODE', 'false');
+                    localStorage.setItem('USER_ADDRESS', userAddress);
 
-                    document.getElementById('wallet-address').textContent = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-                    connectBtn.classList.add('hidden');
-                    document.getElementById('wallet-status').classList.remove('hidden');
-                    document.getElementById('wallet-status').classList.add('flex');
-
+                    updateWalletUI(userAddress);
                     syncOnChainParams();
                     document.getElementById('agent-id-display').textContent = 'Agent #' + currentAgentId;
                 } catch (err) {
-                    console.error("Connection failed", err);
+                    console.error("Connection failed, falling back to demo", err);
+                    switchToDemo();
                 }
             } else {
-                alert("Please install MetaMask or another Web3 wallet.");
+                switchToDemo();
             }
         }
+
+        function switchToDemo() {
+            isDemoMode = true;
+            userAddress = '0xDEMO' + Math.floor(Math.random()*1000000).toString(16).padStart(6, '0');
+            localStorage.setItem('DEMO_MODE', 'true');
+            localStorage.setItem('USER_ADDRESS', userAddress);
+            updateWalletUI(userAddress);
+        }
+
         connectBtn.addEventListener('click', connectWallet);
+
+        // Session Report Logic
+        let sessionData = null;
+        const pnlModal = document.getElementById('pnl-modal');
+
+        document.getElementById('session-report-btn').addEventListener('click', async () => {
+            pnlModal.classList.remove('hidden');
+            try {
+                const res = await fetch('/logs/pnl_report.json');
+                if (!res.ok) throw new Error('Report not found');
+                sessionData = await res.json();
+                renderSessionReport(sessionData);
+            } catch (e) {
+                document.getElementById('report-status-banner').textContent = 'NO DATA';
+                document.getElementById('report-status-banner').className = 'px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs bg-white/5 text-gray-500';
+                document.getElementById('report-trades-body').innerHTML = '<tr><td colspan="5" class="py-12 text-center italic text-gray-600">No session data available yet. Run the E2E test to generate a report.</td></tr>';
+            }
+        });
+
+        document.getElementById('close-pnl-modal').addEventListener('click', () => pnlModal.classList.add('hidden'));
+
+        function renderSessionReport(data) {
+            const metrics = data.summary;
+            document.getElementById('report-session-id').textContent = 'SESSION: ' + data.sessionId;
+
+            const isProfit = metrics.totalPnL >= 0;
+            const banner = document.getElementById('report-status-banner');
+            banner.textContent = isProfit ? '✅ PROFIT' : '❌ LOSS';
+            banner.className = `px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs ${isProfit ? 'bg-emerald/20 text-emerald' : 'bg-crimson/20 text-crimson'}`;
+
+            document.getElementById('report-realized').textContent = (isProfit ? '+' : '') + '$' + metrics.realizedPnL.toFixed(2);
+            document.getElementById('report-realized').className = 'text-xl font-bold mono ' + (isProfit ? 'text-emerald' : 'text-crimson');
+            document.getElementById('report-winrate').textContent = metrics.winRate.toFixed(2) + '%';
+            document.getElementById('report-mdd').textContent = metrics.maxDrawdown.toFixed(2) + '%';
+            document.getElementById('report-savings').textContent = '$' + metrics.sentinelSavings.toFixed(2);
+
+            const tbody = document.getElementById('report-trades-body');
+            tbody.innerHTML = '';
+            data.trades.forEach(t => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-white/5 hover:bg-white/2';
+                const pnl = t.realizedPnL || 0;
+                row.innerHTML = `
+                    <td class="py-3">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                    <td class="py-3">${t.pair}</td>
+                    <td class="py-3 ${t.side === 'BUY' ? 'text-emerald' : 'text-crimson'}">${t.side}</td>
+                    <td class="py-3 text-right">$${t.price.toFixed(2)}</td>
+                    <td class="py-3 text-right ${pnl >= 0 ? 'text-emerald' : 'text-crimson'}">${pnl !== 0 ? (pnl > 0 ? '+' : '') + '$' + pnl.toFixed(2) : '—'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.getElementById('export-pnl-btn').addEventListener('click', () => {
+            if (!sessionData) return;
+            const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sentinel-report-${sessionData.sessionId}.json`;
+            a.click();
+        });
+
+        // Multi-Tenancy State
+        let currentAgentId = localStorage.getItem('AGENT_ID') || 42;
+        document.getElementById('agent-id-display').textContent = 'Agent #' + currentAgentId;
 
         async function syncOnChainParams() {
             if (!provider) return;
