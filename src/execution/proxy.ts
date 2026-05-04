@@ -253,20 +253,41 @@ class ExecutionProxy {
       const tickerData = JSON.parse(tickerResult.content[0].text);
       const currentPrice = action.toLowerCase() === 'buy' ? parseFloat(tickerData.a[0]) : parseFloat(tickerData.b[0]);
 
-      this.log('INFO', 'Slippage Check', { TRACE_ID: traceId, currentPrice, maxSlippageBps: maxSlippageBps.toString() });
-      // In a real market order, we'd check against a reference price.
-      // For now, we log it. Real enforcement would involve using limit orders or a max price.
-      // Kraken market orders don't support a direct 'max_price' in the API,
-      // so we simulate slippage enforcement by switching to a limit order if needed,
-      // or just validating the spread before execution.
+      const referencePrice = currentPrice;
+
+      // Calculate limit price based on slippage bps
+      const slippageMultiplier = Number(maxSlippageBps) / 10000;
+      let limitPrice: number;
+      if (action.toLowerCase() === 'buy') {
+        limitPrice = referencePrice * (1 + slippageMultiplier);
+      } else {
+        limitPrice = referencePrice * (1 - slippageMultiplier);
+      }
+
+      // Round to 8 decimal places for exchange compatibility
+      limitPrice = Math.round(limitPrice * 1e8) / 1e8;
+
+      // Fail-Closed Validation
+      if (!limitPrice || limitPrice <= 0 || !isFinite(limitPrice)) {
+        throw new CriticalSecurityException(`Invalid calculated limitPrice: ${limitPrice} (Reference: ${referencePrice}, Slippage: ${maxSlippageBps})`);
+      }
+
+      this.log('INFO', 'Executing Limit Order with Slippage Enforcement', {
+        TRACE_ID: traceId,
+        referencePrice,
+        calculatedLimitPrice: limitPrice,
+        slippageBps: maxSlippageBps.toString(),
+        side: action.toUpperCase()
+      });
 
       const result = await this.mcpClient.callTool({
         name: 'place_order',
         arguments: {
           symbol: cleanSymbol,
           side: action.toLowerCase() as 'buy' | 'sell',
-          type: 'market',
-          amount: amount
+          type: 'limit',
+          amount: amount,
+          price: limitPrice
         },
       }) as unknown as McpResult;
 
