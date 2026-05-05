@@ -9,7 +9,7 @@ import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
-import { ERR_ENV_MISSING, ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_INVALID_SYMBOL } from '../utils/constants.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN, ERR_MAX_RETRIES_EXCEEDED } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -41,6 +41,12 @@ class ExecutionProxy {
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
 
+  // Circuit Breaker State
+  private consecutiveFailures = 0;
+  private readonly MAX_CONSECUTIVE_FAILURES = 3;
+  private circuitBreakerOpenUntil = 0;
+  private readonly CIRCUIT_BREAKER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
   constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia') {
     // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia
     if (!contractAddress && network === 'sepolia') {
@@ -48,8 +54,8 @@ class ExecutionProxy {
       if (fs.existsSync(deploymentsPath)) {
         try {
           const content = fs.readFileSync(deploymentsPath, 'utf8');
-          const deployments = safeParseJSON(content, {}, { file: 'deployments_sepolia.json' });
-          this.contractAddress = deployments.riskRouter;
+          const deployments = safeParseJSON(content, {} as Record<string, string>, { file: 'deployments_sepolia.json' });
+          this.contractAddress = deployments.riskRouter as `0x${string}`;
         } catch (error) {
           throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`, ERR_JSON_PARSE);
         }
@@ -98,7 +104,7 @@ class ExecutionProxy {
   /**
    * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
    */
-  private log(level: 'INFO' | 'ERROR' | 'CRITICAL', message: string, data: Record<string, unknown> = {}) {
+  private log(level: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL', message: string, data: Record<string, unknown> = {}) {
     logger.error({
       level,
       module: 'ExecutionProxy',
@@ -234,6 +240,11 @@ class ExecutionProxy {
       return;
     }
 
+    if (Date.now() < this.circuitBreakerOpenUntil) {
+      this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
+      throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);
+    }
+
     const paperMode = process.env.KRAKEN_PAPER_MODE === 'true';
     this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString(), paperMode });
     
@@ -264,10 +275,7 @@ class ExecutionProxy {
 
       // Task 1.2: Enforce Slippage in the Execution Proxy
       // Pre-execution price check
-      const tickerResult = await this.mcpClient.callTool({
-        name: 'get_ticker',
-        arguments: { symbol: cleanSymbol }
-      }) as unknown as McpResult;
+      const tickerResult = await this.callMcpToolWithRetry('get_ticker', { symbol: cleanSymbol }, traceId);
 
       const tickerData = safeParseJSON(tickerResult.content[0].text, null as any, { traceId, step: 'ticker' });
       if (!tickerData || !tickerData.a || !tickerData.b) {
@@ -286,8 +294,9 @@ class ExecutionProxy {
         limitPrice = referencePrice * (1 - slippageMultiplier);
       }
 
-      // Round to 8 decimal places for exchange compatibility
-      limitPrice = Math.round(limitPrice * 1e8) / 1e8;
+      // Round to 8 decimal places for exchange compatibility (Kraken padding)
+      limitPrice = this.formatKrakenPrice(limitPrice);
+      const paddedAmount = this.formatKrakenVolume(amount);
 
       // Fail-Closed Validation
       if (!limitPrice || limitPrice <= 0 || !isFinite(limitPrice)) {
@@ -302,16 +311,13 @@ class ExecutionProxy {
         side: action.toUpperCase()
       });
 
-      const result = await this.mcpClient.callTool({
-        name: 'place_order',
-        arguments: {
-          symbol: cleanSymbol,
-          side: action.toLowerCase() as 'buy' | 'sell',
-          type: 'limit',
-          amount: amount,
-          price: limitPrice
-        },
-      }) as unknown as McpResult;
+      const result = await this.callMcpToolWithRetry('place_order', {
+        symbol: cleanSymbol,
+        side: action.toLowerCase() as 'buy' | 'sell',
+        type: 'limit',
+        amount: paddedAmount,
+        price: limitPrice
+      }, traceId);
 
       const content = result.content;
       const resultData = safeParseJSON(content[0].text, {} as any, { traceId, step: 'place_order' }) as Record<string, any>;
@@ -323,6 +329,9 @@ class ExecutionProxy {
       const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
 
       this.log('INFO', 'MCP Order Execution Success', { TRACE_ID: traceId, result: resultData });
+
+      // Reset circuit breaker on success
+      this.consecutiveFailures = 0;
 
       // Audit Logging
       this.auditLog({
@@ -339,8 +348,22 @@ class ExecutionProxy {
     } catch (error: any) {
       const config = loadAgentMetadata();
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = error.code || ERR_KRAKEN_API_FAIL;
-      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, errorCode, error: errorMessage });
+      const errorCode = (error as any).code || ERR_KRAKEN_API_FAIL;
+      
+      this.consecutiveFailures++;
+      if (this.consecutiveFailures >= this.MAX_CONSECUTIVE_FAILURES) {
+        this.circuitBreakerOpenUntil = Date.now() + this.CIRCUIT_BREAKER_COOLDOWN_MS;
+        this.log('CRITICAL', 'CIRCUIT BREAKER TRIPPED OPEN', { TRACE_ID: traceId, consecutiveFailures: this.consecutiveFailures });
+        this.auditLog({
+            traceId,
+            agentId: this.agentAddress,
+            event: 'CIRCUIT_BREAKER_TRIPPED',
+            consecutiveFailures: this.consecutiveFailures,
+            breakerState: 'OPEN'
+        });
+      }
+
+      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, errorCode, error: errorMessage, consecutiveFailures: this.consecutiveFailures });
 
       this.auditLog({
           traceId,
@@ -349,7 +372,9 @@ class ExecutionProxy {
           volume: (Number(volume) / config.usdScalingFactor).toString(),
           krakenStatus: 'failed',
           errorCode,
-          error: errorMessage
+          error: errorMessage,
+          consecutiveFailures: this.consecutiveFailures,
+          breakerState: Date.now() < this.circuitBreakerOpenUntil ? 'OPEN' : 'CLOSED'
       });
 
       throw new CriticalSecurityException(`Execution failure: ${errorMessage}`, errorCode);
@@ -365,6 +390,74 @@ class ExecutionProxy {
     }
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
     await this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
+  }
+
+  /**
+   * @dev Calls MCP tool with exponential backoff for transient failures.
+   */
+  private async callMcpToolWithRetry(toolName: string, args: any, traceId: string): Promise<McpResult> {
+    let attempt = 1;
+    const maxRetries = 3;
+    const baseDelayMs = 2000;
+
+    while (attempt <= maxRetries) {
+      try {
+        const result = await this.mcpClient!.callTool({
+          name: toolName,
+          arguments: args
+        }) as unknown as McpResult;
+
+        // Check if MCP server returned an error array for non-sensitive commands
+        if ((result as any).isError) {
+          const errorText = result.content?.[0]?.text || '';
+          throw new Error(`MCP Error: ${errorText}`);
+        }
+
+        return result;
+      } catch (error: any) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isTransient = errorMessage.includes('ETIMEDOUT') || errorMessage.includes('502') || errorMessage.includes('503') || errorMessage.includes('Exchange error');
+        
+        if (!isTransient || attempt >= maxRetries) {
+          if (attempt >= maxRetries) {
+             this.log('ERROR', `Max retries exceeded for ${toolName}`, { TRACE_ID: traceId, attempt, maxRetries, error: errorMessage });
+             throw new CriticalSecurityException(`Max retries exceeded for ${toolName}: ${errorMessage}`, ERR_MAX_RETRIES_EXCEEDED);
+          }
+          throw error;
+        }
+
+        const delay = baseDelayMs * Math.pow(2, attempt - 1);
+        this.log('WARN', `Transient error during ${toolName}. Retrying...`, { TRACE_ID: traceId, attempt, maxRetries, delay, error: errorMessage });
+        
+        this.auditLog({
+          traceId,
+          agentId: this.agentAddress,
+          event: 'RETRY_ATTEMPT',
+          tool: toolName,
+          attempt,
+          delay,
+          error: errorMessage
+        });
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempt++;
+      }
+    }
+    throw new CriticalSecurityException(`Max retries exceeded for ${toolName}`, ERR_MAX_RETRIES_EXCEEDED);
+  }
+
+  /**
+   * @dev Formats volume for Kraken requirements
+   */
+  private formatKrakenVolume(volume: number): number {
+    return Math.round(volume * 1e8) / 1e8;
+  }
+
+  /**
+   * @dev Formats price for Kraken requirements
+   */
+  private formatKrakenPrice(price: number): number {
+    return Math.round(price * 1e8) / 1e8;
   }
 }
 

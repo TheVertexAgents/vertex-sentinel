@@ -9,7 +9,7 @@ import ExecutionProxy from '../../src/execution/proxy.js';
 import type { Hex } from 'viem';
 
 describe("Sentinel Full Loop Integration", function () {
-  this.timeout(30000); // 30s timeout because AI and MCP execution take time
+  this.timeout(60000); // 60s timeout because AI and MCP execution with retries take time
 
   after(async () => {
     await closeMcpClient();
