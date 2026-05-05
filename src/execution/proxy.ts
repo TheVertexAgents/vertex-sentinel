@@ -8,6 +8,8 @@ import fs from 'fs';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
+import { safeParseJSON } from '../utils/safe-json.js';
+import { ERR_ENV_MISSING, ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_INVALID_SYMBOL } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -45,10 +47,11 @@ class ExecutionProxy {
       const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
       if (fs.existsSync(deploymentsPath)) {
         try {
-          const deployments = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'));
+          const content = fs.readFileSync(deploymentsPath, 'utf8');
+          const deployments = safeParseJSON(content, {}, { file: 'deployments_sepolia.json' });
           this.contractAddress = deployments.riskRouter;
         } catch (error) {
-          throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`);
+          throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`, ERR_JSON_PARSE);
         }
       } else {
         // Strategic Fallback: Official Hackathon RiskRouter Address
@@ -186,10 +189,11 @@ class ExecutionProxy {
               this.log('CRITICAL', 'SECURITY_BREACH_ATTEMPT: Unauthorized agent address in event', {
                   expected: this.agentAddress,
                   actual: agent,
-                  intentHash
+                  intentHash,
+                  errorCode: ERR_UNAUTHORIZED_AGENT
               });
               // Fail-Closed: Halt or ignore? Request says "halt"
-              throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`);
+              throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`, ERR_UNAUTHORIZED_AGENT);
           }
 
           this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch(err => {
@@ -239,9 +243,24 @@ class ExecutionProxy {
       // Replace formatEther (10^18) with scaling factor based on config.usdScalingFactor.
       const amount = Number(volume) / config.usdScalingFactor;
 
-      // Multi-Asset Expansion: Normalize pairs for Kraken (e.g. BTC/USDC -> XBTUSDC)
-      let cleanSymbol = pair.replace('/', '').replace('USDC', 'USD').replace('USDT', 'USD');
-      if (cleanSymbol.startsWith('BTC')) cleanSymbol = cleanSymbol.replace('BTC', 'XBT');
+      // Multi-Asset Expansion: Normalize pairs for Kraken (e.g. BTC/USDC -> XBTUSD)
+      const baseQuoteMap: Record<string, string> = {
+          'BTC': 'XBT',
+          'WBTC': 'XBT'
+      };
+      
+      let base = pair, quote = '';
+      if (pair.includes('/')) {
+          [base, quote] = pair.split('/');
+      } else {
+          // Fallback if no slash
+          base = pair.substring(0, 3);
+          quote = pair.substring(3);
+      }
+      
+      const cleanBase = baseQuoteMap[base] || base;
+      const cleanQuote = quote === 'USDC' || quote === 'USDT' ? 'USD' : quote;
+      const cleanSymbol = `${cleanBase}${cleanQuote}`;
 
       // Task 1.2: Enforce Slippage in the Execution Proxy
       // Pre-execution price check
@@ -250,7 +269,10 @@ class ExecutionProxy {
         arguments: { symbol: cleanSymbol }
       }) as unknown as McpResult;
 
-      const tickerData = JSON.parse(tickerResult.content[0].text);
+      const tickerData = safeParseJSON(tickerResult.content[0].text, null as any, { traceId, step: 'ticker' });
+      if (!tickerData || !tickerData.a || !tickerData.b) {
+          throw new CriticalSecurityException(`Invalid or missing ticker data for ${cleanSymbol}`, ERR_KRAKEN_API_FAIL);
+      }
       const currentPrice = action.toLowerCase() === 'buy' ? parseFloat(tickerData.a[0]) : parseFloat(tickerData.b[0]);
 
       const referencePrice = currentPrice;
@@ -269,7 +291,7 @@ class ExecutionProxy {
 
       // Fail-Closed Validation
       if (!limitPrice || limitPrice <= 0 || !isFinite(limitPrice)) {
-        throw new CriticalSecurityException(`Invalid calculated limitPrice: ${limitPrice} (Reference: ${referencePrice}, Slippage: ${maxSlippageBps})`);
+        throw new CriticalSecurityException(`Invalid calculated limitPrice: ${limitPrice} (Reference: ${referencePrice}, Slippage: ${maxSlippageBps})`, ERR_PRICE_INVALID);
       }
 
       this.log('INFO', 'Executing Limit Order with Slippage Enforcement', {
@@ -292,7 +314,11 @@ class ExecutionProxy {
       }) as unknown as McpResult;
 
       const content = result.content;
-      const resultData = JSON.parse(content[0].text) as Record<string, any>;
+      const resultData = safeParseJSON(content[0].text, {} as any, { traceId, step: 'place_order' }) as Record<string, any>;
+
+      if (resultData.error && resultData.error.length > 0) {
+          throw new CriticalSecurityException(`Kraken API Error: ${resultData.error.join(', ')}`, ERR_KRAKEN_API_FAIL);
+      }
 
       const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
 
@@ -310,10 +336,11 @@ class ExecutionProxy {
           krakenStatus: 'success'
       });
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       const config = loadAgentMetadata();
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, error: errorMessage });
+      const errorCode = error.code || ERR_KRAKEN_API_FAIL;
+      this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, errorCode, error: errorMessage });
 
       this.auditLog({
           traceId,
@@ -321,10 +348,11 @@ class ExecutionProxy {
           pair,
           volume: (Number(volume) / config.usdScalingFactor).toString(),
           krakenStatus: 'failed',
+          errorCode,
           error: errorMessage
       });
 
-      throw new CriticalSecurityException(`Execution failure: ${errorMessage}`);
+      throw new CriticalSecurityException(`Execution failure: ${errorMessage}`, errorCode);
     }
   }
 

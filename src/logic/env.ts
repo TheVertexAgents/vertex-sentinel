@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CriticalSecurityException } from './errors.js';
 import { logger } from '../utils/logger.js';
+import { ERR_ENV_MISSING } from '../utils/constants.js';
 
 /**
  * @dev Schema for environment variable validation.
@@ -18,7 +19,7 @@ const envSchema = z.object({
   NETWORK: z.string().min(1, "NETWORK is required"),
   TX_CONFIRMATION_TIMEOUT: z.coerce.number().int().positive().default(90000),
   LOCAL_RPC_URL: z.string().url().default('http://127.0.0.1:8545'),
-  LUNARCRUSH_KEY: z.string().optional(),
+  LUNARCRUSH_KEY: z.string().min(1, "LUNARCRUSH_KEY is required"),
   AGENT_METADATA_URI: z.string().url("AGENT_METADATA_URI must be a valid URL").default("https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"),
   AGENT_STACK_URL: z.string().url().default('http://localhost:3003'),
   AGENTSTACK_REQUIRED: z.enum(['true', 'false']).default('true'),
@@ -48,10 +49,10 @@ export function validateEnv() {
     const data = result.data;
     if (data.USE_CIRCLE_WAAS === 'true') {
         if (!data.CIRCLE_API_KEY || !data.CIRCLE_ENTITY_SECRET || !data.AGENT_WALLET_ID || !data.AGENT_WALLET_ADDRESS || !data.ORCHESTRATOR_WALLET_ADDRESS) {
-            throw new CriticalSecurityException("Circle WaaS is enabled but CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, AGENT_WALLET_ID, AGENT_WALLET_ADDRESS, or ORCHESTRATOR_WALLET_ADDRESS is missing.");
+            throw new CriticalSecurityException("Circle WaaS is enabled but CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, AGENT_WALLET_ID, AGENT_WALLET_ADDRESS, or ORCHESTRATOR_WALLET_ADDRESS is missing.", ERR_ENV_MISSING);
         }
     } else if (!data.AGENT_PRIVATE_KEY) {
-        throw new CriticalSecurityException("AGENT_PRIVATE_KEY is required when Circle WaaS is disabled.");
+        throw new CriticalSecurityException("AGENT_PRIVATE_KEY is required when Circle WaaS is disabled.", ERR_ENV_MISSING);
     }
   }
 
@@ -60,7 +61,7 @@ export function validateEnv() {
       .map((err) => `${err.path.join('.')}: ${err.message}`)
       .join(', ');
 
-    throw new CriticalSecurityException(`Environment validation failed: ${errorMessages}`);
+    throw new CriticalSecurityException(`Environment validation failed: ${errorMessages}`, ERR_ENV_MISSING);
   }
 
   logger.info({ step: 'ENV_VALIDATED', message: 'Environment variables successfully validated.' });

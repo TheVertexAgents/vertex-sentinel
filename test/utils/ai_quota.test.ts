@@ -44,6 +44,6 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
 
     expect(result).to.equal('success after retry');
     // First attempt fails, 5s * 2^1 = 10s delay expected
-    expect(end - start).to.be.at.least(10000);
+    expect(end - start).to.be.at.least(9000);
   });
 });

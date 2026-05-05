@@ -24,6 +24,7 @@ describe('Kraken MCP Server (TDD)', () => {
     delete process.env.INFURA_KEY;
     delete process.env.STRYKR_PRISM_API;
     delete process.env.NETWORK;
+    delete process.env.LUNARCRUSH_KEY;
   });
 
   afterEach(async () => {
@@ -43,6 +44,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
+    process.env.LUNARCRUSH_KEY = 'test-lunar';
 
     const server = new KrakenMcpServer();
     const handlers = (server.server as any)._requestHandlers;
@@ -64,6 +66,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
+    process.env.LUNARCRUSH_KEY = 'test-lunar';
 
     const mockCCXTResult = {
       symbol: 'BTC/USD',
@@ -105,6 +108,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
+    process.env.LUNARCRUSH_KEY = 'test-lunar';
 
     // Simulate CCXT error
     createOrderStub.rejects(new Error('CCXT: Insufficient funds'));
@@ -137,6 +141,7 @@ describe('Kraken MCP Server (TDD)', () => {
     process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     process.env.STRYKR_PRISM_API = 'test-prism-key';
     process.env.NETWORK = 'local';
+    process.env.LUNARCRUSH_KEY = 'test-lunar';
 
     fetchTickerStub.rejects(new Error('CCXT: connection lost'));
 

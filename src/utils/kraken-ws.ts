@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import { logger } from './logger.js';
+import { safeParseJSON } from './safe-json.js';
 
 /**
  * @dev Kraken WebSocket API v2 Client.
@@ -111,7 +112,8 @@ export class KrakenWSClient {
 
   private handleMessage(data: WebSocket.Data) {
     try {
-      const message = JSON.parse(data.toString());
+      const message = safeParseJSON(data.toString(), null as any, { step: 'kraken_ws_msg' });
+      if (!message) return;
 
       if (message.channel === 'ticker' && message.type === 'update') {
         const tickerData = message.data[0];

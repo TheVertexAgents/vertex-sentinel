@@ -25,6 +25,8 @@ import { RiskCalibrator } from './risk-calibrator.js';
 import { checkGeographicRestrictions } from '../utils/geo-restrict.js';
 import { EventReconciler } from '../execution/reconciler.js';
 import ExecutionProxy from '../execution/proxy.js';
+import { safeParseJSON } from '../utils/safe-json.js';
+import { ERR_KRAKEN_API_FAIL, ERR_JSON_PARSE } from '../utils/constants.js';
 
 dotenv.config();
 
@@ -175,9 +177,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
         throw new Error('Empty ticker response from MCP');
       }
 
-      const ticker = JSON.parse(tickerResponse.content[0].text);
+      const ticker = safeParseJSON(tickerResponse.content[0].text, {} as any, { step: 'ticker' });
       if (!ticker.c || !ticker.c[0]) {
-        throw new Error('Invalid ticker data: missing last trade price (c[0])');
+        throw new CriticalSecurityException('Invalid ticker data: missing last trade price (c[0])', ERR_KRAKEN_API_FAIL);
       }
 
       realPrice = parseFloat(ticker.c[0]);
@@ -421,7 +423,8 @@ function haltSystem(reason: string) {
 async function main() {
   const haltPath = path.join(process.cwd(), 'logs/HALTED');
   if (fs.existsSync(haltPath)) {
-    const haltData = JSON.parse(fs.readFileSync(haltPath, 'utf8'));
+    const haltContent = fs.readFileSync(haltPath, 'utf8');
+    const haltData = safeParseJSON(haltContent, { reason: 'Unknown', timestamp: new Date().toISOString() }, { file: 'logs/HALTED' });
     logger.error({
       module: 'AGENT_BRAIN',
       step: 'STARTUP_PREVENTED',

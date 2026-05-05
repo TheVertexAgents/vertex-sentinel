@@ -10,6 +10,12 @@ describe('Kraken MCP Stability (#148)', function() {
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.KRAKEN_PAPER_MODE = 'false';
+    process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
+    process.env.INFURA_KEY = 'test-infura';
+    process.env.AGENT_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+    process.env.STRYKR_PRISM_API = 'test-prism-key';
+    process.env.NETWORK = 'local';
+    process.env.LUNARCRUSH_KEY = 'test-lunar';
     server = new KrakenMcpServer();
   });
 

@@ -90,4 +90,21 @@ describe('Execution Proxy Unit Tests', function () {
         // We assert that krakenStatus matches what actually occurred (success or failed)
         expect(['success', 'failed']).to.include(lastEntry.krakenStatus);
     });
+
+    it('should map BTC/USD to XBTUSD and ETH/USDT to ETHUSD correctly', async function () {
+        const callToolStub = sinon.stub().resolves({
+            content: [{ text: JSON.stringify({ a: ['50000'], b: ['49900'], txid: ['123'] }) }]
+        });
+        (proxy as any).mcpClient = { callTool: callToolStub };
+
+        await proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-TRACE-BTC', 'buy', 100n);
+        expect(callToolStub.calledWith(sinon.match({ name: 'get_ticker', arguments: { symbol: 'XBTUSD' } }))).to.be.true;
+        expect(callToolStub.calledWith(sinon.match({ name: 'place_order', arguments: sinon.match({ symbol: 'XBTUSD' }) }))).to.be.true;
+
+        callToolStub.resetHistory();
+        
+        await proxy.executeOnKraken('ETH/USDT', 100000n, 'TEST-TRACE-ETH', 'buy', 100n);
+        expect(callToolStub.calledWith(sinon.match({ name: 'get_ticker', arguments: { symbol: 'ETHUSD' } }))).to.be.true;
+        expect(callToolStub.calledWith(sinon.match({ name: 'place_order', arguments: sinon.match({ symbol: 'ETHUSD' }) }))).to.be.true;
+    });
 });
