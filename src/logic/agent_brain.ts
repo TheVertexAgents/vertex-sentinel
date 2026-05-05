@@ -26,7 +26,7 @@ import { checkGeographicRestrictions } from '../utils/geo-restrict.js';
 import { EventReconciler } from '../execution/reconciler.js';
 import ExecutionProxy from '../execution/proxy.js';
 import { safeParseJSON } from '../utils/safe-json.js';
-import { ERR_KRAKEN_API_FAIL, ERR_JSON_PARSE } from '../utils/constants.js';
+import { ERR_KRAKEN_API_FAIL } from '../utils/constants.js';
 
 dotenv.config();
 

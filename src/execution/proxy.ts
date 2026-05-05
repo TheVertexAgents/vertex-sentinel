@@ -9,7 +9,7 @@ import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
-import { ERR_ENV_MISSING, ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_INVALID_SYMBOL } from '../utils/constants.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -48,7 +48,7 @@ class ExecutionProxy {
       if (fs.existsSync(deploymentsPath)) {
         try {
           const content = fs.readFileSync(deploymentsPath, 'utf8');
-          const deployments = safeParseJSON(content, {}, { file: 'deployments_sepolia.json' });
+          const deployments = safeParseJSON(content, {} as any, { file: 'deployments_sepolia.json' });
           this.contractAddress = deployments.riskRouter;
         } catch (error) {
           throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`, ERR_JSON_PARSE);
