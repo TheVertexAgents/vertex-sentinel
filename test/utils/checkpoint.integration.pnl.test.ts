@@ -42,6 +42,7 @@ describe('Checkpoint PnL Integration', () => {
         totalExposureUsd: 1000.00,
         roiPercent: 1.23,
         sentinelSavings: 500.00,
+      totalInvested: 10000,
         maxDrawdown: 5.0,
         sharpeRatio: 2.1
     };

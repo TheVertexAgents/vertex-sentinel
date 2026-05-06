@@ -180,6 +180,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       tracker.recordSavings(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor);
     }
     // Note: recordTrade is now handled by ExecutionProxy upon successful execution
+    logger.debug({ module: 'AGENT_BRAIN', step: 'PRICE_FETCH', pair: intent.pair, price: realPrice });
 
     // Fetch current on-chain risk parameters for "Distance to Circuit Breaker"
     let onchainRisk: any = null;
@@ -511,13 +512,15 @@ async function main() {
     // ✅ NEW: Update Unrealized PnL for active positions (UX/Reporting Hardening)
     try {
         const tracker = getPnLTracker();
-        const activePositions = Array.from(tracker.getSummary().positions)
-            .filter(([_, pos]) => (pos as any).open)
+        const kraken = getKrakenService();
+        const activePositions = Object.entries(tracker.getSummary().positions)
+            .filter(([_, pos]) => pos.open)
             .map(([pair, _]) => pair);
         
         for (const pair of activePositions) {
-            const { realPrice } = await getAssetResolution(pair);
-            tracker.updateUnrealizedPnL(pair, realPrice);
+            const ticker = await kraken.getTicker(pair);
+            const price = parseFloat(ticker.c[0]);
+            tracker.updateUnrealizedPnL(pair, price);
         }
         
         // Emit final balance update with fresh unrealized metrics
