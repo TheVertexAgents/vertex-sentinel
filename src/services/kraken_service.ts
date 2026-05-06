@@ -1,7 +1,6 @@
 import { kraken as KrakenExchange } from 'ccxt';
 import {
   TickerSchema,
-  OrderParamsSchema,
   OrderResultSchema,
   Ticker,
   Balance,
@@ -11,7 +10,6 @@ import {
 } from '../mcp/kraken/types.js';
 import { validateEnv } from '../logic/env.js';
 import { CriticalSecurityException } from '../logic/errors.js';
-import { ZodError } from 'zod';
 import { logger } from '../utils/logger.js';
 
 /**

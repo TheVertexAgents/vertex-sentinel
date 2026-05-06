@@ -5,7 +5,6 @@ import { getCachedAI, setCachedAI, generateWithRetry } from '../../utils/ai.js';
 import { CriticalSecurityException } from '../errors.js';
 import { loadAgentMetadata } from '../config.js';
 import { getKrakenService } from '../../services/kraken_service.js';
-import type { Ticker, Balance, TradeHistory } from '../../mcp/kraken/types.js';
 import { getNewsFeed } from './news_feed.js';
 import { AgentStackClient } from '../clients/agent_stack.js';
 

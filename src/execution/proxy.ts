@@ -9,7 +9,7 @@ import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
-import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN, ERR_MAX_RETRIES_EXCEEDED } from '../utils/constants.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
