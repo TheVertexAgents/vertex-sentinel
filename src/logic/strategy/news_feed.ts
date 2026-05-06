@@ -28,24 +28,30 @@ export async function getNewsFeed(assets: string[] = ['BTC', 'ETH', 'SOL']): Pro
     return getNeutralFallback(assets);
   }
 
-  try {
-    // Note: V4 Free Tier endpoints vary. Using a robust multi-asset fetch if possible,
-    // or iterating if required. For V4, typically /public/coins/list/v2 or similar.
-    // Based on research report, we use symbols as query param.
-    const symbols = assets.join(',');
-    const url = `https://api.lunarcrush.com/public/coins/list/v2?symbols=${symbols}&key=${apiKey}`;
+  const maxRetries = 3;
+  let attempt = 0;
 
-    const response = await fetch(url);
+  while (attempt < maxRetries) {
+    attempt++;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    if (!response.ok) {
-      throw new Error(`LunarCrush API responded with status: ${response.status}`);
-    }
+    try {
+      const symbols = assets.join(',');
+      const url = `https://api.lunarcrush.com/public/coins/list/v2?symbols=${symbols}&key=${apiKey}`;
 
-    const data = await response.json() as any;
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
 
-    if (!data || !data.data) {
-      throw new Error('Invalid response format from LunarCrush');
-    }
+      if (!response.ok) {
+        throw new Error(`LunarCrush API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json() as any;
+
+      if (!data || !data.data) {
+        throw new Error('Invalid response format from LunarCrush');
+      }
 
     const headlines: NewsHeadline[] = (data.data || []).slice(0, 8).map((item: any) => ({
       title: item.title || item.name || 'Market Update',
@@ -62,22 +68,34 @@ export async function getNewsFeed(assets: string[] = ['BTC', 'ETH', 'SOL']): Pro
       socialSentiment[asset.toLowerCase()] = assetData ? (assetData.galaxy_score / 100 || 0.5) : 0.5;
     });
 
-    return {
-      timestamp: new Date().toISOString(),
-      headlines,
-      socialSentiment,
-      overallSummary: 'Market news aggregated from social + headlines via LunarCrush.',
-    };
+      return {
+        timestamp: new Date().toISOString(),
+        headlines,
+        socialSentiment,
+        overallSummary: 'Market news aggregated from social + headlines via LunarCrush.',
+      };
 
-  } catch (error: any) {
-    logger.warn({
-      module: 'NEWS_FEED',
-      step: 'FETCH_FAILED',
-      error: error.message,
-      message: 'Entering neutral fallback mode for sentiment.'
-    });
-    return getNeutralFallback(assets);
+    } catch (error: any) {
+      clearTimeout(timeout);
+      const isLastAttempt = attempt === maxRetries;
+      logger.warn({
+        module: 'NEWS_FEED',
+        step: 'FETCH_ATTEMPT_FAILED',
+        attempt,
+        error: error.message,
+        nextAction: isLastAttempt ? 'FALLBACK' : 'RETRYING'
+      });
+
+      if (isLastAttempt) {
+        return getNeutralFallback(assets);
+      }
+      
+      // Wait before next attempt (exponential-ish backoff)
+      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+    }
   }
+
+  return getNeutralFallback(assets);
 }
 
 function getNeutralFallback(assets: string[]): NewsSummary {

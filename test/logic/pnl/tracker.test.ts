@@ -166,4 +166,29 @@ describe('PnLTracker', () => {
     const metrics = tracker.getMetrics();
     expect(metrics.winRate).to.equal(50);
   });
+
+  it('should average in multiple BUY trades for the same pair', () => {
+    tracker.recordTrade({
+      id: '1',
+      pair: 'BTC/USD',
+      side: 'BUY',
+      price: 60000,
+      amount: 0.1,
+      timestamp: new Date().toISOString()
+    });
+
+    tracker.recordTrade({
+      id: '2',
+      pair: 'BTC/USD',
+      side: 'BUY',
+      price: 40000,
+      amount: 0.1,
+      timestamp: new Date().toISOString()
+    });
+
+    const summary = tracker.getSummary();
+    expect(summary.positions['BTC/USD'].amount).to.be.closeTo(0.2, 0.0001);
+    expect(summary.positions['BTC/USD'].entryPrice).to.be.closeTo(50000, 0.01); // (60000 + 40000) / 2
+    expect(summary.summary.totalTrades).to.equal(2);
+  });
 });

@@ -2,6 +2,8 @@ import { PnLCalculator } from './calculator.js';
 import { PnLTrackerConfig, Trade, Position, PnLMetrics, PnLSummary } from './types.js';
 import { logger } from '../../utils/logger.js';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export class PnLTracker {
   private config: Required<PnLTrackerConfig>;
@@ -16,8 +18,52 @@ export class PnLTracker {
     this.config = {
       makerFeePercent: config?.makerFeePercent ?? 0.16,
       takerFeePercent: config?.takerFeePercent ?? 0.26,
-      exchangeName: config?.exchangeName ?? 'kraken'
+      exchangeName: config?.exchangeName ?? 'kraken',
+      persist: config?.persist ?? false
     };
+    if (this.config.persist) {
+      this.load();
+    }
+  }
+
+  private load() {
+    const pnlPath = path.join(process.cwd(), 'logs/pnl.json');
+    if (fs.existsSync(pnlPath)) {
+      try {
+        const content = fs.readFileSync(pnlPath, 'utf8');
+        const data = JSON.parse(content);
+        if (data.trades) this.trades = data.trades;
+        if (data.positions) {
+          // Re-hydrate the Map from the serialized object
+          for (const [pair, pos] of Object.entries(data.positions)) {
+            this.positions.set(pair, pos as Position);
+          }
+        }
+        if (data.summary) {
+          this.realizedPnL = data.summary.realizedPnL || 0;
+          this.totalInvested = data.summary.totalInvested || 0;
+          this.sentinelSavings = data.summary.sentinelSavings || 0;
+          this.equityCurve = [0, this.realizedPnL];
+        }
+        logger.info({ module: 'PnLTracker', step: 'STATE_LOADED', trades: this.trades.length, positions: this.positions.size });
+      } catch (e: any) {
+        logger.warn({ module: 'PnLTracker', step: 'LOAD_FAILED', error: e.message });
+      }
+    }
+  }
+
+  save() {
+    const pnlPath = path.join(process.cwd(), 'logs/pnl.json');
+    const logsDir = path.dirname(pnlPath);
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+    try {
+      fs.writeFileSync(pnlPath, JSON.stringify(this.getSummary(), null, 2));
+      logger.debug({ module: 'PnLTracker', step: 'STATE_SAVED' });
+    } catch (e: any) {
+      logger.error({ module: 'PnLTracker', step: 'SAVE_FAILED', error: e.message });
+    }
   }
 
   getConfig(): Required<PnLTrackerConfig> {
@@ -30,16 +76,28 @@ export class PnLTracker {
     const fullTrade: Trade = { ...trade, fee };
 
     if (trade.side === 'BUY') {
-      const position: Position = {
-        pair: trade.pair,
-        open: true,
-        entryPrice: trade.price,
-        currentPrice: trade.price,
-        amount: trade.amount,
-        unrealizedPnL: -fee * 2, // Accounting for entry fee and projected exit fee
-        entryTime: trade.timestamp
-      };
-      this.positions.set(trade.pair, position);
+      const existing = this.positions.get(trade.pair);
+      if (existing && existing.open) {
+        // Average In: Calculate weighted average entry price
+        const totalAmount = existing.amount + trade.amount;
+        const totalCost = (existing.entryPrice * existing.amount) + (trade.price * trade.amount);
+        existing.entryPrice = totalCost / totalAmount;
+        existing.amount = totalAmount;
+        existing.currentPrice = trade.price;
+        // Re-estimate unrealized PnL (rough approximation for fees)
+        existing.unrealizedPnL = ((trade.price - existing.entryPrice) * totalAmount) - (fee * 2);
+      } else {
+        const position: Position = {
+          pair: trade.pair,
+          open: true,
+          entryPrice: trade.price,
+          currentPrice: trade.price,
+          amount: trade.amount,
+          unrealizedPnL: -fee * 2, // Accounting for entry fee and projected exit fee
+          entryTime: trade.timestamp
+        };
+        this.positions.set(trade.pair, position);
+      }
       this.totalInvested += (trade.price * trade.amount) + fee;
     } else if (trade.side === 'SELL') {
       const position = this.positions.get(trade.pair);
@@ -61,39 +119,27 @@ export class PnLTracker {
     }
 
     this.trades.push(fullTrade);
+    this.save();
   }
 
   recordSavings(amountUsd: number) {
     this.sentinelSavings += amountUsd;
     logger.info({ module: 'PnLTracker', step: 'SAVINGS_RECORDED', amountUsd, totalSavings: this.sentinelSavings });
+    this.save();
   }
 
-  async updateUnrealizedPnL(pair: string, mcpClient: any) {
+  updateUnrealizedPnL(pair: string, currentPrice: number) {
     const position = this.positions.get(pair);
     if (!position || !position.open) return;
 
-    try {
-      const response = await mcpClient.callTool('get_ticker', { symbol: pair });
-      // The response structure might vary; assuming it matches what's used in signIntent
-      // and according to the mock in tracker.test.ts
-      const ticker = typeof response.content[0].text === 'string'
-        ? JSON.parse(response.content[0].text)
-        : response.content[0].text;
-
-      // Kraken ticker 'c' field is [price, volume]
-      const currentPrice = parseFloat(ticker.c[0]);
-      position.currentPrice = currentPrice;
-
-      const result = PnLCalculator.calculateTradePnL(
-        position.entryPrice,
-        currentPrice,
-        position.amount,
-        this.config.takerFeePercent
-      );
-      position.unrealizedPnL = result.netPnL;
-    } catch (error) {
-      logger.warn({ module: 'PnLTracker', step: 'UNREALIZED_UPDATE_FAILED', pair, error: error instanceof Error ? error.message : String(error) });
-    }
+    position.currentPrice = currentPrice;
+    const result = PnLCalculator.calculateTradePnL(
+      position.entryPrice,
+      currentPrice,
+      position.amount,
+      this.config.takerFeePercent
+    );
+    position.unrealizedPnL = result.netPnL;
   }
 
   getMetrics(): PnLMetrics {
@@ -124,6 +170,7 @@ export class PnLTracker {
       totalPnL: totalPnL,
       roiPercent: PnLCalculator.calculateROI(totalPnL, this.totalInvested),
       sentinelSavings: this.sentinelSavings,
+      totalInvested: this.totalInvested,
       maxDrawdown: PnLCalculator.calculateMaxDrawdown(currentEquityCurve),
       sharpeRatio: PnLCalculator.calculateSharpeRatio(tradeResults)
     };

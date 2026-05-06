@@ -13,8 +13,15 @@ export class NotificationService {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
+    // Enhanced Console Fallback (Issue #171)
     if (!token || !chatId) {
-      logger.warn({ module: 'Notifications', message: 'Telegram credentials missing, skipping alert.' });
+      console.log(`\n\x1b[36m[NOTIFY]\x1b[0m \x1b[1mTELEGRAM FALLBACK:\x1b[0m ${message.replace(/<[^>]*>/g, '')}\n`);
+      logger.info({ module: 'Notifications', message: 'Telegram credentials missing, using console fallback.' });
+      
+      // Fallback to Discord if available
+      if (process.env.DISCORD_WEBHOOK_URL) {
+        await this.sendDiscord(message);
+      }
       return;
     }
 
@@ -32,6 +39,27 @@ export class NotificationService {
       logger.info({ module: 'Notifications', step: 'TELEGRAM_SENT' });
     } catch (error: any) {
       logger.error({ module: 'Notifications', message: 'Failed to send Telegram alert', error: error.message });
+    }
+  }
+
+  /**
+   * @dev Sends an alert via Discord Webhook.
+   */
+  static async sendDiscord(message: string) {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (!webhookUrl) return;
+
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `**VERTEX SENTINEL ALERT**\n${message.replace(/<[^>]*>/g, '')}`
+        })
+      });
+      logger.info({ module: 'Notifications', step: 'DISCORD_SENT' });
+    } catch (error: any) {
+      logger.warn({ module: 'Notifications', message: 'Discord webhook failed', error: error.message });
     }
   }
 

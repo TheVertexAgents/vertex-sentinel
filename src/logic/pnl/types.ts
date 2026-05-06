@@ -2,6 +2,7 @@ export interface PnLTrackerConfig {
   makerFeePercent?: number;    // Default: 0.16
   takerFeePercent?: number;    // Default: 0.26
   exchangeName?: string;       // Default: "kraken"
+  persist?: boolean;           // Default: false
 }
 
 export interface Trade {
@@ -35,6 +36,7 @@ export interface PnLMetrics {
   totalPnL: number;
   roiPercent: number;
   sentinelSavings: number;
+  totalInvested: number;
   maxDrawdown: number;
   sharpeRatio: number;
   onchainRisk?: {

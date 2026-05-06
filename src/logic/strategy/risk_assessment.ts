@@ -94,7 +94,7 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const news = await getNewsFeed([baseAsset, 'BTC', 'ETH', 'SOL']);
     const sentiment = await getSentiment(pair);
 
-    // 4. Manual Penalty Model (Bootstrap Logic)
+    // 4. Manual Penalty Model (Bootstrap Logic) - Hardened for Issue #171
     const ask = parseFloat(ticker.a[0]);
     const bid = parseFloat(ticker.b[0]);
     const spread = (ask - bid) / ask;
@@ -102,19 +102,34 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const low24h = parseFloat(ticker.l[1]);
     const volatility = (high24h - low24h) / low24h;
 
-    const spreadPenalty = Math.min(0.5, (spread / 0.02) * 0.5);
-    const volatilityPenalty = Math.min(0.3, (volatility / 0.1) * 0.3);
-    const volumePenalty = Math.min(0.2, (Number(amountUsdScaled) / (loadAgentMetadata().usdScalingFactor * 1000)) * 0.2);
+    // Aggressive Spread Penalty: 0.5% spread is now a 0.2 penalty, 2% is 0.8 (Critical)
+    const spreadPenalty = Math.min(0.8, (spread / 0.005) * 0.2); 
+    
+    // Volatility Penalty: 5% movement in 24h triggers 0.2 penalty
+    const volatilityPenalty = Math.min(0.4, (volatility / 0.05) * 0.2);
+
+    // Volume Penalty: scaled to prevent "whale" moves relative to bootstrap liquidity ($100k)
+    const volumePenalty = Math.min(0.3, (Number(amountUsdScaled) / (loadAgentMetadata().usdScalingFactor * 1000)) * 0.3);
+
+    // Sentiment Penalty (Issue #171): Directly penalize neutral/bearish sentiment
+    // If score < 0.55 (barely bullish), we start applying a penalty.
+    const sentimentPenalty = sentiment.score < 0.55 ? Math.min(0.5, (0.55 - sentiment.score) * 2) : 0;
+
+    // Expected ROI Block (Issue #171)
+    // Edge is (sentiment_score - 0.5) - spread_cost. 
+    // We require a positive edge to proceed with a BUY.
+    const expectedEdge = sentiment.score - 0.5;
+    const expectedRoi = expectedEdge - spread;
 
     // News-based manual penalty
     let newsPenalty = 0;
     if (news.headlines.some(h => h.impact === 'high' && h.sentiment < 0.4)) {
-      newsPenalty = 0.5;
+      newsPenalty = 0.6; // Increased from 0.5
     } else if (news.headlines.some(h => h.impact === 'medium' && h.sentiment < 0.4)) {
-      newsPenalty = 0.2;
+      newsPenalty = 0.3; // Increased from 0.2
     }
 
-    const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty + newsPenalty);
+    const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty + newsPenalty + sentimentPenalty);
 
     // 5. Genkit AI Risk Assessment
     const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
@@ -216,11 +231,22 @@ Output your response in valid JSON format:
         breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
       };
     } else if (!verification.verified) {
-      logger.warn({ module: 'RISK_ASSESSMENT', message: 'AgentStack unreachable. Using local risk assessment only.', error: verification.error });
+      logger.error({ module: 'RISK_ASSESSMENT', message: 'Fail-Closed: AgentStack verification failed. Blocking trade per Verified-or-Die rule.', error: verification.error });
+      // We force a HOLD here to comply with the "Verified or Die" security mandate.
+      return {
+        action: 'HOLD',
+        pair,
+        amountUsdScaled: 0n,
+        confidence: 0,
+        riskScore: 1.0,
+        reasoning: `Security Block: Arc L1 Verification failed (${verification.error}). Verified-or-Die enforcement active.`,
+        newsHighlights: [],
+        arcL1Proof: undefined,
+        breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
+      };
     }
 
-    // 7. Hybrid Enforcement (Fail-Closed)
-    // If either manual penalty or AI score exceeds 0.8, we HOLD.
+    // 7. Hybrid Enforcement (Fail-Closed) - Updated for Issue #171
     const riskScore = Math.max(manualPenalty, aiResult.riskScore);
     const confidence = 1.0 - riskScore;
     const confidenceThreshold = 0.2; // Equivalent to risk 0.8
@@ -230,16 +256,24 @@ Output your response in valid JSON format:
 
     let reasons = [aiResult.justification];
 
-    // Append top news highlights to reasoning to ensure they are hashed and signed (Issue #110 decision)
+    // ROI Check Reasoning
+    reasons.push(`Expected ROI: ${(expectedRoi * 100).toFixed(2)}% (Edge: ${(expectedEdge * 100).toFixed(2)}%, Spread: ${(spread * 100).toFixed(2)}%)`);
+
+    // Append top news highlights to reasoning
     if (newsHighlights.length > 0) {
       reasons.push(`News: ${newsHighlights.slice(0, 2).join(' | ')}`);
     }
 
     if (manualPenalty > 0.8) reasons.push(`Critical Manual Penalty: ${(manualPenalty * 100).toFixed(0)}%`);
     if (aiResult.riskScore > 0.8) reasons.push(`Critical AI Risk Score: ${(aiResult.riskScore * 100).toFixed(0)}%`);
+    
+    // Enforcement Logic
     if (confidence < confidenceThreshold) {
       action = 'HOLD';
       reasons.push("Fail-Closed: Risk threshold exceeded.");
+    } else if (expectedRoi <= 0) {
+      action = 'HOLD';
+      reasons.push(`ROI Block: Negative expected return after spread (${(expectedRoi * 100).toFixed(2)}%).`);
     }
 
     return {

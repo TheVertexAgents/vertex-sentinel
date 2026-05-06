@@ -53,7 +53,7 @@ function getAgentMetadata() {
 let _pnlTracker: PnLTracker | null = null;
 function getPnLTracker() {
   if (!_pnlTracker) {
-    _pnlTracker = new PnLTracker();
+    _pnlTracker = new PnLTracker({ persist: true });
   }
   return _pnlTracker;
 }
@@ -161,34 +161,25 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     // 2. Run Strategic Risk Assessment
     const decision = await analyzeRisk(intent.pair, intent.amountUsdScaled);
 
-    // 3. Update PnL Tracker before checkpoint (using real market data)
-    const tracker = getPnLTracker();
-    if (decision.action === 'HOLD') {
-      tracker.recordSavings(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor);
-    }
+    // Fetch real price for PnL tracking and explanation
     let realPrice = 0;
     try {
       const kraken = getKrakenService();
       const ticker = await kraken.getTicker(intent.pair);
-
       if (!ticker.c || !ticker.c[0]) {
         throw new CriticalSecurityException('Invalid ticker data: missing last trade price (c[0])', ERR_KRAKEN_API_FAIL);
       }
-
       realPrice = parseFloat(ticker.c[0]);
     } catch (e: any) {
-      // Fail-Closed: Remove hardcoded fallback.
       throw new CriticalSecurityException('Fail-Closed: Failed to fetch real market price: ' + e.message);
     }
 
-    tracker.recordTrade({
-      id: traceId,
-      pair: intent.pair,
-      side: intent.action as 'BUY' | 'SELL',
-      price: realPrice,
-      amount: Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor / realPrice,
-      timestamp: new Date().toISOString()
-    });
+    // 3. Update PnL Tracker (Conditional on action)
+    const tracker = getPnLTracker();
+    if (decision.action === 'HOLD') {
+      tracker.recordSavings(Number(intent.amountUsdScaled) / getAgentMetadata().usdScalingFactor);
+    }
+    // Note: recordTrade is now handled by ExecutionProxy upon successful execution
 
     // Fetch current on-chain risk parameters for "Distance to Circuit Breaker"
     let onchainRisk: any = null;
@@ -231,12 +222,8 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       );
     }
 
-    // 5. Persist PnL to logs/pnl.json
-    const pnlLogPath = path.join(process.cwd(), 'logs/pnl.json');
-    if (!fs.existsSync(path.dirname(pnlLogPath))) {
-        fs.mkdirSync(path.dirname(pnlLogPath), { recursive: true });
-    }
-    fs.writeFileSync(pnlLogPath, JSON.stringify(tracker.getSummary(), null, 2));
+    // 5. Persist PnL to logs/pnl.json - Handled internally by tracker.save()
+    // tracker.save(); // Redundant as recordSavings already calls it
 
     // 6. Log Human-Readable Explanation (UX Alignment)
     logger.info({ step: 'EXPLANATION', explanation: formatExplanation(decision) });
@@ -461,7 +448,7 @@ async function main() {
 
   // Initialize Execution Proxy and Event Reconciler for Institutional Reliability
   const network = (process.env.NETWORK === 'sepolia' ? 'sepolia' : 'local') as 'local' | 'sepolia';
-  const proxy = new ExecutionProxy(config.riskRouter as Hex, network);
+  const proxy = new ExecutionProxy(config.riskRouter as Hex, network, getPnLTracker());
   const reconciler = new EventReconciler(config.riskRouter as Hex, network, proxy);
   reconciler.start();
   proxy.startListener();
@@ -519,6 +506,26 @@ async function main() {
       const refreshedNonce = await riskRouterClient.getIntentNonce(BigInt(agentMetadata.agentId));
       nonceTracker.sync(nonceKey, refreshedNonce);
       logger.info({ step: 'NONCE_REFRESHED', nonce: refreshedNonce });
+    }
+    
+    // ✅ NEW: Update Unrealized PnL for active positions (UX/Reporting Hardening)
+    try {
+        const tracker = getPnLTracker();
+        const activePositions = Array.from(tracker.getSummary().positions)
+            .filter(([_, pos]) => (pos as any).open)
+            .map(([pair, _]) => pair);
+        
+        for (const pair of activePositions) {
+            const { realPrice } = await getAssetResolution(pair);
+            tracker.updateUnrealizedPnL(pair, realPrice);
+        }
+        
+        // Emit final balance update with fresh unrealized metrics
+        agentEvents.emit('balance.update', {
+          pnl: tracker.getMetrics()
+        });
+    } catch (e) {
+        logger.warn({ module: 'AGENT_BRAIN', step: 'PNL_UPDATE_FAILED', error: e instanceof Error ? e.message : String(e) });
     }
 
     // Wait for next trading cycle

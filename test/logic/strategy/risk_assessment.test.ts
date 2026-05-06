@@ -18,15 +18,19 @@ describe('Risk Assessment Strategy Unit Tests', function () {
     process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000000';
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sandbox = sinon.createSandbox();
 
-    // Pre-seed sentiment cache to bypass generateWithRetry (ESM exports can't be stubbed by sinon)
+    // Default: seed bullish sentiment to bypass ROI block (0.7 > spread)
     setCachedAI('sentiment-BTC/USD', {
-        headline: "Neutral sentiment",
-        indicator: "Neutral",
-        score: 0.5
+        headline: "Optimistic market sentiment",
+        indicator: "Bullish",
+        score: 0.7
     });
+
+    // Mock AgentStackClient to pass "Verified or Die" security check globally for tests
+    const { AgentStackClient } = await import('../../../src/logic/clients/agent_stack.js');
+    sandbox.stub(AgentStackClient, 'verifyTrade').resolves({ verified: true, proof: '0xmockproof' });
   });
 
   afterEach(async () => {

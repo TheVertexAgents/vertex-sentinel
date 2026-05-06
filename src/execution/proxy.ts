@@ -9,6 +9,7 @@ import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
+import { PnLTracker } from '../logic/pnl/tracker.js';
 import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
@@ -30,6 +31,7 @@ class ExecutionProxy {
   private contractAddress: `0x${string}`;
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
+  private pnlTracker: PnLTracker | null;
 
   // Circuit Breaker State
   private consecutiveFailures = 0;
@@ -37,7 +39,8 @@ class ExecutionProxy {
   private circuitBreakerOpenUntil = 0;
   private readonly CIRCUIT_BREAKER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
-  constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia') {
+  constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia', pnlTracker: PnLTracker | null = null) {
+    this.pnlTracker = pnlTracker;
     // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia
     if (!contractAddress && network === 'sepolia') {
       const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
@@ -295,10 +298,20 @@ class ExecutionProxy {
 
       const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
 
-      this.log('INFO', 'KrakenService Order Execution Success', { TRACE_ID: traceId, result: resultData });
-
       // Reset circuit breaker on success
       this.consecutiveFailures = 0;
+
+      // Update PnL Tracker if available (Issue #171 Reconciliation fix)
+      if (this.pnlTracker) {
+        this.pnlTracker.recordTrade({
+            id: traceId,
+            pair,
+            side: action.toUpperCase() as 'BUY' | 'SELL',
+            price: resultData.price || referencePrice,
+            amount: paddedAmount,
+            timestamp: new Date().toISOString()
+        });
+      }
 
       // Audit Logging
       this.auditLog({
