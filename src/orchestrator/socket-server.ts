@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { logger } from '../utils/logger.js';
 import { EventEmitter } from 'events';
+import { QuotaTracker } from '../utils/quota-tracker.js';
 
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
@@ -14,7 +15,22 @@ const PORT = process.env.SOCKET_PORT || 3006;
  * Bridges Agent Brain events to the frontend via EventEmitter.
  */
 export function startSocketServer() {
-  const httpServer = createServer();
+  const httpServer = createServer((req, res) => {
+    // REST Endpoint for Quota Monitoring
+    if (req.url === '/api/quota' && req.method === 'GET') {
+      const usage = QuotaTracker.getInstance().getUsage();
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify(usage));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end();
+  });
+
   const io = new Server(httpServer, {
     cors: {
       origin: "*", // Adjust for production security

@@ -1,6 +1,8 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { logger } from './logger.js';
+import { QuotaTracker } from './quota-tracker.js';
+import { CriticalSecurityException } from '../logic/errors.js';
 
 export const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],
@@ -47,11 +49,26 @@ export function setCachedAI(key: string, data: any) {
 }
 
 export async function generateWithRetry(module: string, params: any, maxAttempts = 3) {
+  const quota = QuotaTracker.getInstance();
+  if (!quota.canRequest()) {
+    logger.error({ module, step: 'QUOTA_EXHAUSTED', message: 'Daily AI quota limit reached.' });
+    return null;
+  }
+
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
       await limiter.wait();
-      const response = await ai.generate(params);
+
+      // Inject configurable model if using googleAI
+      const modelName = process.env.AI_MODEL || 'gemini-flash-latest';
+      const finalParams = {
+        ...params,
+        model: googleAI.model(modelName)
+      };
+
+      const response = await ai.generate(finalParams);
+      await quota.increment();
       return response.output;
     } catch (err: any) {
       attempts++;

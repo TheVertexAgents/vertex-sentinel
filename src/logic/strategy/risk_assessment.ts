@@ -67,11 +67,7 @@ async function getSentiment(pair: string) {
     return output;
   }
 
-  return {
-    headline: `Live sentiment unavailable for ${pair}. Relying strictly on market volatility metrics.`,
-    indicator: "Neutral",
-    score: 0.5
-  };
+  throw new CriticalSecurityException(`Fail-Closed: AI Sentiment analysis failed for ${pair}. Verified-or-Die enforcement active.`);
 }
 
 /**

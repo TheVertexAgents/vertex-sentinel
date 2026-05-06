@@ -36,6 +36,7 @@ const envSchema = z.object({
   TELEGRAM_CHAT_ID: z.string().optional(),
   KRAKEN_PAPER_MODE: z.enum(['true', 'false']).default('false'),
   HITL_THRESHOLD_USD: z.coerce.number().int().positive().default(1000),
+  AI_MODEL: z.string().default('gemini-flash-latest'),
 });
 
 /**
