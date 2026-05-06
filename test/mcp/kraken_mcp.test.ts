@@ -129,7 +129,7 @@ describe('Kraken MCP Server (TDD)', () => {
       expect.fail('Should have thrown an error');
     } catch (error: any) {
       expect(error.name).to.equal('CriticalSecurityException');
-      expect(error.message).to.contain('Execution failure on Kraken CLI');
+      expect(error.message).to.contain('Execution failure on Kraken API');
     }
   });
 

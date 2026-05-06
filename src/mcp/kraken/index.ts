@@ -19,24 +19,16 @@ import { logger } from '../../utils/logger.js';
 
 /**
  * @title Kraken MCP Server
- * @dev Standardized MCP server for Kraken exchange interactions via the official
- * Kraken Rust CLI binary. Decouples execution logic from the Sentinel Layer.
+ * @dev Standardized MCP server for Kraken exchange interactions via CCXT.
+ * Decouples execution logic from the Sentinel Layer.
  * Strictly adheres to Project Constitution v2.0.0.
  *
- * CLI Syntax (2026 Kraken CLI):
- *   Global JSON:  kraken -o json <command> [args...]
- *   Ticker:       kraken -o json ticker <PAIR>
- *   Balance:      kraken -o json balance
- *   History:      kraken -o json trades-history
- *   Order Buy:    kraken -o json order buy <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
- *   Order Sell:   kraken -o json order sell <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
- *
  * Paper Mode (KRAKEN_PAPER_MODE=true):
- *   Ticker:       kraken -o json ticker <PAIR>          (always real market data)
- *   Balance:      kraken -o json paper balance
- *   History:      kraken -o json paper history
- *   Order Buy:    kraken -o json paper buy <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
- *   Order Sell:   kraken -o json paper sell <PAIR> <VOLUME> --type <TYPE> [--price <PRICE>]
+ *   Ticker:       Real market data
+ *   Balance:      Mock balance
+ *   History:      Mock history
+ *   Order Buy:    Simulated buy
+ *   Order Sell:   Simulated sell
  */
 export class KrakenMcpServer {
   public server: Server; // Made public for testing
@@ -340,7 +332,7 @@ export class KrakenMcpServer {
 
         // According to Constitution v2.0.0: Fail-Closed on order execution security errors
         if (toolName === 'place_order') {
-          throw new CriticalSecurityException(`Execution failure on Kraken CLI: ${errorMessage}`);
+          throw new CriticalSecurityException(`Execution failure on Kraken API: ${errorMessage}`);
         }
 
         // For all other tools (read-only): return MCP error response so the LLM
@@ -354,7 +346,7 @@ export class KrakenMcpServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     this.log('server_start', {
-      message: 'Kraken MCP server running on stdio (CLI mode)',
+      message: 'Kraken MCP server running on stdio',
       paperMode: this.isPaperMode(),
       version: '2.0.0',
     });
