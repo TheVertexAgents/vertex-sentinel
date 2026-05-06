@@ -2,14 +2,14 @@ import { createPublicClient, http, parseAbi } from 'viem';
 import { hardhat, sepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Hex } from 'viem';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import path from 'path';
 import fs from 'fs';
+import { getKrakenService } from '../services/kraken_service.js';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
-import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN, ERR_MAX_RETRIES_EXCEEDED } from '../utils/constants.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -18,15 +18,6 @@ const RISK_ROUTER_ABI = parseAbi([
 ]);
 
 type Network = 'local' | 'sepolia';
-
-interface McpContent {
-  type: string;
-  text: string;
-}
-
-interface McpResult {
-  content: McpContent[];
-}
 
 /**
  * @title ExecutionProxy
@@ -37,7 +28,6 @@ interface McpResult {
 class ExecutionProxy {
   private client;
   private contractAddress: `0x${string}`;
-  private mcpClient: Client | null = null;
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
 
@@ -145,24 +135,9 @@ class ExecutionProxy {
   }
 
   /**
-   * @dev Initializes the connection to the Kraken MCP server.
-   * Uses the shared singleton from risk_assessment.ts to avoid double-spawning.
-   */
-  async initMcp() {
-    this.log('INFO', 'Initializing shared Kraken MCP Client...');
-    const { getMcpClient } = await import('../logic/strategy/risk_assessment.js');
-    this.mcpClient = await getMcpClient();
-    this.log('INFO', 'Successfully connected to shared Kraken MCP Server.');
-  }
-
-  /**
    * @dev Starts listening for TradeAuthorized events from the on-chain RiskRouter.
    */
   async startListener() {
-    if (!this.mcpClient) {
-      await this.initMcp();
-    }
-    
     this.log('INFO', 'Monitoring for TradeAuthorized events on-chain...');
 
     // Listen for authorized trades
@@ -231,25 +206,21 @@ class ExecutionProxy {
   }
 
   /**
-   * @dev Calls the Kraken MCP server to execute an order.
+   * @dev Calls the Kraken service to execute an order.
    * Implements "Fail-Closed" behavior.
    */
   private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint) {
-    if (!this.mcpClient) {
-      this.log('ERROR', 'MCP Client not initialized. Cannot execute trade.');
-      return;
-    }
-
     if (Date.now() < this.circuitBreakerOpenUntil) {
       this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
       throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);
     }
 
     const paperMode = process.env.KRAKEN_PAPER_MODE === 'true';
-    this.log('INFO', 'Submitting order via MCP...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString(), paperMode });
+    this.log('INFO', 'Submitting order via KrakenService...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString(), paperMode });
     
     try {
       const config = loadAgentMetadata();
+      const kraken = getKrakenService();
       // Constitution Alignment: Unit conversion and symbol formatting.
       // Replace formatEther (10^18) with scaling factor based on config.usdScalingFactor.
       const amount = Number(volume) / config.usdScalingFactor;
@@ -275,9 +246,8 @@ class ExecutionProxy {
 
       // Task 1.2: Enforce Slippage in the Execution Proxy
       // Pre-execution price check
-      const tickerResult = await this.callMcpToolWithRetry('get_ticker', { symbol: cleanSymbol }, traceId);
+      const tickerData = await kraken.getTicker(cleanSymbol);
 
-      const tickerData = safeParseJSON(tickerResult.content[0].text, null as any, { traceId, step: 'ticker' });
       if (!tickerData || !tickerData.a || !tickerData.b) {
           throw new CriticalSecurityException(`Invalid or missing ticker data for ${cleanSymbol}`, ERR_KRAKEN_API_FAIL);
       }
@@ -311,24 +281,21 @@ class ExecutionProxy {
         side: action.toUpperCase()
       });
 
-      const result = await this.callMcpToolWithRetry('place_order', {
+      const resultData = await kraken.placeOrder({
         symbol: cleanSymbol,
         side: action.toLowerCase() as 'buy' | 'sell',
         type: 'limit',
         amount: paddedAmount,
         price: limitPrice
-      }, traceId);
+      });
 
-      const content = result.content;
-      const resultData = safeParseJSON(content[0].text, {} as any, { traceId, step: 'place_order' }) as Record<string, any>;
-
-      if (resultData.error && resultData.error.length > 0) {
-          throw new CriticalSecurityException(`Kraken API Error: ${resultData.error.join(', ')}`, ERR_KRAKEN_API_FAIL);
+      if ((resultData as any).error && (resultData as any).error.length > 0) {
+          throw new CriticalSecurityException(`Kraken API Error: ${(resultData as any).error.join(', ')}`, ERR_KRAKEN_API_FAIL);
       }
 
       const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
 
-      this.log('INFO', 'MCP Order Execution Success', { TRACE_ID: traceId, result: resultData });
+      this.log('INFO', 'KrakenService Order Execution Success', { TRACE_ID: traceId, result: resultData });
 
       // Reset circuit breaker on success
       this.consecutiveFailures = 0;
@@ -385,65 +352,8 @@ class ExecutionProxy {
    * @dev Process an authorized trade intent directly (non-event path, for testing).
    */
   async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
-    if (!this.mcpClient) {
-        await this.initMcp();
-    }
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
     await this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
-  }
-
-  /**
-   * @dev Calls MCP tool with exponential backoff for transient failures.
-   */
-  private async callMcpToolWithRetry(toolName: string, args: any, traceId: string): Promise<McpResult> {
-    let attempt = 1;
-    const maxRetries = 3;
-    const baseDelayMs = 2000;
-
-    while (attempt <= maxRetries) {
-      try {
-        const result = await this.mcpClient!.callTool({
-          name: toolName,
-          arguments: args
-        }) as unknown as McpResult;
-
-        // Check if MCP server returned an error array for non-sensitive commands
-        if ((result as any).isError) {
-          const errorText = result.content?.[0]?.text || '';
-          throw new Error(`MCP Error: ${errorText}`);
-        }
-
-        return result;
-      } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isTransient = errorMessage.includes('ETIMEDOUT') || errorMessage.includes('502') || errorMessage.includes('503') || errorMessage.includes('Exchange error');
-        
-        if (!isTransient || attempt >= maxRetries) {
-          if (attempt >= maxRetries) {
-             this.log('ERROR', `Max retries exceeded for ${toolName}`, { TRACE_ID: traceId, attempt, maxRetries, error: errorMessage });
-             throw new CriticalSecurityException(`Max retries exceeded for ${toolName}: ${errorMessage}`, ERR_MAX_RETRIES_EXCEEDED);
-          }
-          throw error;
-        }
-
-        const delay = baseDelayMs * Math.pow(2, attempt - 1);
-        this.log('WARN', `Transient error during ${toolName}. Retrying...`, { TRACE_ID: traceId, attempt, maxRetries, delay, error: errorMessage });
-        
-        this.auditLog({
-          traceId,
-          agentId: this.agentAddress,
-          event: 'RETRY_ATTEMPT',
-          tool: toolName,
-          attempt,
-          delay,
-          error: errorMessage
-        });
-
-        await new Promise(resolve => setTimeout(resolve, delay));
-        attempt++;
-      }
-    }
-    throw new CriticalSecurityException(`Max retries exceeded for ${toolName}`, ERR_MAX_RETRIES_EXCEEDED);
   }
 
   /**

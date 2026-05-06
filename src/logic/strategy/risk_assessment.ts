@@ -4,10 +4,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { getCachedAI, setCachedAI, generateWithRetry } from '../../utils/ai.js';
 import { CriticalSecurityException } from '../errors.js';
 import { loadAgentMetadata } from '../config.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import path from 'path';
-import type { Ticker, Balance, TradeHistory } from '../../mcp/kraken/types.js';
+import { getKrakenService } from '../../services/kraken_service.js';
 import { getNewsFeed } from './news_feed.js';
 import { AgentStackClient } from '../clients/agent_stack.js';
 
@@ -41,96 +38,6 @@ export const TradeDecisionSchema = z.object({
 export type TradeDecision = z.infer<typeof TradeDecisionSchema>;
 
 
-/**
- * @dev Simple MCP Client Singleton for Ticker and Account Data.
- */
-let mcpClient: Client | null = null;
-let connectionPromise: Promise<Client> | null = null;
-let connectionFailed = false;
-
-export async function getMcpClient() {
-  if (mcpClient) return mcpClient;
-  if (connectionFailed) throw new Error('MCP connection previously failed');
-  
-  if (connectionPromise) {
-    return connectionPromise;
-  }
-
-  connectionPromise = (async () => {
-    logger.info({ module: 'MCP_INITIALIZE', message: 'Connecting to Kraken MCP server...' });
-
-    try {
-      const serverPath = path.join(process.cwd(), 'src/mcp/kraken/index.ts');
-      logger.info({ module: 'MCP_INITIALIZE', step: 'SPAWN_SERVER', serverPath });
-      const transport = new StdioClientTransport({
-        command: process.execPath,
-        args: ['--import', 'tsx', '--no-warnings', serverPath],
-        env: {
-          ...process.env,
-          NODE_ENV: process.env.NODE_ENV || 'development',
-          KRAKEN_CLI_PATH: process.env.KRAKEN_CLI_PATH || 'kraken'
-        } as Record<string, string>
-      });
-
-      const client = new Client(
-        { name: 'sentinel-strategy-client', version: '1.0.0' },
-        { capabilities: {} }
-      );
-
-      await Promise.race([
-        client.connect(transport),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('MCP connection timeout')), 15000))
-      ]);
-
-      mcpClient = client;
-      logger.info({ module: 'MCP_INITIALIZE', message: 'Connected successfully' });
-      return mcpClient;
-    } catch (err: any) {
-      connectionFailed = true;
-      connectionPromise = null; // Allow retry if it failed? Or keep failed?
-      logger.error({ module: 'MCP_INITIALIZE', step: 'CONNECTION_FAILED', error: err.message });
-      throw err;
-    }
-  })();
-
-  return connectionPromise;
-}
-
-/**
- * @dev Safely calls an MCP tool and parses the response.
- */
-async function callMcpTool(name: string, args: Record<string, any> = {}) {
-  const client = await getMcpClient();
-  const response = await client.callTool({ name, arguments: args }) as { 
-    isError?: boolean; 
-    content: Array<{ type: string; text: string }> 
-  };
-
-  if (response.isError) {
-    throw new Error(response.content[0].text);
-  }
-
-  try {
-    return JSON.parse(response.content[0].text);
-  } catch (err) {
-    throw new Error(`Invalid JSON response from ${name}: ${response.content[0].text}`);
-  }
-}
-
-/**
- * @dev Closes the MCP client and cleans up transport resources.
- */
-export async function closeMcpClient() {
-  if (mcpClient) {
-    logger.info({ module: 'MCP_CLIENT', message: 'Closing connection...' });
-    try {
-      await mcpClient.close();
-    } catch (err: any) {
-      logger.warn({ module: 'MCP_CLIENT', step: 'CLOSE_ERROR', error: err.message });
-    }
-    mcpClient = null;
-  }
-}
 
 /**
  * @dev Live AI Sentiment API (Genkit)
@@ -175,11 +82,12 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
   logger.info({ module: 'RISK_STRATEGY', step: 'ANALYSIS_START', pair });
   try {
     // 1. Fetch Market Data
-    const ticker = await callMcpTool('get_ticker', { symbol: pair }) as Ticker;
+    const kraken = getKrakenService();
+    const ticker = await kraken.getTicker(pair);
 
     // 2. Fetch Portfolio & History
-    const balance = await callMcpTool('get_balance', {}) as Balance;
-    const history = await callMcpTool('get_trade_history', {}) as TradeHistory;
+    const balance = await kraken.getBalance();
+    const history = await kraken.getTradeHistory();
 
     // 3. Fetch Live News & Sentiment (Issue #110)
     const baseAsset = pair.split('/')[0].split('-')[0]; // Handle various pair formats

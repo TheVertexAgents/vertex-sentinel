@@ -4,15 +4,17 @@ import sinon from 'sinon';
 import fs from 'fs';
 import path from 'path';
 import ExecutionProxy from '../../src/execution/proxy.js';
-import { closeMcpClient } from '../../src/logic/strategy/risk_assessment.js';
+import { KrakenService } from '../../src/services/kraken_service.js';
 
 describe('Execution Proxy Unit Tests', function () {
     this.timeout(30000); // 30s timeout for binary execution
+    let sandbox: sinon.SinonSandbox;
     let proxy: any;
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
     const originalEnv = { ...process.env };
 
     beforeEach(() => {
+        sandbox = sinon.createSandbox();
         process.env.GOOGLE_GENAI_API_KEY = 'test-api-key';
         process.env.AGENT_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001';
         process.env.KRAKEN_API_KEY = 'test-kraken-key';
@@ -32,7 +34,7 @@ describe('Execution Proxy Unit Tests', function () {
     afterEach(async () => {
         process.env = { ...originalEnv };
         sinon.restore();
-        await closeMcpClient();
+        KrakenService.resetInstance();
     });
 
     it('should initialize correctly with given address', () => {
@@ -92,114 +94,74 @@ describe('Execution Proxy Unit Tests', function () {
     });
 
     it('should map BTC/USD to XBTUSD and ETH/USDT to ETHUSD correctly', async function () {
-        const callToolStub = sinon.stub().resolves({
-            content: [{ text: JSON.stringify({ a: ['50000'], b: ['49900'], txid: ['123'] }) }]
-        });
-        (proxy as any).mcpClient = { callTool: callToolStub };
+        const getTickerStub = sandbox.stub(KrakenService.prototype, 'getTicker').resolves({
+            a: ['50000', '0', '0'], b: ['49900', '0', '0'], symbol: 'XBTUSD',
+            c: ['50000', '0'], v: ['0', '0'], p: ['0', '0'], t: [0, 0], l: ['0', '0'], h: ['0', '0'], o: '0'
+        } as any);
+        const placeOrderStub = sandbox.stub(KrakenService.prototype, 'placeOrder').resolves({ txid: ['123'] } as any);
 
         await proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-TRACE-BTC', 'buy', 100n);
-        expect(callToolStub.calledWith(sinon.match({ name: 'get_ticker', arguments: { symbol: 'XBTUSD' } }))).to.be.true;
-        expect(callToolStub.calledWith(sinon.match({ name: 'place_order', arguments: sinon.match({ symbol: 'XBTUSD' }) }))).to.be.true;
+        expect(getTickerStub.calledWith('XBTUSD')).to.be.true;
+        expect(placeOrderStub.calledWith(sinon.match({ symbol: 'XBTUSD' }))).to.be.true;
 
-        callToolStub.resetHistory();
+        getTickerStub.resetHistory();
+        placeOrderStub.resetHistory();
         
         await proxy.executeOnKraken('ETH/USDT', 100000n, 'TEST-TRACE-ETH', 'buy', 100n);
-        expect(callToolStub.calledWith(sinon.match({ name: 'get_ticker', arguments: { symbol: 'ETHUSD' } }))).to.be.true;
-        expect(callToolStub.calledWith(sinon.match({ name: 'place_order', arguments: sinon.match({ symbol: 'ETHUSD' }) }))).to.be.true;
+        expect(getTickerStub.calledWith('ETHUSD')).to.be.true;
+        expect(placeOrderStub.calledWith(sinon.match({ symbol: 'ETHUSD' }))).to.be.true;
     });
 
     describe('Day 3-4 Resilience: Circuit Breaker & Retry Logic', () => {
-        let callToolStub: sinon.SinonStub;
+        let getTickerStub: sinon.SinonStub;
+        let placeOrderStub: sinon.SinonStub;
 
         beforeEach(() => {
-            callToolStub = sinon.stub();
-            (proxy as any).mcpClient = { callTool: callToolStub };
+            getTickerStub = sandbox.stub(KrakenService.prototype, 'getTicker');
+            placeOrderStub = sandbox.stub(KrakenService.prototype, 'placeOrder');
         });
 
         it('should format volume and price correctly for Kraken', async () => {
             // Setup stub to succeed immediately
-            callToolStub.onCall(0).resolves({
-                content: [{ text: JSON.stringify({ a: ['50000.123456789'], b: ['49900.123456789'], txid: ['123'] }) }]
-            });
-            callToolStub.onCall(1).resolves({
-                content: [{ text: JSON.stringify({ txid: ['456'] }) }]
-            });
+            getTickerStub.resolves({
+                a: ['50000.123456789', '0', '0'], b: ['49900.123456789', '0', '0'], symbol: 'XBTUSD',
+                c: ['50000', '0'], v: ['0', '0'], p: ['0', '0'], t: [0, 0], l: ['0', '0'], h: ['0', '0'], o: '0'
+            } as any);
+            placeOrderStub.resolves({ txid: ['456'] } as any);
 
             // Very small volume to test rounding (e.g., config.usdScalingFactor = 1e6 default or 1 for tests. Wait, if volume is 1000n, amount = 1000)
             await proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-FORMAT', 'buy', 100n);
             
-            const placeOrderCall = callToolStub.getCall(1);
-            expect(placeOrderCall.args[0].name).to.equal('place_order');
+            expect(placeOrderStub.calledOnce).to.be.true;
+            const args = placeOrderStub.getCall(0).args[0];
             
-            const args = placeOrderCall.args[0].arguments;
             // Validate rounding (should be max 8 decimal places)
             expect(args.price.toString().split('.')[1]?.length || 0).to.be.at.most(8);
             expect(args.amount.toString().split('.')[1]?.length || 0).to.be.at.most(8);
         });
 
-        it('should retry transient errors (e.g. 502) and succeed', async () => {
-            // Fail twice, succeed on 3rd attempt
-            callToolStub.onCall(0).rejects(new Error('502 Bad Gateway'));
-            callToolStub.onCall(1).rejects(new Error('ETIMEDOUT'));
-            callToolStub.onCall(2).resolves({
-                content: [{ text: JSON.stringify({ a: ['50000'], b: ['49900'], txid: ['123'] }) }]
-            });
-            callToolStub.onCall(3).resolves({
-                content: [{ text: JSON.stringify({ txid: ['456'] }) }]
-            });
-
-            // override baseDelayMs for faster tests
-            const originalCallMcpToolWithRetry = (proxy as any).callMcpToolWithRetry.bind(proxy);
-            (proxy as any).callMcpToolWithRetry = async function (toolName: string, args: any, traceId: string) {
-                // stub base delay internally by temporarily replacing Math.pow wait?
-                // actually, let's just use fake timers
-                return originalCallMcpToolWithRetry(toolName, args, traceId);
-            };
-
-            const clock = sinon.useFakeTimers();
-            const execPromise = proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-RETRY', 'buy', 100n);
-            
-            await clock.tickAsync(2000); // 1st retry
-            await clock.tickAsync(4000); // 2nd retry
-            
-            await execPromise;
-            clock.restore();
-
-            expect(callToolStub.callCount).to.equal(4); // 3 for ticker, 1 for place_order
-        });
-
-        it('should throw ERR_MAX_RETRIES_EXCEEDED after 3 transient failures', async () => {
-            callToolStub.rejects(new Error('503 Service Unavailable'));
-            const clock = sinon.useFakeTimers();
-
-            const execPromise = proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-MAX-RETRY', 'buy', 100n);
-            
-            await clock.tickAsync(2000); // 1st retry
-            await clock.tickAsync(4000); // 2nd retry
-            await clock.tickAsync(8000); // 3rd retry
+        it('should NOT retry in proxy because retry is now in KrakenService', async () => {
+            // This test is updated because callMcpToolWithRetry is gone and retry logic is moved to KrakenService.
+            // Proxy now just calls KrakenService once and expects it to handle retries or throw.
+            getTickerStub.rejects(new Error('502 Bad Gateway'));
             
             try {
-                await execPromise;
-                expect.fail('Should have thrown CriticalSecurityException');
+                await proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-NO-RETRY-IN-PROXY', 'buy', 100n);
+                expect.fail('Should have thrown');
             } catch (err: any) {
-                expect(err.message).to.include('Max retries exceeded');
+                expect(err.message).to.include('502 Bad Gateway');
             }
-            clock.restore();
+
+            expect(getTickerStub.calledOnce).to.be.true;
         });
 
         it('should open Circuit Breaker after 3 consecutive execution failures', async () => {
             // Fail execution continuously
-            callToolStub.rejects(new Error('Exchange error: Connection lost'));
+            getTickerStub.rejects(new Error('Exchange error: Connection lost'));
             
-            const clock = sinon.useFakeTimers();
-
             for (let i = 0; i < 3; i++) {
-                const execPromise = proxy.executeOnKraken('BTC/USD', 100000n, `TEST-CB-${i}`, 'buy', 100n);
-                await clock.tickAsync(2000); 
-                await clock.tickAsync(4000); 
-                await clock.tickAsync(8000);
                 try {
-                    await execPromise;
+                    await proxy.executeOnKraken('BTC/USD', 100000n, `TEST-CB-${i}`, 'buy', 100n);
                 } catch (e) {
                     // expected failure
                 }
@@ -209,8 +171,8 @@ describe('Execution Proxy Unit Tests', function () {
             expect((proxy as any).consecutiveFailures).to.equal(3);
             expect((proxy as any).circuitBreakerOpenUntil).to.be.greaterThan(Date.now());
 
-            // 4th attempt should fail immediately without calling MCP
-            const initialCallCount = callToolStub.callCount;
+            // 4th attempt should fail immediately without calling KrakenService
+            const initialCallCount = getTickerStub.callCount;
             try {
                 await proxy.executeOnKraken('BTC/USD', 100000n, 'TEST-CB-BLOCKED', 'buy', 100n);
                 expect.fail('Should block execution');
@@ -218,9 +180,7 @@ describe('Execution Proxy Unit Tests', function () {
                 expect(err.code).to.equal('ERR_CIRCUIT_BREAKER_OPEN');
             }
 
-            expect(callToolStub.callCount).to.equal(initialCallCount); // no new calls made
-
-            clock.restore();
+            expect(getTickerStub.callCount).to.equal(initialCallCount); // no new calls made
         });
     });
 });

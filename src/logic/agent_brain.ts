@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import { validateEnv } from './env.js';
 import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
-import { analyzeRisk, getMcpClient, closeMcpClient } from './strategy/risk_assessment.js';
+import { analyzeRisk } from './strategy/risk_assessment.js';
 import { createSignedCheckpoint } from '../utils/checkpoint.js';
 import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
@@ -23,6 +23,7 @@ import { OHLCVCollector } from './strategy/ohlcv_collector.js';
 import { NotificationService } from '../utils/notifications.js';
 import { RiskCalibrator } from './risk-calibrator.js';
 import { checkGeographicRestrictions } from '../utils/geo-restrict.js';
+import { getKrakenService, closeKrakenService } from '../services/kraken_service.js';
 import { EventReconciler } from '../execution/reconciler.js';
 import ExecutionProxy from '../execution/proxy.js';
 import { safeParseJSON } from '../utils/safe-json.js';
@@ -167,17 +168,9 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     }
     let realPrice = 0;
     try {
-      const client = await getMcpClient();
-      const tickerResponse = await client.callTool({
-        name: 'get_ticker',
-        arguments: { symbol: intent.pair }
-      }) as { content: Array<{ type: string; text: string }> };
+      const kraken = getKrakenService();
+      const ticker = await kraken.getTicker(intent.pair);
 
-      if (!tickerResponse.content || tickerResponse.content.length === 0) {
-        throw new Error('Empty ticker response from MCP');
-      }
-
-      const ticker = safeParseJSON(tickerResponse.content[0].text, {} as any, { step: 'ticker' });
       if (!ticker.c || !ticker.c[0]) {
         throw new CriticalSecurityException('Invalid ticker data: missing last trade price (c[0])', ERR_KRAKEN_API_FAIL);
       }
@@ -388,8 +381,8 @@ async function shutdown() {
     sleepResolve(null);
   }
 
-  // Force cleanup of MCP resources
-  await closeMcpClient();
+  // Force cleanup of KrakenService resources
+  await closeKrakenService();
   
   logger.info({ step: 'SHUTDOWN_COMPLETE', message: 'Agent shutdown complete.' });
   process.exit(0);

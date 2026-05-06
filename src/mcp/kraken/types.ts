@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * @dev Zod schema for ticker data from Kraken CLI.
+ * @dev Zod schema for ticker data from Kraken.
  * Compatible with both live and paper mode (ticker always uses real market data).
  */
 export const TickerSchema = z.object({
