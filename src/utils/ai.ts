@@ -2,7 +2,6 @@ import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { logger } from './logger.js';
 import { QuotaTracker } from './quota-tracker.js';
-import { CriticalSecurityException } from '../logic/errors.js';
 
 export const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],

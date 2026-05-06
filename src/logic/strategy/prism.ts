@@ -1,5 +1,4 @@
 import { logger } from '../../utils/logger.js';
-import { loadAgentMetadata } from '../config.js';
 
 /**
  * @dev Strykr PRISM API for canonical asset resolution.
