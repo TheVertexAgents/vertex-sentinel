@@ -7,6 +7,7 @@ import { validateEnv } from './env.js';
 import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
 import { analyzeRisk } from './strategy/risk_assessment.js';
+import { getAssetResolution } from './strategy/prism.js';
 import { createSignedCheckpoint } from '../utils/checkpoint.js';
 import { formatExplanation } from '../utils/explainability.js';
 import { RiskRouterClient } from '../onchain/risk_router.js';
@@ -112,35 +113,6 @@ function getTraceId(): string {
   return randomUUID();
 }
 
-/**
- * @dev Strykr PRISM API for canonical asset resolution.
- */
-async function getAssetResolution(pair: string) {
-  const apiKey = process.env.STRYKR_PRISM_API;
-  const url = `https://api.prismapi.ai/resolve?pair=${encodeURIComponent(pair)}`;
-
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      signal: AbortSignal.timeout(5000)
-    });
-
-    if (!response.ok) {
-        throw new Error(`PRISM API returned ${response.status}`);
-    }
-
-    const data = await response.json() as { symbol: string, precision: number };
-    logger.info({ module: 'PRISM', step: 'METADATA_RESOLUTION', pair, symbol: data.symbol });
-    return data;
-  } catch (error: any) {
-    logger.warn({ module: 'PRISM', message: 'PRISM API unavailable, using fallback', error: error.message });
-    return { symbol: pair, precision: getAgentMetadata().prismDefaultPrecision };
-  }
-}
 
 /**
  * @dev The Intent Layer creates a signed TradeIntent after verifiable risk assessment.
@@ -565,4 +537,4 @@ if (isMain && process.env.NODE_ENV !== 'test') {
   logger.info({ step: 'MODULE_LOADED', isMain, nodeEnv: process.env.NODE_ENV });
 }
 
-export { signIntent, getAssetResolution };
+export { signIntent };

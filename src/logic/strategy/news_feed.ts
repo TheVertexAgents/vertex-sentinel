@@ -36,11 +36,14 @@ export async function getNewsFeed(assets: string[] = ['BTC', 'ETH', 'SOL']): Pro
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    try {
-      const symbols = assets.join(',');
-      const url = `https://api.lunarcrush.com/public/coins/list/v2?symbols=${symbols}&key=${apiKey}`;
+    const symbols = assets.join(',');
+    const url = `https://lunarcrush.com/api4/public/coins/list/v2?symbols=${symbols}`;
 
-      const response = await fetch(url, { signal: controller.signal });
+    try {
+      const response = await fetch(url, { 
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        signal: controller.signal 
+      });
       clearTimeout(timeout);
 
       if (!response.ok) {
@@ -83,6 +86,9 @@ export async function getNewsFeed(assets: string[] = ['BTC', 'ETH', 'SOL']): Pro
         step: 'FETCH_ATTEMPT_FAILED',
         attempt,
         error: error.message,
+        cause: error.cause,
+        stack: error.stack,
+        url,
         nextAction: isLastAttempt ? 'FALLBACK' : 'RETRYING'
       });
 
