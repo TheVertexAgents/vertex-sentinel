@@ -1,5 +1,4 @@
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { generateWithRetry } from '../utils/ai.js';
 import { logger } from '../utils/logger.js';
 import { OHLCVCollector } from './strategy/ohlcv_collector.js';
@@ -90,7 +89,6 @@ export class RiskCalibrator {
 
       // 3. Genkit Analysis
       const suggestion = await generateWithRetry('RiskCalibrator', {
-        model: googleAI.model('gemini-flash-latest'),
         prompt: `You are the Vertex Sentinel Institutional Risk Officer.
         Analyze the current market volatility and suggest adjustments to the RiskRouter position limits.
 

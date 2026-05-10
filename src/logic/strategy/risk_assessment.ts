@@ -1,6 +1,5 @@
 import { logger } from '../../utils/logger.js';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
 import { getCachedAI, setCachedAI, generateWithRetry } from '../../utils/ai.js';
 import { CriticalSecurityException } from '../errors.js';
 import { loadAgentMetadata } from '../config.js';
@@ -49,7 +48,6 @@ async function getSentiment(pair: string) {
   if (cached) return cached;
 
   const output = await generateWithRetry('SENTIMENT', {
-    model: googleAI.model('gemini-flash-latest'),
     prompt: `Analyze the current real-world market sentiment for ${pair} crypto asset. Output JSON with headline, indicator (Bullish/Bearish/Neutral), and score (0.0 to 1.0).`,
     output: {
       format: 'json',
@@ -147,7 +145,6 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
 
     if (!aiResult) {
       aiResult = await generateWithRetry('AI_RISK', {
-        model: googleAI.model('gemini-flash-latest'),
         prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
 
 Analyze the provided data and evaluate:
