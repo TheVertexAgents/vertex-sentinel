@@ -21,19 +21,6 @@ describe('Environment Validation Unit Tests', () => {
         expect(() => validateEnv()).to.throw(/Environment validation failed/);
     });
 
-    it('should throw CriticalSecurityException if LUNARCRUSH_KEY is missing', () => {
-        process.env.GOOGLE_GENAI_API_KEY = 'test';
-        process.env.AGENT_PRIVATE_KEY = '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-        process.env.KRAKEN_API_KEY = 'test';
-        process.env.KRAKEN_SECRET = 'test';
-        process.env.INFURA_KEY = 'test';
-        process.env.STRYKR_PRISM_API = 'test';
-        process.env.NETWORK = 'sepolia';
-        delete process.env.LUNARCRUSH_KEY;
-
-        expect(() => validateEnv()).to.throw(/LUNARCRUSH_KEY: Required/);
-    });
-
     it('should pass if all required variables are present', () => {
         process.env.GOOGLE_GENAI_API_KEY = 'test';
         process.env.AGENT_PRIVATE_KEY = '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -42,7 +29,6 @@ describe('Environment Validation Unit Tests', () => {
         process.env.INFURA_KEY = 'test';
         process.env.STRYKR_PRISM_API = 'test';
         process.env.NETWORK = 'sepolia';
-        process.env.LUNARCRUSH_KEY = 'test-lunar';
 
         expect(() => validateEnv()).to.not.throw();
     });

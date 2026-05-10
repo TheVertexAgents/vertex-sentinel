@@ -585,6 +585,11 @@
         // Auto-connect if data exists
         if (userAddress) {
             updateWalletUI(userAddress);
+            if (!isDemoMode && typeof window.ethereum !== 'undefined') {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                syncOnChainParams();
+            }
         }
 
         function updateWalletUI(addr) {
@@ -1092,6 +1097,19 @@
         initWebSocket();
         fetchInitialData();
         initTradingView();
+
+        // Polling PnL Report (Sprint 2B Optimization)
+        setInterval(async () => {
+            try {
+                const res = await fetch('/logs/pnl_report.json');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.summary) {
+                        updateStatsFromMetrics(data.summary);
+                    }
+                }
+            } catch (_) {}
+        }, 5000);
     </script>
 </body>
 </html>

@@ -489,10 +489,28 @@
         <div class="slide" data-slide="3">
             <div class="max-w-4xl w-full">
                 <h2 class="animate-in delay-1 text-4xl font-black mb-12 text-center">
-                    3-Layer Security Architecture
+                    Verifiable Execution Pipeline
                 </h2>
                 
                 <div class="space-y-2">
+                    <!-- Layer 0: HITL -->
+                    <div class="animate-in delay-1 layer-box glass border-l-4 border-amber bg-amber/5">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div>
+                                <span class="text-amber text-xs font-bold uppercase tracking-widest">Intercept</span>
+                                <h3 class="text-2xl font-bold mt-1">High-Stakes HITL</h3>
+                                <p class="text-gray-400 text-sm">Human-in-the-Loop Approval</p>
+                            </div>
+                            <div class="flex gap-3 flex-wrap">
+                                <span class="glass px-3 py-1 text-xs font-mono">Threshold Intercept</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Manual Verify</span>
+                                <span class="glass px-3 py-1 text-xs font-mono">Approve/Reject</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layer-connector animate-in delay-2" style="height: 20px;"></div>
+
                     <!-- Layer 1: Intent -->
                     <div class="animate-in delay-2 layer-box glass border-l-4 border-cyan">
                         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -740,29 +758,29 @@
                     <span class="text-emerald text-sm font-bold uppercase tracking-widest">Verified Live Execution</span>
                 </div>
                 <h2 class="animate-in delay-1 text-5xl font-black mb-12 text-center">
-                    Verifiable Execution on <span class="text-cyan">Arc L1</span>
+                    Live Performance & <span class="text-cyan">PnL Report</span>
                 </h2>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <div class="animate-in delay-2 glass stat-card">
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Total Trades</p>
-                        <p class="stat-value text-cyan">4</p>
-                        <p class="text-gray-400 text-xs mt-1">BTC/USD (Live)</p>
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Realized PnL</p>
+                        <p class="stat-value text-emerald text-3xl">+$99.07</p>
                     </div>
                     <div class="animate-in delay-3 glass stat-card">
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Volume</p>
-                        <p class="stat-value text-white">0.0005</p>
-                        <p class="text-gray-400 text-xs mt-1">BTC Total</p>
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Win Rate</p>
+                        <p class="stat-value text-white text-3xl">66.6%</p>
                     </div>
                     <div class="animate-in delay-4 glass stat-card">
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Success Rate</p>
-                        <p class="stat-value text-emerald">100%</p>
-                        <p class="text-gray-400 text-xs mt-1">4/4 Trades</p>
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Drawdown</p>
+                        <p class="stat-value text-crimson text-3xl">8.2%</p>
                     </div>
                     <div class="animate-in delay-5 glass stat-card">
-                        <p class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Arc Proofs</p>
-                        <p class="stat-value text-purple">Live</p>
-                        <p class="text-gray-400 text-xs mt-1">session-2vydqn3f</p>
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Savings</p>
+                        <p class="stat-value text-cyan text-3xl">$187.50</p>
+                    </div>
+                    <div class="animate-in delay-6 glass stat-card">
+                        <p class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Proofs</p>
+                        <p class="stat-value text-purple text-3xl">Live</p>
                     </div>
                 </div>
                 
@@ -818,8 +836,66 @@
             </div>
         </div>
 
-        <!-- Slide 8: Risk Guardrails -->
+        <!-- Slide 8: Sentinel SDK -->
         <div class="slide" data-slide="7">
+            <div class="max-w-5xl w-full">
+                <div class="flex items-center justify-center gap-3 mb-4 animate-in delay-1">
+                    <span class="glass px-4 py-2 text-xs font-bold uppercase tracking-widest text-cyan">New Release</span>
+                </div>
+                <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
+                    Sentinel <span class="text-cyan glow-cyan">SDK</span>
+                </h2>
+                <p class="animate-in delay-2 text-xl text-gray-400 text-center mb-12">
+                    Bring Verifiable Risk Management to Any AI Agent
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="animate-in delay-3 space-y-4">
+                        <div class="glass p-6">
+                            <h3 class="font-bold text-cyan mb-2">@vertex-agents/sentinel-sdk</h3>
+                            <p class="text-gray-400 text-sm">Lightweight TypeScript SDK for easy integration.</p>
+                        </div>
+                        <div class="glass p-6">
+                            <h3 class="font-bold mb-2">Fail-Closed Guarantee</h3>
+                            <p class="text-gray-400 text-sm">Throws `FailClosedException` on risk violations.</p>
+                        </div>
+                        <div class="glass p-6">
+                            <h3 class="font-bold mb-2">One-Click Authorization</h3>
+                            <pre class="text-emerald text-xs mt-3"><code>await sentinel.authorize(tradeIntent);</code></pre>
+                        </div>
+                    </div>
+                    <div class="animate-in delay-4">
+                        <div class="code-block h-full">
+                            <p class="text-gray-500 text-xs mb-3 uppercase tracking-widest">Example Usage</p>
+                            <pre class="text-cyan text-xs leading-relaxed"><code>import { SentinelClient } from '@vertex-agents/sentinel-sdk';
+
+const sentinel = new SentinelClient({
+  network: 'sepolia',
+  routerAddress: '0xd6A6...FdBC',
+  privateKey: process.env.AGENT_KEY
+});
+
+// Verifiable Trade Authorization
+const auth = await sentinel.authorize({
+  pair: 'BTC/USD',
+  action: 'BUY',
+  amountUsdScaled: 1000n,
+  nonce: 1n,
+  deadline: 1715332000n
+});
+
+if (auth.isAllowed) {
+  // Execute trade with cryptographic proof
+  executeOnKraken(auth.signature);
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Risk Guardrails -->
+        <div class="slide" data-slide="8">
             <div class="max-w-5xl w-full">
                 <h2 class="animate-in delay-1 text-5xl font-black mb-4 text-center">
                     Risk <span class="text-amber">Guardrails</span>

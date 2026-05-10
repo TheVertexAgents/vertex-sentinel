@@ -6,19 +6,7 @@ import sinon from 'sinon';
 describe("Sentiment Integration (Issue #110)", function () {
   this.timeout(10000);
 
-  it("Should fetch news and return neutral fallback if LUNARCRUSH_KEY is missing", async function () {
-    const originalKey = process.env.LUNARCRUSH_KEY;
-    delete process.env.LUNARCRUSH_KEY;
-
-    const news = await getNewsFeed(['BTC']);
-    expect(news.overallSummary).to.contain('Sentiment Data Unavailable');
-    expect(news.socialSentiment.btc).to.equal(0.5);
-
-    process.env.LUNARCRUSH_KEY = originalKey;
-  });
-
-  it("Should handle API errors gracefully and return neutral fallback", async function () {
-    process.env.LUNARCRUSH_KEY = 'test-key';
+  it("Should fetch news and return neutral fallback if API is down", async function () {
     const fetchStub = sinon.stub(global, 'fetch').rejects(new Error('Network error'));
 
     const news = await getNewsFeed(['BTC']);
@@ -28,20 +16,13 @@ describe("Sentiment Integration (Issue #110)", function () {
     fetchStub.restore();
   });
 
-  it("Should parse LunarCrush response correctly", async function () {
-    process.env.LUNARCRUSH_KEY = 'test-key';
+  it("Should parse CoinGecko response correctly", async function () {
     const mockResponse = {
       ok: true,
       json: async () => ({
-        data: [
-          {
-            symbol: 'BTC',
-            title: 'Bitcoin breaks $100k',
-            sentiment: 0.9,
-            galaxy_score: 85,
-            alt_rank: 5
-          }
-        ]
+        bitcoin: {
+          usd_24h_change: 15.0
+        }
       })
     };
 
@@ -49,8 +30,9 @@ describe("Sentiment Integration (Issue #110)", function () {
 
     const news = await getNewsFeed(['BTC']);
     expect(news.headlines).to.have.lengthOf(1);
-    expect(news.headlines[0].title).to.equal('Bitcoin breaks $100k');
+    expect(news.headlines[0].title).to.contain('BTC showing strong bullish momentum');
     expect(news.headlines[0].impact).to.equal('high');
+    // 0.5 + (15/20) = 0.5 + 0.75 = 1.25, clamped to 0.85
     expect(news.socialSentiment.btc).to.equal(0.85);
 
     fetchStub.restore();

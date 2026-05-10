@@ -22,6 +22,7 @@ export class KrakenService {
   private exchange: KrakenExchange;
   private apiKey: string;
   private apiSecret: string;
+  private cache = new Map<string, { data: any; expiresAt: number }>();
 
   private constructor() {
     const env = validateEnv();
@@ -68,6 +69,16 @@ export class KrakenService {
     else logger.info(logData);
   }
 
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (entry && Date.now() < entry.expiresAt) return entry.data as T;
+    return null;
+  }
+
+  private setCache(key: string, data: any, ttlMs: number) {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+  }
+
   private async withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
     for (let i = 1; i <= attempts; i++) {
       try {
@@ -112,6 +123,9 @@ export class KrakenService {
   }
 
   public async getBalance(): Promise<Balance> {
+    const cached = this.getCached<Balance>('balance');
+    if (cached) return cached;
+
     this.log('get_balance', {}, 'info');
     if (this.isPaperMode()) {
       return {
@@ -129,10 +143,14 @@ export class KrakenService {
         normalizedBalance[asset] = info.toString();
       }
     }
+    this.setCache('balance', normalizedBalance, 60000); // 60s TTL
     return normalizedBalance as any;
   }
 
   public async getTradeHistory(): Promise<TradeHistory> {
+    const cached = this.getCached<TradeHistory>('trade_history');
+    if (cached) return cached;
+
     this.log('get_trade_history', {}, 'info');
     if (this.isPaperMode()) {
       return { trades: {}, count: 0 } as any;
@@ -155,10 +173,12 @@ export class KrakenService {
       };
     }
 
-    return {
+    const result = {
       trades: tradesRecord,
       count: trades.length,
     } as any;
+    this.setCache('trade_history', result, 120000); // 120s TTL
+    return result;
   }
 
   public async placeOrder(params: OrderParams): Promise<OrderResult> {

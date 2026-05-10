@@ -35,6 +35,39 @@ const limiter = new RateLimiter();
 const aiCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 300_000; // 5 minutes
 
+/**
+ * @dev Circuit Breaker for AI requests.
+ * Prevents cascading failures when the AI provider is down.
+ */
+class CircuitBreaker {
+  private failures = 0;
+  private lastFailureTime = 0;
+  private readonly threshold = 5;
+  private readonly cooldown = 300_000; // 5 minutes
+
+  recordFailure() {
+    this.failures++;
+    this.lastFailureTime = Date.now();
+  }
+
+  recordSuccess() {
+    this.failures = 0;
+  }
+
+  isOpen(): boolean {
+    if (this.failures >= this.threshold) {
+      if (Date.now() - this.lastFailureTime > this.cooldown) {
+        // Half-open state: allow one trial request
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+}
+
+const circuitBreaker = new CircuitBreaker();
+
 export function getCachedAI(key: string) {
   const cached = aiCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -54,6 +87,11 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
     return null;
   }
 
+  if (circuitBreaker.isOpen()) {
+    logger.warn({ module, step: 'CIRCUIT_BREAKER_OPEN', message: 'AI circuit breaker is open. Skipping request.' });
+    return null;
+  }
+
   let attempts = 0;
   while (attempts < maxAttempts) {
     try {
@@ -68,8 +106,10 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
 
       const response = await ai.generate(finalParams);
       await quota.increment();
+      circuitBreaker.recordSuccess();
       return response.output;
     } catch (err: any) {
+      circuitBreaker.recordFailure();
       attempts++;
       const isQuotaError = err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('429');
       const isRetryableError = isQuotaError || err.message?.includes('503');
