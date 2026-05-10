@@ -16,81 +16,93 @@ export interface NewsSummary {
   overallSummary: string;
 }
 
+export interface SentimentProvider {
+  name: string;
+  getSentiment(assets: string[]): Promise<NewsSummary>;
+}
+
+class CoinGeckoProvider implements SentimentProvider {
+  public name = 'CoinGecko';
+  private SYMBOL_TO_ID: Record<string, string> = {
+    'BTC': 'bitcoin',
+    'ETH': 'ethereum',
+    'SOL': 'solana',
+    'XRP': 'ripple',
+    'ADA': 'cardano',
+    'DOT': 'polkadot',
+    'DOGE': 'dogecoin',
+    'MATIC': 'polygon-ecosystem-native',
+    'LINK': 'chainlink',
+  };
+
+  async getSentiment(assets: string[]): Promise<NewsSummary> {
+    const ids = assets.map(a => this.SYMBOL_TO_ID[a.toUpperCase()] || a.toLowerCase()).join(',');
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`CoinGecko responded with ${response.status}`);
+    const data = await response.json() as any;
+
+    const socialSentiment: Record<string, number> = {};
+    const headlines: NewsHeadline[] = [];
+
+    assets.forEach(asset => {
+      const id = this.SYMBOL_TO_ID[asset.toUpperCase()] || asset.toLowerCase();
+      const assetData = data[id];
+      if (assetData && assetData.usd_24h_change !== undefined) {
+        const change24h = assetData.usd_24h_change;
+        const score = Math.min(0.85, Math.max(0.15, 0.5 + (change24h / 20)));
+        socialSentiment[asset.toLowerCase()] = score;
+        if (Math.abs(change24h) > 5) {
+          headlines.push({
+            title: `${asset} showing ${change24h > 0 ? 'strong bullish' : 'strong bearish'} momentum (${change24h.toFixed(2)}% 24h)`,
+            source: 'CoinGecko Price Proxy',
+            publishedAt: new Date().toISOString(),
+            sentiment: score,
+            impact: Math.abs(change24h) > 10 ? 'high' : 'medium',
+            instruments: [asset],
+          });
+        }
+      } else {
+        socialSentiment[asset.toLowerCase()] = 0.5;
+      }
+    });
+
+    return {
+      timestamp: new Date().toISOString(),
+      headlines,
+      socialSentiment,
+      overallSummary: 'Market sentiment proxied via CoinGecko 24h price momentum.',
+    };
+  }
+}
+
+
 /**
- * @dev Fetches live news and social sentiment from LunarCrush (V4 Free Tier).
+ * @dev Fetches market momentum from abstracted providers (default: CoinGecko).
  * Falls back to neutral state on failure (Fail-Closed continuity).
  */
 export async function getNewsFeed(assets: string[] = ['BTC', 'ETH', 'SOL']): Promise<NewsSummary> {
-  const apiKey = process.env.LUNARCRUSH_KEY;
-
-  if (!apiKey) {
-    logger.warn({ module: 'NEWS_FEED', message: 'LUNARCRUSH_KEY not found. Operating in neutral mode.' });
-    return getNeutralFallback(assets);
-  }
-
+  const provider = new CoinGeckoProvider();
   const maxRetries = 3;
   let attempt = 0;
 
   while (attempt < maxRetries) {
     attempt++;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
     try {
-      const symbols = assets.join(',');
-      const url = `https://api.lunarcrush.com/public/coins/list/v2?symbols=${symbols}&key=${apiKey}`;
-
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`LunarCrush API responded with status: ${response.status}`);
-      }
-
-      const data = await response.json() as any;
-
-      if (!data || !data.data) {
-        throw new Error('Invalid response format from LunarCrush');
-      }
-
-    const headlines: NewsHeadline[] = (data.data || []).slice(0, 8).map((item: any) => ({
-      title: item.title || item.name || 'Market Update',
-      source: 'LunarCrush',
-      publishedAt: new Date().toISOString(), // Use current time if item.published_at is missing
-      sentiment: item.sentiment ?? 0.5,
-      impact: (item.galaxy_score > 70 || item.alt_rank < 10) ? 'high' : 'medium',
-      instruments: assets,
-    }));
-
-    const socialSentiment: Record<string, number> = {};
-    assets.forEach(asset => {
-      const assetData = data.data?.find((d: any) => d.symbol === asset);
-      socialSentiment[asset.toLowerCase()] = assetData ? (assetData.galaxy_score / 100 || 0.5) : 0.5;
-    });
-
-      return {
-        timestamp: new Date().toISOString(),
-        headlines,
-        socialSentiment,
-        overallSummary: 'Market news aggregated from social + headlines via LunarCrush.',
-      };
-
+      return await provider.getSentiment(assets);
     } catch (error: any) {
-      clearTimeout(timeout);
       const isLastAttempt = attempt === maxRetries;
       logger.warn({
         module: 'NEWS_FEED',
         step: 'FETCH_ATTEMPT_FAILED',
+        provider: provider.name,
         attempt,
         error: error.message,
         nextAction: isLastAttempt ? 'FALLBACK' : 'RETRYING'
       });
 
-      if (isLastAttempt) {
-        return getNeutralFallback(assets);
-      }
-      
-      // Wait before next attempt (exponential-ish backoff)
+      if (isLastAttempt) break;
       await new Promise(resolve => setTimeout(resolve, attempt * 2000));
     }
   }

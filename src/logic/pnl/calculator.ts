@@ -58,16 +58,22 @@ export class PnLCalculator {
 
   /**
    * Calculates Maximum Drawdown.
+   * Hardened for Issue #146: Uses MDD_EQUITY_FLOOR to prevent mathematical skew from $0 baselines.
    */
   static calculateMaxDrawdown(equityCurve: number[]): number {
     if (equityCurve.length === 0) return 0;
     let maxDrawdown = 0;
     let peak = equityCurve[0];
 
+    // Add MDD_EQUITY_FLOOR to prevent MDD > 100% when starting from low/zero equity.
+    const floor = parseFloat(process.env.MDD_EQUITY_FLOOR || '100');
+
     for (const value of equityCurve) {
       if (value > peak) peak = value;
-      const drawdown = (peak - value) / (peak || 1);
-      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      // Use floor as minimum denominator to prevent skew from $0 baselines
+      const denominator = Math.max(peak, floor);
+      const currentDrawdown = (peak - value) / denominator;
+      if (currentDrawdown > maxDrawdown) maxDrawdown = currentDrawdown;
     }
 
     return maxDrawdown * 100;

@@ -3,18 +3,10 @@
 **Give your AI agent a "Security Brain" in 3 simple steps.**
 
 ## 1. Installation & Config
-Add the Sentinel SDK to your OpenServ or TypeScript agent project.
+Add the Sentinel SDK to your project.
 
 ```bash
 npm install @vertex-agents/sentinel-sdk
-```
-
-Configure your environment with your agent's private key and the Sentinel Router address.
-
-```typescript
-// .env
-AGENT_PRIVATE_KEY=0x...
-SENTINEL_ROUTER_ADDRESS=0x... // (Sepolia / Mainnet)
 ```
 
 ## 2. Initialize the Sentinel Client
@@ -22,29 +14,29 @@ Create a new `SentinelClient` and connect it to your preferred network.
 
 ```typescript
 import { SentinelClient } from '@vertex-agents/sentinel-sdk';
-import { parseEther } from 'viem';
 
 const sentinel = new SentinelClient({
   network: 'sepolia',
-  routerAddress: process.env.SENTINEL_ROUTER_ADDRESS,
+  routerAddress: '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC',
   privateKey: process.env.AGENT_PRIVATE_KEY,
+  agentId: 1
 });
 ```
 
 ## 3. Authorize & Execute a Trade
-Before sending an order to an exchange, run it through the Sentinel. The SDK will handle:
-- **Genkit Risk Assessment** (AI-powered reasoning)
-- **EIP-712 Signing** (Cryptographic proof of intent)
-- **On-Chain Pre-Verification** (Optional check against contract state)
+Before sending an order to an exchange, run it through the Sentinel. The SDK will handle EIP-712 signing and fail-closed validation.
 
 ```typescript
 // 1. Build your TradeIntent
 const intent = {
-  agentId: 'MY_AGENT_001',
-  pair: 'BTC/USDC',
-  volume: parseEther('1.5'),
-  maxPrice: parseEther('65000'),
-  deadline: BigInt(Math.floor(Date.now() / 1000) + 3600), // 1 hour
+  agentId: 1n,
+  agentWallet: '0x...',
+  pair: 'BTC/USD',
+  action: 'BUY',
+  amountUsdScaled: 100000n, // $1000.00
+  maxSlippageBps: 100,
+  nonce: 1n,
+  deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
 };
 
 // 2. Get Sentinel Authorization
@@ -55,8 +47,7 @@ if (auth.isAllowed) {
   console.log(`✅ Sentinel Authorized: ${auth.reason}`);
   console.log(`Signature: ${auth.signature}`);
 
-  // Proceed to your execution layer (e.g., Kraken, Uniswap)
-  // await executeTrade(intent, auth.signature);
+  // Proceed to your execution layer (e.g., Kraken)
 } else {
   console.error(`🚫 Sentinel REJECTED: ${auth.reason}`);
   // Trade is blocked (Fail-Closed)
@@ -66,7 +57,7 @@ if (auth.isAllowed) {
 ---
 
 ## 🛡️ The "Fail-Closed" Guarantee
-The Sentinel SDK ensures that if your agent's risk score exceeds the threshold (default: 0.8) or if the signature is invalid, the `auth.isAllowed` flag will be `false`. Your execution logic should **always** check this flag before proceeding.
+The Sentinel SDK ensures that if your agent's risk score exceeds the threshold or if the signature is invalid, the `auth.isAllowed` flag will be `false`. Your execution logic should **always** check this flag before proceeding.
 
 **"Security isn't a feature; it's a foundation."**
 *Vertex Sentinel SDK v1.0.0-Beta*

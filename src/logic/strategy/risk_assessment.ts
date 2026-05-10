@@ -77,18 +77,27 @@ async function getSentiment(pair: string) {
 export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promise<TradeDecision> {
   logger.info({ module: 'RISK_STRATEGY', step: 'ANALYSIS_START', pair });
   try {
-    // 1. Fetch Market Data
     const kraken = getKrakenService();
-    const ticker = await kraken.getTicker(pair);
+    const baseAsset = pair.split('/')[0].split('-')[0];
 
-    // 2. Fetch Portfolio & History
-    const balance = await kraken.getBalance();
-    const history = await kraken.getTradeHistory();
+    // Parallelize API calls for optimization (Sprint 1D)
+    const [tickerResult, balanceResult, historyResult, newsResult, sentimentResult] = await Promise.allSettled([
+      kraken.getTicker(pair),
+      kraken.getBalance(),
+      kraken.getTradeHistory(),
+      getNewsFeed([baseAsset, 'BTC', 'ETH', 'SOL']),
+      getSentiment(pair)
+    ]);
 
-    // 3. Fetch Live News & Sentiment (Issue #110)
-    const baseAsset = pair.split('/')[0].split('-')[0]; // Handle various pair formats
-    const news = await getNewsFeed([baseAsset, 'BTC', 'ETH', 'SOL']);
-    const sentiment = await getSentiment(pair);
+    if (tickerResult.status === 'rejected') throw tickerResult.reason;
+    if (sentimentResult.status === 'rejected') throw sentimentResult.reason;
+
+    const ticker = tickerResult.value;
+    const sentiment = sentimentResult.value;
+
+    const balance = balanceResult.status === 'fulfilled' ? balanceResult.value : ({} as any);
+    const history = historyResult.status === 'fulfilled' ? historyResult.value : ({ trades: {}, count: 0 } as any);
+    const news = newsResult.status === 'fulfilled' ? newsResult.value : { headlines: [], socialSentiment: {}, overallSummary: 'News fallback' };
 
     // 4. Manual Penalty Model (Bootstrap Logic) - Hardened for Issue #171
     const ask = parseFloat(ticker.a[0]);
@@ -113,7 +122,8 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
 
     // Expected ROI Block (Issue #171)
     // Edge is (sentiment_score - 0.5) - spread_cost. 
-    // We require a positive edge to proceed with a BUY.
+    // We require a minimum ROI to proceed with a BUY.
+    const minRoi = parseFloat(process.env.MIN_EXPECTED_ROI || '-0.002');
     const expectedEdge = sentiment.score - 0.5;
     const expectedRoi = expectedEdge - spread;
 
@@ -207,39 +217,38 @@ Output your response in valid JSON format:
 
     // 6. Arc L1 Verification Layer (Milestone 3 Integration)
     // The Sentinel MUST "hire" the AgentStack Orchestrator to verify local data.
-    const verification = await AgentStackClient.verifyTrade(
-      manualPenalty > 0.8 || aiResult.riskScore > 0.8 ? 'HOLD' : 'BUY', // Simplified intent for verification
-      Math.max(manualPenalty, aiResult.riskScore),
-      pair
-    );
+    const agentStackRequired = process.env.AGENTSTACK_REQUIRED !== 'false';
+    let verification: { verified: boolean; proof?: string; error?: string } = { verified: true, proof: 'SKIP_AGENTSTACK' };
 
-    const agentStackRequired = process.env.AGENTSTACK_REQUIRED === 'true';
-    if (!verification.verified && agentStackRequired) {
-      return {
-        action: 'HOLD',
-        pair,
-        amountUsdScaled: 0n,
-        confidence: 0,
-        riskScore: 1.0,
-        reasoning: `Security Halt: Verification Gateway Unreachable. Market Data Integrity cannot be guaranteed via Arc L1. Error: ${verification.error}`,
-        newsHighlights: [],
-        arcL1Proof: undefined,
-        breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
+    if (agentStackRequired) {
+      const result = await AgentStackClient.verifyTrade(
+        manualPenalty > 0.8 || aiResult.riskScore > 0.8 ? 'HOLD' : 'BUY', // Simplified intent for verification
+        Math.max(manualPenalty, aiResult.riskScore),
+        pair
+      );
+      verification = {
+        verified: result.verified,
+        proof: result.proof,
+        error: result.error
       };
-    } else if (!verification.verified) {
-      logger.error({ module: 'RISK_ASSESSMENT', message: 'Fail-Closed: AgentStack verification failed. Blocking trade per Verified-or-Die rule.', error: verification.error });
-      // We force a HOLD here to comply with the "Verified or Die" security mandate.
-      return {
-        action: 'HOLD',
-        pair,
-        amountUsdScaled: 0n,
-        confidence: 0,
-        riskScore: 1.0,
-        reasoning: `Security Block: Arc L1 Verification failed (${verification.error}). Verified-or-Die enforcement active.`,
-        newsHighlights: [],
-        arcL1Proof: undefined,
-        breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
-      };
+
+      if (!verification.verified) {
+        logger.error({ module: 'RISK_ASSESSMENT', message: 'Fail-Closed: AgentStack verification failed. Blocking trade per Verified-or-Die rule.', error: verification.error });
+        // We force a HOLD here to comply with the "Verified or Die" security mandate.
+        return {
+          action: 'HOLD',
+          pair,
+          amountUsdScaled: 0n,
+          confidence: 0,
+          riskScore: 1.0,
+          reasoning: `Security Block: Arc L1 Verification failed (${verification.error}). Verified-or-Die enforcement active.`,
+          newsHighlights: [],
+          arcL1Proof: undefined,
+          breakdown: { marketRisk: 0, portfolioRisk: 0, sentimentRisk: 0, manualPenalty: 0, aiScore: 1.0 }
+        };
+      }
+    } else {
+      logger.warn({ module: 'RISK_ASSESSMENT', step: 'AGENTSTACK_SKIPPED', message: 'AgentStack verification skipped (AGENTSTACK_REQUIRED=false)' });
     }
 
     // 7. Hybrid Enforcement (Fail-Closed) - Updated for Issue #171
@@ -267,9 +276,9 @@ Output your response in valid JSON format:
     if (confidence < confidenceThreshold) {
       action = 'HOLD';
       reasons.push("Fail-Closed: Risk threshold exceeded.");
-    } else if (expectedRoi <= 0) {
+    } else if (expectedRoi < minRoi) {
       action = 'HOLD';
-      reasons.push(`ROI Block: Negative expected return after spread (${(expectedRoi * 100).toFixed(2)}%).`);
+      reasons.push(`ROI Block: Expected return (${(expectedRoi * 100).toFixed(2)}%) below threshold (${(minRoi * 100).toFixed(2)}%).`);
     }
 
     return {

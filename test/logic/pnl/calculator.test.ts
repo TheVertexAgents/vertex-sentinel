@@ -50,12 +50,24 @@ describe('PnLCalculator', () => {
     expect(PnLCalculator.calculateWinLossRatio(results)).to.be.closeTo(2.67, 0.01);
   });
 
-  it('should calculate max drawdown correctly', () => {
-    const curve = [0, 100, 80, 120, 90, 150];
+  it('should calculate max drawdown correctly with MDD_EQUITY_FLOOR', () => {
+    // With floor = 100, curve [0, 100, 80, 120, 90, 150]
+    // Initial peak = max(0, 100) = 100
     // Peak 100 -> 80 (20% drawdown)
     // Peak 120 -> 90 (25% drawdown)
     // Max DD: 25%
+    process.env.MDD_EQUITY_FLOOR = '100';
+    const curve = [0, 100, 80, 120, 90, 150];
     expect(PnLCalculator.calculateMaxDrawdown(curve)).to.equal(25);
+  });
+
+  it('should normalize MDD using floor when peak is low', () => {
+    process.env.MDD_EQUITY_FLOOR = '100';
+    // Starting with 0, drop to -20.
+    // Peak = 0. Value = -20. Denominator = max(0, 100) = 100.
+    // DD = (0 - (-20)) / 100 = 20%.
+    const curve = [0, -20];
+    expect(PnLCalculator.calculateMaxDrawdown(curve)).to.equal(20);
   });
 
   it('should calculate sharpe ratio correctly', () => {

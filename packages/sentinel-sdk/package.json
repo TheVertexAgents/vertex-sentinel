@@ -1,0 +1,23 @@
+{
+  "name": "@vertex-agents/sentinel-sdk",
+  "version": "1.0.0",
+  "description": "SDK for the Vertex Sentinel Layer - Verifiable risk-management for AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "NODE_OPTIONS='--import tsx' mocha test/**/*.test.ts"
+  },
+  "dependencies": {
+    "ethers": "^6.10.0",
+    "viem": "^2.47.6"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "chai": "^4.3.4",
+    "mocha": "^10.0.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.0"
+  }
+}

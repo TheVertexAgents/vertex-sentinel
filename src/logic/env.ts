@@ -19,7 +19,7 @@ const envSchema = z.object({
   NETWORK: z.string().min(1, "NETWORK is required"),
   TX_CONFIRMATION_TIMEOUT: z.coerce.number().int().positive().default(90000),
   LOCAL_RPC_URL: z.string().url().default('http://127.0.0.1:8545'),
-  LUNARCRUSH_KEY: z.string().min(1, "LUNARCRUSH_KEY is required"),
+  COINGECKO_API_KEY: z.string().optional(),
   AGENT_METADATA_URI: z.string().url("AGENT_METADATA_URI must be a valid URL").default("https://github.com/TheVertexAgents/vertex-sentinel/blob/main/metadata.json"),
   AGENT_STACK_URL: z.string().url().default('http://localhost:3003'),
   AGENTSTACK_REQUIRED: z.enum(['true', 'false']).default('true'),
