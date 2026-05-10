@@ -1,8 +1,6 @@
 import { expect } from 'chai';
 import { generateWithRetry, ai } from '../../src/utils/ai.js';
 import sinon from 'sinon';
-import { groq } from 'genkitx-groq';
-import { googleAI } from '@genkit-ai/google-genai';
 
 describe('AI Provider Integration (Groq)', function() {
   let aiStub: sinon.SinonStub;
