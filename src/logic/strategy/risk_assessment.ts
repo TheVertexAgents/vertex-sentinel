@@ -65,7 +65,18 @@ async function getSentiment(pair: string) {
     return output;
   }
 
-  throw new CriticalSecurityException(`Fail-Closed: AI Sentiment analysis failed for ${pair}. Verified-or-Die enforcement active.`);
+  // Graceful degradation: neutral sentiment baseline
+  logger.warn({
+    module: 'SENTIMENT',
+    step: 'DEGRADED_MODE',
+    pair,
+    message: 'All AI attempts failed. Applying neutral sentiment baseline.'
+  });
+  return {
+    headline: 'Degraded Mode: AI Sentiment Engine Unavailable',
+    indicator: 'Neutral',
+    score: 0.5
+  };
 }
 
 /**
@@ -88,10 +99,21 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     ]);
 
     if (tickerResult.status === 'rejected') throw tickerResult.reason;
-    if (sentimentResult.status === 'rejected') throw sentimentResult.reason;
 
     const ticker = tickerResult.value;
-    const sentiment = sentimentResult.value;
+
+    // Sentiment failure should not crash the system — use neutral fallback
+    const sentiment = sentimentResult.status === 'fulfilled'
+      ? sentimentResult.value
+      : { headline: 'Sentiment Unavailable', indicator: 'Neutral', score: 0.5 };
+
+    if (sentimentResult.status === 'rejected') {
+      logger.warn({
+        module: 'RISK_STRATEGY',
+        step: 'SENTIMENT_DEGRADED',
+        error: sentimentResult.reason?.message || 'Unknown'
+      });
+    }
 
     const balance = balanceResult.status === 'fulfilled' ? balanceResult.value : ({} as any);
     const history = historyResult.status === 'fulfilled' ? historyResult.value : ({ trades: {}, count: 0 } as any);

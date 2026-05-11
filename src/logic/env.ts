@@ -8,7 +8,7 @@ import { ERR_ENV_MISSING } from '../utils/constants.js';
  * Mandated by Project Constitution v2.0.0.
  */
 const envSchema = z.object({
-  GOOGLE_GENAI_API_KEY: z.string().min(1, "GOOGLE_GENAI_API_KEY is required"),
+  GOOGLE_GENAI_API_KEY: z.string().optional(),
   AGENT_PRIVATE_KEY: z.string().regex(/^0x[a-fA-F0-9]{64}$/).optional(),
   AGENT_WALLET_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "AGENT_WALLET_ADDRESS must be a valid Ethereum address").optional(),
   KRAKEN_API_KEY: z.string().min(1, "KRAKEN_API_KEY is required"),

@@ -4,7 +4,7 @@ import { logger } from './logger.js';
 import { NotificationService } from './notifications.js';
 
 const QUOTA_FILE = path.join(process.cwd(), 'data', 'ai_quota_usage.json');
-const DAILY_LIMIT = 20;
+const DAILY_LIMIT = process.env.AI_PROVIDER === 'groq' ? 14400 : 20;
 const ALERT_THRESHOLD = 0.8; // 80%
 
 export interface QuotaState {

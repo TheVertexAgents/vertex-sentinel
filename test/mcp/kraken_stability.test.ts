@@ -7,6 +7,7 @@ describe('Kraken MCP Stability (#148)', function() {
   let server: KrakenMcpServer;
 
   beforeEach(() => {
+    process.env.AI_PROVIDER = 'google';
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.KRAKEN_PAPER_MODE = 'false';

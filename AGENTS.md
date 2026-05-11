@@ -62,4 +62,12 @@ python3 -m http.server 12000
 
 ## Current Development Phase
 - **Focus**: Performance, Reliability, and Institutional Scalability.
-- **Key Initiative**: WebSocket Migration and Sepolia Congestion Hardening.
+- **Key Initiative**: GROQ Migration and AI Resilience Hardening.
+- **AI Provider**: System migrated to GROQ (llama-3.3-70b-versatile) for high-frequency risk assessment.
+
+## Recovery & Maintenance
+- **HALTED State**: If the system enters a persistent HALTED state (check `logs/HALTED`), you can force a restart using:
+  ```bash
+  npm start -- --force-restart
+  ```
+- **AI Switching**: To switch between providers, update `AI_PROVIDER` in `.env` (supports `google` and `groq`).

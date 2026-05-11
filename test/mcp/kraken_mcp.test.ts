@@ -37,6 +37,7 @@ describe('Kraken MCP Server (TDD)', () => {
   });
 
   it('should list available tools correctly', async () => {
+    process.env.AI_PROVIDER = 'google';
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
@@ -59,6 +60,7 @@ describe('Kraken MCP Server (TDD)', () => {
   });
 
   it('should fetch ticker data correctly via CCXT', async () => {
+    process.env.AI_PROVIDER = 'google';
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
@@ -101,6 +103,7 @@ describe('Kraken MCP Server (TDD)', () => {
   });
 
   it('should throw CriticalSecurityException on exchange error during place_order', async () => {
+    process.env.AI_PROVIDER = 'google';
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';
@@ -134,6 +137,7 @@ describe('Kraken MCP Server (TDD)', () => {
   });
 
   it('should return MCP error response on exchange error during non-sensitive operations', async () => {
+    process.env.AI_PROVIDER = 'google';
     process.env.KRAKEN_API_KEY = 'test-key';
     process.env.KRAKEN_SECRET = 'test-secret';
     process.env.GOOGLE_GENAI_API_KEY = 'test-genai';

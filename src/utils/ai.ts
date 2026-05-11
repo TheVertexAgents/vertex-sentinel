@@ -4,12 +4,15 @@ import { groq, llama33x70bVersatile } from 'genkitx-groq';
 import { logger } from './logger.js';
 import { QuotaTracker } from './quota-tracker.js';
 
-export const ai = genkit({
-  plugins: [
-    googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY }),
-    groq({ apiKey: process.env.GROQ_API_KEY }),
-  ],
-});
+const plugins = [];
+if (process.env.GOOGLE_GENAI_API_KEY) {
+  plugins.push(googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY }));
+}
+if (process.env.GROQ_API_KEY) {
+  plugins.push(groq({ apiKey: process.env.GROQ_API_KEY }));
+}
+
+export const ai = genkit({ plugins });
 
 /**
  * @dev Global Rate Limiter for AI requests.
@@ -46,8 +49,8 @@ const CACHE_TTL = 300_000; // 5 minutes
 class CircuitBreaker {
   private failures = 0;
   private lastFailureTime = 0;
-  private readonly threshold = 5;
-  private readonly cooldown = 300_000; // 5 minutes
+  private readonly threshold = process.env.AI_PROVIDER === 'groq' ? 10 : 5;
+  private readonly cooldown = process.env.AI_PROVIDER === 'groq' ? 120_000 : 300_000;
 
   recordFailure() {
     this.failures++;

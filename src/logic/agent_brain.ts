@@ -346,12 +346,16 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     return { isAllowed: true, reason: decision.reasoning, signature };
   } catch (error: any) {
     if (error instanceof CriticalSecurityException) {
-      haltSystem(error.message);
+      // Only halt for TRUE security violations (e.g., env tampering, Verified-or-Die blocks)
+      // NOT for recoverable API errors unless they are explicitly marked as security critical
+      if (error.code === 'ENV_MISSING' || error.message.includes('Verified-or-Die')) {
+        haltSystem(error.message);
+      }
       throw error;
     }
-    const msg = `Critical error during signIntent: ${error.message}`;
-    haltSystem(msg);
-    throw new CriticalSecurityException(msg);
+    // Non-security errors: log and continue to next cycle
+    logger.error({ module: 'AGENT_BRAIN', step: 'CYCLE_ERROR_RECOVERABLE', error: error.message });
+    return { isAllowed: false, reason: `Recoverable error: ${error.message}`, signature: '0x' };
   }
 }
 
@@ -403,6 +407,20 @@ function haltSystem(reason: string) {
  */
 async function main() {
   const haltPath = path.join(process.cwd(), 'logs/HALTED');
+
+  // Support for --force-restart to clear persistent halt state
+  if (process.argv.includes('--force-restart')) {
+    if (fs.existsSync(haltPath)) {
+      logger.warn({
+        module: 'AGENT_BRAIN',
+        step: 'FORCE_RESTART',
+        message: 'Manual force-restart flag detected. Clearing persistent HALTED state.',
+        clearedAt: new Date().toISOString()
+      });
+      fs.unlinkSync(haltPath);
+    }
+  }
+
   if (fs.existsSync(haltPath)) {
     const haltContent = fs.readFileSync(haltPath, 'utf8');
     const haltData = safeParseJSON(haltContent, { reason: 'Unknown', timestamp: new Date().toISOString() }, { file: 'logs/HALTED' });
