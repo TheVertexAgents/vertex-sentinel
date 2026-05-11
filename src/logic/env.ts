@@ -37,6 +37,8 @@ const envSchema = z.object({
   KRAKEN_PAPER_MODE: z.enum(['true', 'false']).default('false'),
   HITL_THRESHOLD_USD: z.coerce.number().int().positive().default(1000),
   AI_MODEL: z.string().default('gemini-flash-latest'),
+  AI_PROVIDER: z.enum(['google', 'groq']).default('google'),
+  GROQ_API_KEY: z.string().optional(),
 });
 
 /**
@@ -54,6 +56,14 @@ export function validateEnv() {
         }
     } else if (!data.AGENT_PRIVATE_KEY) {
         throw new CriticalSecurityException("AGENT_PRIVATE_KEY is required when Circle WaaS is disabled.", ERR_ENV_MISSING);
+    }
+
+    // AI Provider Validation (Fail-Closed)
+    if (data.AI_PROVIDER === 'google' && !data.GOOGLE_GENAI_API_KEY) {
+      throw new CriticalSecurityException("AI_PROVIDER is set to 'google' but GOOGLE_GENAI_API_KEY is missing.", ERR_ENV_MISSING);
+    }
+    if (data.AI_PROVIDER === 'groq' && !data.GROQ_API_KEY) {
+      throw new CriticalSecurityException("AI_PROVIDER is set to 'groq' but GROQ_API_KEY is missing.", ERR_ENV_MISSING);
     }
   }
 

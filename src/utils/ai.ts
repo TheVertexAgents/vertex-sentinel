@@ -1,10 +1,14 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { groq, llama33x70bVersatile } from 'genkitx-groq';
 import { logger } from './logger.js';
 import { QuotaTracker } from './quota-tracker.js';
 
 export const ai = genkit({
-  plugins: [googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY })],
+  plugins: [
+    googleAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY }),
+    groq({ apiKey: process.env.GROQ_API_KEY }),
+  ],
 });
 
 /**
@@ -97,11 +101,25 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
     try {
       await limiter.wait();
 
-      // Inject configurable model if using googleAI
-      const modelName = process.env.AI_MODEL || 'gemini-flash-latest';
+      // Resolve AI Provider and Model
+      const provider = process.env.AI_PROVIDER || 'google';
+      let modelName = process.env.AI_MODEL;
+
+      let model;
+      if (provider === 'groq') {
+        if (!modelName || modelName === 'gemini-flash-latest' || modelName === 'llama-3.3-70b-versatile') {
+          model = llama33x70bVersatile;
+        } else {
+          model = `groq/${modelName}`;
+        }
+      } else {
+        modelName = modelName || 'gemini-flash-latest';
+        model = googleAI.model(modelName);
+      }
+
       const finalParams = {
         ...params,
-        model: googleAI.model(modelName)
+        model
       };
 
       const response = await ai.generate(finalParams);
