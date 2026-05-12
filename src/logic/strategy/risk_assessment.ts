@@ -166,8 +166,9 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     let aiResult = getCachedAI(aiRiskCacheKey);
 
     if (!aiResult) {
-      aiResult = await generateWithRetry('AI_RISK', {
-        prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
+      try {
+        aiResult = await generateWithRetry('AI_RISK', {
+          prompt: `You are the Vertex Sentinel Risk Specialist. Your mandate is to protect the agent's capital by identifying high-risk trade intents before they reach the blockchain.
 
 Analyze the provided data and evaluate:
 1. Market Risk: Based on Bid/Ask spread and volatility.
@@ -207,19 +208,23 @@ Output your response in valid JSON format:
   "sentimentRisk": number (0.0 to 1.0),
   "justification": "concise string citing specific headlines if relevant"
 }`,
-        output: {
-          format: 'json',
-          schema: z.object({
-            riskScore: z.number(),
-            marketRisk: z.number(),
-            portfolioRisk: z.number(),
-            sentimentRisk: z.number(),
-            justification: z.string(),
-          })
+          output: {
+            format: 'json',
+            schema: z.object({
+              riskScore: z.number(),
+              marketRisk: z.number(),
+              portfolioRisk: z.number(),
+              sentimentRisk: z.number(),
+              justification: z.string(),
+            })
+          }
+        });
+        if (aiResult) {
+          setCachedAI(aiRiskCacheKey, aiResult);
         }
-      });
-      if (aiResult) {
-        setCachedAI(aiRiskCacheKey, aiResult);
+      } catch (err: any) {
+        logger.error({ module: 'AI_RISK', step: 'CATCH_BLOCK', error: err.message });
+        aiResult = null;
       }
     }
 
@@ -230,7 +235,7 @@ Output your response in valid JSON format:
         marketRisk: 0.2,
         portfolioRisk: 0,
         sentimentRisk: 0.2,
-        justification: "Degraded Mode: AI Engine Unavailable. Applying conservative risk baseline (0.2).",
+        justification: `Degraded Mode: AI Engine (${process.env.AI_PROVIDER || 'google'}) Unavailable. Applying conservative risk baseline (0.2).`,
       };
     }
 

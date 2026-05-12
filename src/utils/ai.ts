@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { groq, llama33x70bVersatile } from 'genkitx-groq';
@@ -105,13 +107,15 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
       await limiter.wait();
 
       // Resolve AI Provider and Model
-      const provider = process.env.AI_PROVIDER || 'google';
-      let modelName = process.env.AI_MODEL;
+      const provider = (process.env.AI_PROVIDER || 'google').trim().toLowerCase();
+      let modelName = (process.env.AI_MODEL || '').trim();
 
       let model;
       if (provider === 'groq') {
-        if (!modelName || modelName === 'gemini-flash-latest' || modelName === 'llama-3.3-70b-versatile') {
+        // Force default model if name matches known identifiers or is empty
+        if (!modelName || modelName === 'gemini-flash-latest' || modelName.includes('llama-3.3-70b-versatile')) {
           model = llama33x70bVersatile;
+          modelName = 'llama-3.3-70b-versatile';
         } else {
           model = `groq/${modelName}`;
         }
@@ -119,6 +123,14 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
         modelName = modelName || 'gemini-flash-latest';
         model = googleAI.model(modelName);
       }
+
+      logger.info({ 
+        module, 
+        step: 'MODEL_RESOLUTION', 
+        provider, 
+        modelName, 
+        resolvedModel: typeof model === 'string' ? model : (model as any).name || 'ModelRef' 
+      });
 
       const finalParams = {
         ...params,
@@ -132,10 +144,12 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
     } catch (err: any) {
       circuitBreaker.recordFailure();
       attempts++;
+      
+      const isModelNotFoundError = err.message?.includes('NOT_FOUND') || err.message?.includes('not found');
       const isQuotaError = err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('429');
       const isRetryableError = isQuotaError || err.message?.includes('503');
 
-      if (isRetryableError) {
+      if (isRetryableError && !isModelNotFoundError) {
         // More conservative backoff for quota errors
         const baseDelay = isQuotaError ? 5000 : 2000;
         const delay = Math.pow(2, attempts) * baseDelay;
@@ -144,6 +158,10 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
         await new Promise(r => setTimeout(r, delay));
       } else {
         logger.error({ module, step: 'API_FAILED', error: err.message });
+        // Don't throw if we want the caller to use a fallback, or if it's a configuration error
+        if (isModelNotFoundError) {
+           return null; // Let the caller handle the null output
+        }
         throw err;
       }
     }

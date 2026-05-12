@@ -25,6 +25,7 @@ describe('Kraken MCP Server (TDD)', () => {
     delete process.env.STRYKR_PRISM_API;
     delete process.env.NETWORK;
     delete process.env.LUNARCRUSH_KEY;
+    process.env.KRAKEN_PAPER_MODE = 'false';
   });
 
   afterEach(async () => {

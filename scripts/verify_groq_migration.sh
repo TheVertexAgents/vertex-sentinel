@@ -208,7 +208,7 @@ if [ ! -f "$RISK_FILE" ]; then
     fail "$RISK_FILE does not exist"
 else
     # 3a. getSentiment() must NOT throw CriticalSecurityException on AI failure
-    #     Old: throw new CriticalSecurityException(\`Fail-Closed: AI Sentiment analysis failed...\`)
+    #     Old: throw new CriticalSecurityException(`Fail-Closed: AI Sentiment analysis failed...`)
     #     New: Return neutral fallback { headline: '...', indicator: 'Neutral', score: 0.5 }
     if grep -q "throw.*CriticalSecurityException.*Sentiment.*analysis.*failed\|throw.*CriticalSecurityException.*Verified-or-Die" "$RISK_FILE"; then
         fail "getSentiment() still throws CriticalSecurityException on AI failure"
@@ -351,7 +351,7 @@ fi
 
 print_section "6. .env.example — GROQ Documentation (Sprint 4A)"
 
-ENV_EXAMPLE=".env.example"
+ENV_EXAMPLE="\.env.example"
 
 if [ ! -f ".env.example" ]; then
     fail ".env.example does not exist"
@@ -579,7 +579,7 @@ cat > logs/GROQ_MIGRATION_VERIFICATION.md << REPORT_EOF
 
 **Timestamp:** ${VERIFICATION_TIMESTAMP}
 **Script:** scripts/verify_groq_migration.sh
-**Status:** $([ $FAIL_COUNT -eq 0 ] && echo "✅ ALL CHECKS PASSED" || echo "❌ $FAIL_COUNT CHECKS FAILED")
+**Status:** $([ $FAIL_COUNT -eq 0 ] && echo "✅ ALL CHECKS PASSED" || echo "❌ ${FAIL_COUNT} CHECKS FAILED")
 
 ## Results
 

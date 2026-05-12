@@ -1,8 +1,8 @@
+import '../bootstrap.js';
 import { logger } from '../utils/logger.js';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { TradeIntent, Authorization } from './types.js';
-import dotenv from 'dotenv';
 import { validateEnv } from './env.js';
 import { CriticalSecurityException } from './errors.js';
 import { loadAgentMetadata } from './config.js';
@@ -28,8 +28,6 @@ import { EventReconciler } from '../execution/reconciler.js';
 import ExecutionProxy from '../execution/proxy.js';
 import { safeParseJSON } from '../utils/safe-json.js';
 import { ERR_KRAKEN_API_FAIL } from '../utils/constants.js';
-
-dotenv.config();
 
 // Validate environment and load metadata on startup
 if (process.env.NODE_ENV !== 'test') {
