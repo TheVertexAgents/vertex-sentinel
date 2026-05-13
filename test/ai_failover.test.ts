@@ -23,7 +23,7 @@ describe('AI Provider Failover', function() {
     process.env.AI_PROVIDER = 'google';
 
     let callCount = 0;
-    aiStub.callsFake(async (params: any) => {
+    aiStub.callsFake(async () => {
       callCount++;
       if (callCount === 1) {
         // Simulate Google provider error (500)
