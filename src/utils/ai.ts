@@ -89,7 +89,7 @@ export function setCachedAI(key: string, data: any) {
   aiCache.set(key, { data, timestamp: Date.now() });
 }
 
-export async function generateWithRetry(module: string, params: any, maxAttempts = 3) {
+export async function generateWithRetry(module: string, params: any, maxAttempts = 3, options?: { provider?: string; modelName?: string }) {
   const quota = QuotaTracker.getInstance();
   if (!quota.canRequest()) {
     logger.error({ module, step: 'QUOTA_EXHAUSTED', message: 'Daily AI quota limit reached.' });
@@ -106,9 +106,9 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
     try {
       await limiter.wait();
 
-      // Resolve AI Provider and Model
-      const provider = (process.env.AI_PROVIDER || 'google').trim().toLowerCase();
-      let modelName = (process.env.AI_MODEL || '').trim();
+      // Resolve AI Provider and Model (allow override via options)
+      const provider = (options?.provider || process.env.AI_PROVIDER || 'google').trim().toLowerCase();
+      let modelName = (options?.modelName || process.env.AI_MODEL || '').trim();
 
       let model;
       if (provider === 'groq') {
@@ -166,5 +166,37 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
       }
     }
   }
+  return null;
+}
+
+/**
+ * getAIResponse: High-level helper that attempts the configured primary provider
+ * and falls back to the secondary provider (Google <-> Groq) if the primary
+ * returns null or throws an unrecoverable error.
+ */
+export async function getAIResponse(module: string, params: any, maxAttempts = 3) {
+  const primary = (process.env.AI_PROVIDER || 'google').trim().toLowerCase();
+  const secondary = primary === 'google' ? 'groq' : 'google';
+
+  // Try primary provider first
+  try {
+    const out = await generateWithRetry(module, params, maxAttempts, { provider: primary });
+    if (out != null) return out;
+    logger.warn({ module, step: 'FALLBACK_PRIMARY_NULL', primary });
+  } catch (err: any) {
+    logger.warn({ module, step: 'PRIMARY_FAILED', provider: primary, error: err?.message });
+  }
+
+  // Try secondary provider as fallback
+  try {
+    logger.info({ module, step: 'ATTEMPT_FALLBACK', fallback: secondary });
+    const out2 = await generateWithRetry(module, params, maxAttempts, { provider: secondary });
+    if (out2 != null) return out2;
+    logger.warn({ module, step: 'FALLBACK_NULL', fallback: secondary });
+  } catch (err: any) {
+    logger.error({ module, step: 'FALLBACK_FAILED', fallback: secondary, error: err?.message });
+  }
+
+  // If both providers fail, return null to keep callers able to handle fallback behavior
   return null;
 }

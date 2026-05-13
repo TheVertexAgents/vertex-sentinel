@@ -45,3 +45,20 @@ jobs:
           STRYKR_PRISM_API: 'mock-key'
           NETWORK: 'sepolia'
           NODE_ENV: 'test'
+
+      - name: Install SDK dependencies
+        run: npm --prefix packages/sentinel-sdk ci
+
+      - name: Build SDK
+        run: npm --prefix packages/sentinel-sdk run build
+
+      - name: Run SDK smoke test
+        run: npm --prefix packages/sentinel-sdk run smoke
+
+      - name: Final Documentation Sync
+        run: |
+          echo "Ensuring docs/guides updated in repository"
+          git --no-pager status --porcelain || true
+          git --no-pager add docs/guides || true
+          git --no-pager diff --staged --name-only || true
+          echo "Docs sync step complete"

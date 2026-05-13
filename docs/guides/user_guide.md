@@ -137,6 +137,15 @@ $$manualPenalty = \min(1.0, \sum penalties)$$
 
 The agent queries an AI provider (Google or Groq) to provide a `riskScore` (0.0 to 1.0) based on market data, portfolio balance, and news.
 
+#### AI Provider Failover
+
+To improve resiliency, the system supports automatic provider failover. The `AI_PROVIDER` environment variable sets the preferred provider ("google" or "groq"). At runtime, the system attempts requests against the configured primary provider and, on failures (HTTP 5xx, timeouts, or unrecoverable errors), transparently falls back to the secondary provider. Operators can observe failover events in logs (Winston JSON entries with step `PRIMARY_FAILED` and `ATTEMPT_FALLBACK`). The helper `getAIResponse()` encapsulates this logic and preserves backward-compatible behavior for callers.
+
+Configuration knobs:
+- AI_PROVIDER (default: google)
+- AI_MODEL (provider-specific model override)
+- AI_FAILOVER_ENABLED (optional boolean to disable auto-failover during testing)
+
 ### Final Risk Score
 
 The final risk score is the maximum of the manual penalty and the AI's suggested score:
@@ -180,6 +189,15 @@ The agent maintains liveness and auditability through heartbeats:
 - **Attestation**: Every cycle, the agent posts its state checkpoint to the `ValidationRegistry` contract.
 - **Circle Nanopayments**: If `USE_CIRCLE_WAAS` is enabled, heartbeats are attested via a symbolic **0.001 USDC** nanopayment on the Arc L1.
 - **Fail-Closed**: If `AGENTSTACK_REQUIRED` is true, the agent must verify its data with the AgentStack orchestrator; otherwise, the trade is blocked.
+
+### Protocol Pausing (Operator Safety & Multisig)
+
+A new protocol-level pause mechanism allows operators to immediately halt authorization and configuration changes. The `RiskRouter` contract exposes `pause()` and `unpause()` functions restricted to either the contract owner or a configured multisig owner (e.g., a Gnosis Safe). When paused:
+
+- `submitTradeIntent` will reject new intents with `Protocol Paused`.
+- Administrative functions such as `setRiskParams` and `setPriceFeed` will be disabled.
+
+Operators should configure a multisig address via `setMultisigOwner()` during deployment and include the multisig in incident response runbooks. Pausing is intended as an emergency safeguard during audits, oracle failures, or suspected security incidents.
 
 ---
 

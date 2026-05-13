@@ -52,6 +52,34 @@ contract RiskRouter is EIP712, Ownable2Step {
 
     AgentRegistry public immutable agentRegistry;
 
+    // Multisig owner (e.g., Gnosis Safe) allowed to pause/unpause the protocol
+    address public multisigOwner;
+    event MultisigOwnerSet(address indexed multisig);
+
+    // Simple on-chain paused flag to avoid external OZ dependency in tests
+    bool private _paused;
+    event Paused(address account);
+    event Unpaused(address account);
+
+    modifier onlyOwnerOrMultisig() {
+        require(owner() == _msgSender() || multisigOwner == _msgSender(), "Not owner or multisig");
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!_paused, "Pausable: paused");
+        _;
+    }
+
+    function setMultisigOwner(address _ms) external onlyOwner {
+        multisigOwner = _ms;
+        emit MultisigOwnerSet(_ms);
+    }
+
+    function paused() public view returns (bool) {
+        return _paused;
+    }
+
     mapping(uint256 => RiskParams)  public riskParams;
     mapping(uint256 => TradeRecord) private _tradeRecords;
     mapping(uint256 => uint256)     private _intentNonces;
@@ -79,7 +107,7 @@ contract RiskRouter is EIP712, Ownable2Step {
         uint256 maxPositionUsdScaled,
         uint256 maxDrawdownBps,
         uint256 maxTradesPerHour
-    ) external onlyOwner {
+    ) external onlyOwner whenNotPaused {
         riskParams[agentId] = RiskParams({
             maxPositionUsdScaled: maxPositionUsdScaled,
             maxDrawdownBps: maxDrawdownBps,
@@ -89,9 +117,19 @@ contract RiskRouter is EIP712, Ownable2Step {
         emit RiskParamsSet(agentId, maxPositionUsdScaled, maxTradesPerHour);
     }
 
-    function setPriceFeed(string calldata pair, address feed) external onlyOwner {
+    function setPriceFeed(string calldata pair, address feed) external onlyOwner whenNotPaused {
         priceFeeds[pair] = feed;
         emit PriceFeedSet(pair, feed);
+    }
+
+    function pause() external onlyOwnerOrMultisig {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    function unpause() external onlyOwnerOrMultisig {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 
     function hashTradeIntent(TradeIntent memory intent) public view returns (bytes32) {
@@ -113,6 +151,11 @@ contract RiskRouter is EIP712, Ownable2Step {
         bytes calldata signature
     ) external returns (bool approved, string memory reason) {
         bytes32 digest = hashTradeIntent(intent);
+
+        if (paused()) {
+            emit TradeRejected(intent.agentId, digest, "Protocol Paused");
+            return (false, "Protocol Paused");
+        }
 
         if (block.timestamp > intent.deadline) {
             emit TradeRejected(intent.agentId, digest, "Intent Expired");
