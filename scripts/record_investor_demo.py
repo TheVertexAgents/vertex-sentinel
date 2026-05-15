@@ -4,9 +4,9 @@ import time
 from playwright.sync_api import sync_playwright
 
 # Configuration
-DASHBOARD_URL = "http://localhost:3005/dashboard/index.html"
-OUTPUT_DIR = "/home/jules/verification/videos"
-SCREENSHOT_DIR = "/home/jules/verification/screenshots"
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:3005/dashboard/index.html")
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "docs/videos")
+SCREENSHOT_DIR = os.getenv("SCREENSHOT_DIR", "docs/screenshots")
 
 def record_investor_walkthrough(page):
     print(f"🎬 Starting investor walkthrough recording at {DASHBOARD_URL}")
@@ -22,7 +22,7 @@ def record_investor_walkthrough(page):
     page.wait_for_timeout(2000) # Wait for animations
 
     # Highlight Metrics
-    page.evaluate("document.querySelector('#metric-pnl').style.border = '2px solid #00f2ff'")
+    page.evaluate("document.querySelector('#metric-total-pnl').style.border = '2px solid #00f2ff'")
     page.wait_for_timeout(1000)
     page.screenshot(path=f"{SCREENSHOT_DIR}/01_risk_terminal.png")
 
@@ -39,7 +39,7 @@ def record_investor_walkthrough(page):
     page.click("#tab-audit")
     page.wait_for_timeout(1000)
     # Scroll through audit logs to show signatures
-    page.evaluate("document.querySelector('#audit-feed').scrollTop = 100")
+    page.evaluate("window.scrollTo(0, 500)")
     page.wait_for_timeout(1000)
     page.screenshot(path=f"{SCREENSHOT_DIR}/03_audit_trail.png")
 
@@ -48,7 +48,7 @@ def record_investor_walkthrough(page):
     page.click("#tab-operations")
     page.wait_for_timeout(1000)
     # Highlight a circuit breaker
-    page.evaluate("document.querySelector('input[placeholder=\"0.5\"]').style.backgroundColor = 'rgba(0, 242, 255, 0.1)'")
+    page.evaluate("document.querySelector('#slider-max-pos').style.boxShadow = '0 0 20px #00f2ff'")
     page.wait_for_timeout(1000)
     page.screenshot(path=f"{SCREENSHOT_DIR}/04_guardrails.png")
 
