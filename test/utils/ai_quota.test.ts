@@ -10,6 +10,11 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
   beforeEach(async () => {
     const aiModule = await import('../../src/utils/ai.js');
     aiStub = sinon.stub(aiModule.ai, 'generate');
+
+    // Reset QuotaTracker state before each test
+    const { QuotaTracker } = await import('../../src/utils/quota-tracker.js');
+    const quota = QuotaTracker.getInstance();
+    (quota as any).state = { date: new Date().toISOString().split('T')[0], count: 0 };
   });
 
   afterEach(() => {

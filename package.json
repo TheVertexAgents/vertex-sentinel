@@ -58,6 +58,7 @@
     "firebase-admin": "^13.7.0",
     "genkit": "^1.31.0",
     "genkitx-groq": "^0.30.0",
+    "js-yaml": "^4.1.1",
     "node-fetch": "^3.3.2",
     "serve": "^14.2.6",
     "sinon": "^21.0.3",
