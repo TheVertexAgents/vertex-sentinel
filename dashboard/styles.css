@@ -7,13 +7,16 @@
     --amber: #F59E0B;
     --slate-800: #1E293B;
     --slate-900: #0F172A;
+    --logo-navy: #0F172A;
+    --logo-blue: #1E3A8A;
 
     /* Institutional Light (Default) */
-    --bg-color: #F1F5F9;
-    --text-primary: #0F172A;
-    --text-secondary: #334155;
-    --glass-bg: rgba(255, 255, 255, 0.9);
-    --glass-border: rgba(15, 23, 42, 0.1);
+    --bg-color: #F5F7FA;
+    --text-primary: #1A202C;
+    --text-secondary: #4A5568;
+    --text-muted: #718096;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 209, 255, 0.2);
     --sidebar-bg: #FFFFFF;
     --border-color: rgba(15, 23, 42, 0.08);
     --card-hover-bg: #FFFFFF;
