@@ -45,6 +45,9 @@
                 <div onclick="switchTab('audit')" id="side-audit" class="nav-item" title="Audit">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
+                <div onclick="switchTab('esg')" id="side-esg" class="nav-item" title="ESG Sentinel">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                </div>
             </nav>
         </aside>
 
@@ -73,6 +76,9 @@
             </div>
 
             <div class="flex items-center gap-8">
+                <button id="theme-toggle" class="glass p-2 hover:border-cyan/50 transition-all active:scale-95 group">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M6.343 6.343l.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z"></path></svg>
+                </button>
                 <div class="toggle-container glass px-4 py-2">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">AI Automation</span>
                     <label class="switch">
@@ -173,7 +179,25 @@
                         </div>
 
                         <div class="glass p-6 border-cyan/10 h-[220px]">
-                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Volatility Heatmap</h4>
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Market Momentum</h4>
+                                <div class="flex gap-2">
+                                    <div id="gauge-volatility" class="w-12 h-12 relative">
+                                        <svg viewBox="0 0 100 50" class="w-full h-full">
+                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-white/5" />
+                                            <path id="volatility-gauge-path" d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="var(--cyan)" stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6" class="transition-all duration-1000" />
+                                        </svg>
+                                        <span class="absolute bottom-0 left-0 right-0 text-[7px] text-center font-bold">VOL</span>
+                                    </div>
+                                    <div id="gauge-volume" class="w-12 h-12 relative">
+                                        <svg viewBox="0 0 100 50" class="w-full h-full">
+                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-white/5" />
+                                            <path id="volume-gauge-path" d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="var(--amber)" stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6" class="transition-all duration-1000" />
+                                        </svg>
+                                        <span class="absolute bottom-0 left-0 right-0 text-[7px] text-center font-bold">LIQ</span>
+                                    </div>
+                                </div>
+                            </div>
                             <div id="volatility-heatmap" class="grid grid-cols-10 gap-1 h-[120px]">
                                 <!-- 100 cells injected here -->
                             </div>
@@ -269,6 +293,16 @@
                                 <button id="update-risk-btn" class="w-full py-4 bg-cyan/10 hover:bg-cyan/20 text-cyan text-xs font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all active:scale-95">
                                     Update Risk Parameters
                                 </button>
+                                <div class="flex items-center justify-between p-4 bg-amber/5 border border-amber/20 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-amber animate-pulse"></div>
+                                        <span class="text-[10px] font-bold text-amber uppercase tracking-widest">Manual Guardrail Pin</span>
+                                    </div>
+                                    <label class="switch scale-75">
+                                        <input type="checkbox" id="guardrail-pin">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
                             </div>
 
                             <!-- Panic & Operations -->
@@ -313,6 +347,77 @@
                             <button id="hire-agent-btn" class="w-full py-3 bg-cyan text-obsidian text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg hover:scale-[1.02] transition-all">
                                 Hire New Agent
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: ESG SENTINEL -->
+            <section id="view-esg" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
+                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Energy Efficiency</p>
+                        <h3 class="text-3xl font-bold">94.2%</h3>
+                        <p class="text-[9px] text-gray-500 mt-2">Renewable Energy Compute Index</p>
+                    </div>
+                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
+                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Carbon Offset Proof</p>
+                        <h3 class="text-3xl font-bold">12.4t</h3>
+                        <p class="text-[9px] text-gray-500 mt-2">Verifiable CO2e Neutralized</p>
+                    </div>
+                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
+                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Social Impact Score</p>
+                        <h3 class="text-3xl font-bold">A+</h3>
+                        <p class="text-[9px] text-gray-500 mt-2">Governance & Inclusion Metrics</p>
+                    </div>
+                </div>
+
+                <div class="glass p-8 border-emerald/10">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 class="text-xl font-bold text-emerald">Sustainability Strategy</h3>
+                            <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Verifiable ESG Guardrails for Institutional Compliance</p>
+                        </div>
+                        <span class="px-3 py-1 bg-emerald/10 text-emerald text-[10px] font-bold rounded border border-emerald/20 uppercase tracking-widest">ESG Tier: Platinum</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <div class="p-4 bg-white/2 rounded-xl border border-white/5">
+                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">ESG Scoring Breakdown</h4>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                        <span>Environmental</span>
+                                        <span class="text-emerald">92/100</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald" style="width: 92%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                        <span>Social</span>
+                                        <span class="text-emerald">88/100</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald" style="width: 88%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                        <span>Governance</span>
+                                        <span class="text-emerald">98/100</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald" style="width: 98%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center gap-4">
+                            <div class="p-6 bg-emerald/5 rounded-xl border border-emerald/20">
+                                <h4 class="text-emerald text-sm font-bold uppercase tracking-widest mb-2">Institutional Proof</h4>
+                                <p class="text-[10px] text-gray-500 mb-6 leading-relaxed">Vertex Sentinel automatically generates on-chain attestations of energy consumption and ESG compliance for every trade cycle.</p>
+                                <button class="w-full py-4 bg-emerald/10 hover:bg-emerald/20 text-emerald text-xs font-bold uppercase tracking-widest rounded-lg border border-emerald/30 transition-all">
+                                    Download ESG Audit Report
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -469,6 +574,17 @@
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
     <script>
+        // Theme Toggle
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            localStorage.setItem('THEME', isLight ? 'light' : 'dark');
+        });
+
+        if (localStorage.getItem('THEME') === 'light') {
+            document.body.classList.add('light-theme');
+        }
+
         // Risk Radar Chart
         let riskRadar = null;
         function initRiskRadar() {
@@ -531,6 +647,16 @@
             }
         }
 
+        function updateGauges(breakdown) {
+            if (!breakdown) return;
+            // Map 0-1 risk to gauge offset (125.6 is empty, 0 is full)
+            const volOffset = 125.6 * (1 - (breakdown.marketRisk || 0));
+            const liqOffset = 125.6 * (1 - (breakdown.portfolioRisk || 0));
+
+            document.getElementById('volatility-gauge-path').style.strokeDashoffset = volOffset;
+            document.getElementById('volume-gauge-path').style.strokeDashoffset = liqOffset;
+        }
+
         function updateHeatmap(value) {
             const index = Math.floor(Math.random() * 100);
             const cell = document.getElementById(`heatmap-cell-${index}`);
@@ -550,8 +676,9 @@
 
         // Tab Management
         function switchTab(tabId) {
-            ['terminal', 'operations', 'audit', 'hitl'].forEach(t => {
-                document.getElementById('view-' + t).classList.add('hidden');
+            ['terminal', 'operations', 'audit', 'hitl', 'esg'].forEach(t => {
+                const view = document.getElementById('view-' + t);
+                if (view) view.classList.add('hidden');
                 const sideItem = document.getElementById('side-' + t);
                 if (sideItem) sideItem.classList.remove('active');
             });
@@ -891,6 +1018,7 @@
                 console.log('Risk Update:', data);
                 updateRiskRadar(data.breakdown);
                 updateHeatmap(data.riskScore);
+                updateGauges(data.breakdown);
             });
         }
 

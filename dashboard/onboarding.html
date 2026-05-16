@@ -20,6 +20,11 @@
             width: 100%;
         }
         input:focus { border-color: var(--cyan); }
+
+        .personality-card.active-personality {
+            background: rgba(0, 229, 255, 0.05);
+            border-color: var(--cyan);
+        }
     </style>
 </head>
 <body class="p-4 md:p-12 flex items-center justify-center">
@@ -34,7 +39,7 @@
             <p class="text-amber text-[10px] font-bold uppercase tracking-widest">Demo Mode Active — Simulating Web3 Environment</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div id="step-indicator-1" class="glass p-4 text-center border-cyan/30 bg-cyan/5">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-cyan">Step 1: Wallet</span>
             </div>
@@ -42,7 +47,10 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Step 2: Identity</span>
             </div>
             <div id="step-indicator-3" class="glass p-4 text-center opacity-30">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Step 3: Guardrails</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Step 3: Personality</span>
+            </div>
+            <div id="step-indicator-4" class="glass p-4 text-center opacity-30">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Step 4: Guardrails</span>
             </div>
         </div>
 
@@ -70,14 +78,24 @@
                         <h2 class="text-2xl font-bold">Mint ERC-8004 Identity</h2>
                         <p class="text-sm text-gray-500 uppercase tracking-widest">US-02: Verifiable Agent Metadata</p>
                     </div>
-                    <div id="nft-preview" class="w-20 h-20 glass border-cyan/50 flex items-center justify-center text-[10px] mono text-cyan text-center p-2 rounded-lg">
-                        SENTINEL ALPHA
+                    <div id="nft-preview-container" class="w-32 h-32 relative group">
+                        <svg id="identity-svg" viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_15px_rgba(0,229,255,0.3)]">
+                            <defs>
+                                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:var(--cyan);stop-opacity:0.2" />
+                                    <stop offset="100%" style="stop-color:var(--cyan);stop-opacity:0.05" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="url(#grad)" stroke="currentColor" stroke-width="0.5" class="text-cyan/30" />
+                            <path id="svg-shape" d="M50 20 L80 50 L50 80 L20 50 Z" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan animate-pulse" />
+                            <text x="50" y="55" id="svg-name" text-anchor="middle" fill="currentColor" style="font-size: 6px; font-family: monospace; font-weight: bold;" class="text-white uppercase">ALPHA</text>
+                        </svg>
                     </div>
                 </div>
                 <div class="space-y-6">
                     <div>
                         <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Agent Name</label>
-                        <input type="text" id="agent-name" placeholder="Sentinel-Alpha" oninput="document.getElementById('nft-preview').textContent = this.value || 'SENTINEL ALPHA'">
+                        <input type="text" id="agent-name" placeholder="Sentinel-Alpha" oninput="updateSVGName(this.value)">
                     </div>
                     <div class="p-4 bg-white/5 rounded-lg border border-white/10">
                         <p class="text-[10px] text-gray-500 uppercase leading-relaxed">This transaction will mint a soulbound identity NFT on Sepolia Testnet, anchoring your agent's reputation to your operator wallet.</p>
@@ -88,8 +106,42 @@
                 </button>
             </section>
 
-            <!-- Step 3: Risk Parameters -->
+            <!-- Step 3: Sentinel Personality -->
             <section id="step-3" class="hidden glass p-12 space-y-8">
+                <div class="space-y-2 text-center">
+                    <h2 class="text-2xl font-bold">Sentinel Personality</h2>
+                    <p class="text-sm text-gray-500 uppercase tracking-widest">Select Risk Behavioral Archetype</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div onclick="selectPersonality('guardian')" class="personality-card glass p-4 border-white/10 hover:border-cyan transition-all cursor-pointer text-center group active-personality" id="p-guardian">
+                        <div class="w-10 h-10 rounded-full bg-cyan/10 flex items-center justify-center mx-auto mb-3 text-cyan group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        </div>
+                        <h4 class="text-xs font-bold uppercase">Guardian</h4>
+                        <p class="text-[8px] text-gray-500 mt-2">Ultra-conservative, focus on capital preservation.</p>
+                    </div>
+                    <div onclick="selectPersonality('scout')" class="personality-card glass p-4 border-white/10 hover:border-amber transition-all cursor-pointer text-center group" id="p-scout">
+                        <div class="w-10 h-10 rounded-full bg-amber/10 flex items-center justify-center mx-auto mb-3 text-amber group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <h4 class="text-xs font-bold uppercase">Scout</h4>
+                        <p class="text-[8px] text-gray-500 mt-2">Balanced, searches for alpha with moderate risk.</p>
+                    </div>
+                    <div onclick="selectPersonality('predator')" class="personality-card glass p-4 border-white/10 hover:border-crimson transition-all cursor-pointer text-center group" id="p-predator">
+                        <div class="w-10 h-10 rounded-full bg-crimson/10 flex items-center justify-center mx-auto mb-3 text-crimson group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <h4 class="text-xs font-bold uppercase">Predator</h4>
+                        <p class="text-[8px] text-gray-500 mt-2">Aggressive, high-frequency growth strategy.</p>
+                    </div>
+                </div>
+                <button id="btn-personality" class="w-full py-5 bg-cyan text-obsidian font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all">
+                    Confirm Personality
+                </button>
+            </section>
+
+            <!-- Step 4: Risk Parameters -->
+            <section id="step-4" class="hidden glass p-12 space-y-8">
                 <div class="space-y-2 text-center">
                     <h2 class="text-2xl font-bold">Initialize Risk Guardrails</h2>
                     <p class="text-sm text-gray-500 uppercase tracking-widest">US-03: On-Chain Enforcement</p>
@@ -142,7 +194,8 @@
         let agentId = null;
 
         function updateStepIndicator(step) {
-            for (let i = 1; i <= 3; i++) {
+            const totalSteps = 4;
+            for (let i = 1; i <= totalSteps; i++) {
                 const ind = document.getElementById('step-indicator-' + i);
                 if (i === step) {
                     ind.className = 'glass p-4 text-center border-cyan/30 bg-cyan/5';
@@ -187,6 +240,37 @@
             localStorage.setItem('USER_ADDRESS', userAddress);
         });
 
+        function updateSVGName(name) {
+            document.getElementById('svg-name').textContent = name || 'ALPHA';
+        }
+
+        let selectedPersonality = 'guardian';
+        function selectPersonality(p) {
+            selectedPersonality = p;
+            document.querySelectorAll('.personality-card').forEach(c => c.classList.remove('active-personality', 'border-cyan', 'border-amber', 'border-crimson'));
+            const card = document.getElementById('p-' + p);
+
+            const shape = document.getElementById('svg-shape');
+            const svg = document.getElementById('identity-svg');
+
+            if (p === 'guardian') {
+                card.classList.add('active-personality', 'border-cyan');
+                shape.setAttribute('d', 'M50 20 L80 50 L50 80 L20 50 Z'); // Diamond
+                shape.className.baseVal = 'text-cyan animate-pulse';
+                svg.style.filter = 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.3))';
+            } else if (p === 'scout') {
+                card.classList.add('active-personality', 'border-amber');
+                shape.setAttribute('d', 'M50 10 L90 90 L10 90 Z'); // Triangle
+                shape.className.baseVal = 'text-amber animate-pulse';
+                svg.style.filter = 'drop-shadow(0 0 15px rgba(245, 158, 11, 0.3))';
+            } else if (p === 'predator') {
+                card.classList.add('active-personality', 'border-crimson');
+                shape.setAttribute('d', 'M20 20 H80 V80 H20 Z'); // Square
+                shape.className.baseVal = 'text-crimson animate-pulse';
+                svg.style.filter = 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.3))';
+            }
+        }
+
         document.getElementById('btn-mint').addEventListener('click', async () => {
             const name = document.getElementById('agent-name').value || "Unnamed Agent";
 
@@ -194,7 +278,6 @@
                 document.getElementById('btn-mint').textContent = 'Processing...';
 
                 if (isDemoMode) {
-                    // Simulate network delay
                     await new Promise(r => setTimeout(r, 1500));
                     agentId = Math.floor(Math.random() * 1000) + 100;
                 } else {
@@ -202,7 +285,7 @@
                     const dummyWallet = ethers.Wallet.createRandom().address;
                     const tx = await registry.register(dummyWallet, name, "Onboarded Agent", ["trading"], "https://vertex.agents/metadata.json");
                     await tx.wait();
-                    agentId = 42; // Simplified
+                    agentId = 42;
                 }
 
                 localStorage.setItem('AGENT_ID', agentId);
@@ -213,6 +296,13 @@
                 alert("Minting failed: " + e.message);
                 document.getElementById('btn-mint').textContent = 'Mint Agent NFT';
             }
+        });
+
+        document.getElementById('btn-personality').addEventListener('click', () => {
+            document.getElementById('step-3').classList.add('hidden');
+            document.getElementById('step-4').classList.remove('hidden');
+            updateStepIndicator(4);
+            localStorage.setItem('SENTINEL_PERSONALITY', selectedPersonality);
         });
 
         document.getElementById('btn-config').addEventListener('click', async () => {
@@ -231,9 +321,9 @@
                     await tx.wait();
                 }
 
-                document.getElementById('step-3').classList.add('hidden');
+                document.getElementById('step-4').classList.add('hidden');
                 document.getElementById('success-area').classList.remove('hidden');
-                updateStepIndicator(4); // Completes all
+                updateStepIndicator(5);
             } catch (e) {
                 alert("Authorization failed: " + e.message);
                 document.getElementById('btn-config').textContent = 'Authorize Parameters';
