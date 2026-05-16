@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import { QuotaTracker } from '../utils/quota-tracker.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
@@ -108,9 +109,6 @@ export function startSocketServer() {
 }
 
 // Start server if this is the main module
-import { fileURLToPath } from 'url';
-import path from 'path';
-
 const isMain = process.argv[1] && (
   path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
 );
