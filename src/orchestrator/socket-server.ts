@@ -77,6 +77,11 @@ export function startSocketServer() {
       logger.info({ module: 'SOCKET_SERVER', step: 'HITL_REJECTED', data });
       agentEvents.emit(`hitl.reject.${data.traceId}`, data);
     });
+
+    socket.on('automation.toggle', (data) => {
+      logger.info({ module: 'SOCKET_SERVER', step: 'AUTOMATION_TOGGLED', enabled: data.enabled });
+      agentEvents.emit('automation.toggle', data);
+    });
   });
 
   httpServer.listen(PORT, () => {

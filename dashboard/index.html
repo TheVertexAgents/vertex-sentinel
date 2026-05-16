@@ -7,57 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/ethers@5.2.0/dist/ethers.umd.min.js" type="application/javascript"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/dashboard/styles.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-        :root {
-            --cyan: #00E5FF;
-            --purple: #7C3AED;
-            --obsidian: #0B0E14;
-            --emerald: #10B981;
-            --crimson: #EF4444;
-            --amber: #F59E0B;
-            --slate-800: #1E293B;
-            --slate-900: #0F172A;
-        }
-
-        body {
-            background-color: var(--obsidian);
-            color: #E2E8F0;
-            font-family: 'Inter', sans-serif;
-            background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
-                              radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.05) 0%, transparent 40%);
-            min-height: 100vh;
-        }
-
-        .glass {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .glass:hover {
-            border-color: rgba(0, 229, 255, 0.2);
-            background: rgba(30, 41, 59, 0.6);
-        }
-
         .tab-active {
-            color: var(--cyan);
-            border-bottom: 2px solid var(--cyan);
+            color: var(--cyan) !important;
             background: rgba(0, 229, 255, 0.05);
         }
-
-        .text-cyan { color: var(--cyan); }
-        .text-emerald { color: var(--emerald); }
-        .text-crimson { color: var(--crimson); }
-        .text-amber { color: var(--amber); }
-
-        .glow-cyan { text-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
-        .glow-emerald { text-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
-
-        .mono { font-family: 'JetBrains Mono', monospace; }
 
         @keyframes pulse-emerald {
             0%, 100% { opacity: 1; transform: scale(1); }
@@ -66,40 +22,33 @@
         .animate-pulse-emerald {
             animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-
-        /* Slider Styling */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: var(--cyan);
-            cursor: pointer;
-            -webkit-appearance: none;
-            margin-top: -6px;
-            box-shadow: 0 0 10px rgba(0, 225, 255, 0.5);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
     </style>
 </head>
-<body class="p-4 md:p-6">
-    <div class="max-w-[1600px] mx-auto">
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="mb-12">
+                <img src="/dashboard/logo.png" alt="Logo" class="w-10 h-10">
+            </div>
+            <nav class="flex flex-col gap-4">
+                <div onclick="switchTab('terminal')" id="side-terminal" class="nav-item active" title="Risk Terminal">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2"></path></svg>
+                </div>
+                <div onclick="switchTab('operations')" id="side-operations" class="nav-item" title="Operations">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </div>
+                <div onclick="switchTab('hitl')" id="side-hitl" class="nav-item relative" title="HITL">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span id="hitl-indicator" class="hidden absolute top-2 right-2 w-2 h-2 bg-amber rounded-full animate-pulse"></span>
+                </div>
+                <div onclick="switchTab('audit')" id="side-audit" class="nav-item" title="Audit">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
         <!-- Header -->
         <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 border-b border-white/5 pb-6">
             <div class="flex items-center gap-4">
@@ -123,17 +72,14 @@
                 </div>
             </div>
 
-            <nav class="flex gap-1 p-1 bg-white/5 rounded-lg">
-                <button onclick="switchTab('terminal')" id="tab-terminal" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md tab-active">Risk Terminal</button>
-                <button onclick="switchTab('operations')" id="tab-operations" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300">Agent Operations</button>
-                <button onclick="switchTab('hitl')" id="tab-hitl" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300 flex items-center gap-2">
-                    HITL
-                    <span id="hitl-badge" class="hidden w-2 h-2 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse"></span>
-                </button>
-                <button onclick="switchTab('audit')" id="tab-audit" class="px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-md text-gray-500 hover:text-gray-300">Technical Audit</button>
-            </nav>
-
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-8">
+                <div class="toggle-container glass px-4 py-2">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">AI Automation</span>
+                    <label class="switch">
+                        <input type="checkbox" id="automation-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <button id="session-report-btn" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-purple-500/30 transition-all active:scale-95">
                     Session Report
                 </button>
@@ -148,7 +94,7 @@
         </header>
 
         <!-- Main Content Area -->
-        <main>
+        <div id="content-area">
             <!-- TAB: RISK TERMINAL -->
             <section id="view-terminal" class="space-y-6">
                 <!-- Top Row Metrics -->
@@ -208,25 +154,17 @@
 
                     <div class="flex flex-col gap-6">
                         <!-- Decision Intelligence / Sentiment -->
-                        <div class="glass p-6 flex-grow border-amber/10">
-                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Decision Intelligence</h4>
-                            <div id="sentiment-heatmap" class="space-y-6">
-                                <div>
-                                    <div class="flex justify-between text-[10px] font-bold uppercase mb-2">
-                                        <span>Market Sentiment</span>
-                                        <span id="sentiment-val" class="text-cyan">Neutral</span>
-                                    </div>
-                                    <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                                        <div id="sentiment-bar" class="h-full bg-gradient-to-r from-crimson via-amber to-emerald transition-all" style="width: 50%"></div>
-                                    </div>
-                                </div>
-                                <div class="space-y-3">
-                                    <p class="text-[10px] text-gray-400 font-medium">LATEST RISK SIGNALS</p>
-                                    <div id="risk-signals" class="space-y-2">
-                                        <!-- Signals injected here -->
-                                        <div class="flex items-center gap-3 text-[11px] text-gray-500 italic">No signals detected</div>
-                                    </div>
-                                </div>
+                        <div class="glass p-6 flex-grow border-amber/10 h-[320px] flex flex-col">
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Risk Breakdown Radar</h4>
+                            <div class="flex-grow relative">
+                                <canvas id="risk-radar"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="glass p-6 border-cyan/10 h-[220px]">
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Volatility Heatmap</h4>
+                            <div id="volatility-heatmap" class="grid grid-cols-10 gap-1 h-[120px]">
+                                <!-- 100 cells injected here -->
                             </div>
                         </div>
 
@@ -405,7 +343,7 @@
                     </div>
                 </div>
             </section>
-        </main>
+        </div>
 
         <footer class="mt-12 py-8 flex flex-col md:flex-row justify-between items-center border-t border-white/5 gap-4 text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
             <div class="flex items-center gap-6">
@@ -420,6 +358,7 @@
             </div>
             <span>© 2026 Vertex Agents</span>
         </footer>
+        </main>
     </div>
 
     <!-- Session Report Modal -->
@@ -519,20 +458,99 @@
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
     <script>
+        // Risk Radar Chart
+        let riskRadar = null;
+        function initRiskRadar() {
+            const ctx = document.getElementById('risk-radar').getContext('2d');
+            riskRadar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Market', 'Portfolio', 'Sentiment', 'Manual', 'AI Score'],
+                    datasets: [{
+                        label: 'Risk Vector',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(0, 229, 255, 0.2)',
+                        borderColor: '#00E5FF',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#00E5FF',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00E5FF'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            pointLabels: { color: '#64748b', font: { size: 10 } },
+                            ticks: { display: false, stepSize: 0.2 },
+                            suggestedMin: 0,
+                            suggestedMax: 1
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateRiskRadar(breakdown) {
+            if (!riskRadar || !breakdown) return;
+            riskRadar.data.datasets[0].data = [
+                breakdown.marketRisk,
+                breakdown.portfolioRisk,
+                breakdown.sentimentRisk,
+                breakdown.manualPenalty,
+                breakdown.aiScore
+            ];
+            riskRadar.update();
+        }
+
+        // Volatility Heatmap
+        function initHeatmap() {
+            const container = document.getElementById('volatility-heatmap');
+            container.innerHTML = '';
+            for (let i = 0; i < 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-full h-full bg-white/5 rounded-sm transition-colors duration-500';
+                cell.id = `heatmap-cell-${i}`;
+                container.appendChild(cell);
+            }
+        }
+
+        function updateHeatmap(value) {
+            const index = Math.floor(Math.random() * 100);
+            const cell = document.getElementById(`heatmap-cell-${index}`);
+            if (!cell) return;
+
+            // value is risk score or price delta, map to colors
+            let color = 'rgba(255, 255, 255, 0.05)';
+            if (value > 0.8) color = 'rgba(239, 68, 68, 0.8)'; // Crimson
+            else if (value > 0.5) color = 'rgba(245, 158, 11, 0.6)'; // Amber
+            else if (value > 0.2) color = 'rgba(0, 229, 255, 0.4)'; // Cyan
+
+            cell.style.backgroundColor = color;
+            setTimeout(() => {
+                cell.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            }, 3000);
+        }
+
         // Tab Management
         function switchTab(tabId) {
             ['terminal', 'operations', 'audit', 'hitl'].forEach(t => {
                 document.getElementById('view-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t).classList.remove('tab-active', 'text-cyan');
-                document.getElementById('tab-' + t).classList.add('text-gray-500');
+                const sideItem = document.getElementById('side-' + t);
+                if (sideItem) sideItem.classList.remove('active');
             });
             document.getElementById('view-' + tabId).classList.remove('hidden');
-            document.getElementById('tab-' + tabId).classList.add('tab-active');
-            document.getElementById('tab-' + tabId).classList.remove('text-gray-500');
+            const sideItem = document.getElementById('side-' + tabId);
+            if (sideItem) sideItem.classList.add('active');
 
             if (tabId === 'terminal') initTradingView();
             if (tabId === 'hitl') {
-                document.getElementById('hitl-badge').classList.add('hidden');
+                document.getElementById('hitl-indicator').classList.add('hidden');
             }
         }
 
@@ -839,12 +857,7 @@
 
             socket.on('risk.alert', (data) => {
                 console.warn('Risk Alert:', data);
-                // Highlight risk signals
-                const signals = document.getElementById('risk-signals');
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 text-[11px] font-bold text-crimson animate-pulse";
-                div.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-crimson shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span><span class="truncate">HIGH RISK: ${data.reasoning}</span>`;
-                signals.prepend(div);
+                updateHeatmap(0.9); // Highlight heatmap on alert
             });
 
             socket.on('balance.update', (data) => {
@@ -855,9 +868,25 @@
             socket.on('hitl.pending', (data) => {
                 console.log('HITL Pending:', data);
                 renderHitlRequest(data);
-                document.getElementById('hitl-badge').classList.remove('hidden');
+                document.getElementById('hitl-indicator').classList.remove('hidden');
             });
         }
+
+        // AI Automation Toggle
+        document.getElementById('automation-toggle').addEventListener('change', (e) => {
+            console.log('Automation Toggled:', e.target.checked);
+            socket.emit('automation.toggle', { enabled: e.target.checked });
+
+            // UI Feedback
+            const statusText = document.getElementById('status-text');
+            if (e.target.checked) {
+                statusText.textContent = 'System Live';
+                statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-emerald/80';
+            } else {
+                statusText.textContent = 'System Paused';
+                statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-amber/80';
+            }
+        });
 
         function renderHitlRequest(data) {
             const container = document.getElementById('hitl-container');
@@ -926,8 +955,12 @@
                 updateStats(checkpoints);
                 renderReasoning(checkpoints.slice(0, 3));
                 renderAuditTable(checkpoints.slice(0, 50));
-                updateSentiment(checkpoints[0]);
-                updateCircuitBreaker(checkpoints[0]);
+
+                if (checkpoints[0]) {
+                    updateRiskRadar(checkpoints[0].breakdown);
+                    updateHeatmap(checkpoints[0].riskScore);
+                    updateCircuitBreaker(checkpoints[0]);
+                }
             } catch (error) {
                 console.error('Fetch error:', error);
             }
@@ -1097,6 +1130,8 @@
         initWebSocket();
         fetchInitialData();
         initTradingView();
+        initRiskRadar();
+        initHeatmap();
 
         // Polling PnL Report (Sprint 2B Optimization)
         setInterval(async () => {

@@ -361,6 +361,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 const TRADING_INTERVAL_MS = parseInt(process.env.TRADING_INTERVAL_MS || '300000', 10);
 
 let isRunning = true;
+let isAutomationEnabled = true; // Master Toggle State
 let sleepResolve: ((value: unknown) => void) | null = null;
 
 async function shutdown() {
@@ -470,8 +471,23 @@ async function main() {
   reconciler.start();
   proxy.startListener();
 
+  // Listen for automation toggle
+  agentEvents.on('automation.toggle', (data: { enabled: boolean }) => {
+    isAutomationEnabled = data.enabled;
+    logger.info({ module: 'AGENT_BRAIN', step: 'AUTOMATION_SYNC', enabled: isAutomationEnabled });
+  });
+
   // Continuous trading loop
   while (isRunning) {
+    if (!isAutomationEnabled) {
+      // If automation is disabled, we skip the trading cycle but keep the loop alive
+      await new Promise(resolve => {
+        sleepResolve = resolve;
+        setTimeout(resolve, 5000);
+      });
+      continue;
+    }
+
     try {
       const entropy = randomBytes(4).readUInt32BE(0);
       const selectedPair = pairs[entropy % pairs.length];
