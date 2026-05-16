@@ -94,7 +94,18 @@
         </header>
 
         <!-- Main Content Area -->
-        <div id="content-area">
+        <div id="content-area" class="relative">
+            <!-- Automation Paused Overlay -->
+            <div id="paused-overlay" class="hidden absolute inset-0 z-40 bg-obsidian/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+                <div class="glass p-8 border-amber/30 bg-amber/5 text-center space-y-4 animate-in fade-in zoom-in duration-300">
+                    <div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center mx-auto border border-amber/30">
+                        <svg class="w-8 h-8 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-amber uppercase tracking-widest">Automation Paused</h3>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Manual Override Active • Agent Brain Idle</p>
+                </div>
+            </div>
+
             <!-- TAB: RISK TERMINAL -->
             <section id="view-terminal" class="space-y-6">
                 <!-- Top Row Metrics -->
@@ -842,6 +853,11 @@
                 document.getElementById('status-text').textContent = 'System Live';
             });
 
+            socket.on('automation.sync', (data) => {
+                console.log('Automation Sync:', data);
+                updateAutomationUI(data.enabled);
+            });
+
             socket.on('disconnect', () => {
                 console.log('Disconnected from Sentinel WebSocket');
                 document.getElementById('status-indicator').classList.remove('bg-emerald');
@@ -870,23 +886,37 @@
                 renderHitlRequest(data);
                 document.getElementById('hitl-indicator').classList.remove('hidden');
             });
+
+            socket.on('risk.update', (data) => {
+                console.log('Risk Update:', data);
+                updateRiskRadar(data.breakdown);
+                updateHeatmap(data.riskScore);
+            });
         }
 
         // AI Automation Toggle
         document.getElementById('automation-toggle').addEventListener('change', (e) => {
-            console.log('Automation Toggled:', e.target.checked);
+            updateAutomationUI(e.target.checked);
             socket.emit('automation.toggle', { enabled: e.target.checked });
+        });
 
-            // UI Feedback
+        function updateAutomationUI(enabled) {
             const statusText = document.getElementById('status-text');
-            if (e.target.checked) {
+            const overlay = document.getElementById('paused-overlay');
+            const toggle = document.getElementById('automation-toggle');
+
+            toggle.checked = enabled;
+
+            if (enabled) {
                 statusText.textContent = 'System Live';
                 statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-emerald/80';
+                overlay.classList.add('hidden');
             } else {
                 statusText.textContent = 'System Paused';
                 statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-amber/80';
+                overlay.classList.remove('hidden');
             }
-        });
+        }
 
         function renderHitlRequest(data) {
             const container = document.getElementById('hitl-container');
@@ -897,22 +927,29 @@
 
             const card = document.createElement('div');
             card.id = `hitl-${data.traceId}`;
-            card.className = "glass p-6 border-amber/20 flex flex-col md:flex-row justify-between items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-500";
+            card.className = "glass p-8 border-amber/30 bg-gradient-to-r from-amber/5 to-transparent flex flex-col md:flex-row justify-between items-center gap-8 animate-in fade-in slide-in-from-top-4 duration-500";
             card.innerHTML = `
-                <div class="flex-grow space-y-2">
-                    <div class="flex items-center gap-3">
-                        <span class="px-2 py-0.5 bg-amber/10 text-amber text-[9px] font-bold rounded border border-amber/20 uppercase tracking-widest">High Stakes</span>
-                        <h4 class="text-sm font-bold mono">${data.action} ${data.pair}</h4>
+                <div class="flex-grow space-y-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber/10 flex items-center justify-center border border-amber/30 text-amber">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <div>
+                            <span class="px-2 py-0.5 bg-amber/20 text-amber text-[9px] font-bold rounded uppercase tracking-widest">Intercepted: High Stakes</span>
+                            <h4 class="text-lg font-black italic tracking-tighter text-white mt-1">${data.action} ${data.pair} <span class="text-amber/50">— $${data.amountUsd.toFixed(2)}</span></h4>
+                        </div>
                     </div>
-                    <p class="text-[11px] text-gray-400 leading-relaxed">${data.reasoning}</p>
-                    <div class="flex gap-4 text-[9px] text-gray-600 uppercase font-bold tracking-widest">
-                        <span>Amount: <span class="text-cyan">$${data.amountUsd.toFixed(2)}</span></span>
-                        <span>Trace ID: <span class="mono">${data.traceId.substring(0,8)}</span></span>
+                    <div class="p-4 bg-white/5 rounded-xl border border-white/10">
+                        <p class="text-xs text-gray-400 font-medium leading-relaxed italic">"${data.reasoning}"</p>
+                    </div>
+                    <div class="flex gap-6 text-[9px] text-gray-500 uppercase font-black tracking-widest mono">
+                        <span class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-gray-700"></span> TRACE: ${data.traceId.substring(0,12)}</span>
+                        <span class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-gray-700"></span> TTL: 10m 00s</span>
                     </div>
                 </div>
-                <div class="flex gap-3 shrink-0">
-                    <button onclick="hitlReject('${data.traceId}')" class="px-6 py-2 bg-crimson/10 hover:bg-crimson/20 text-crimson text-[10px] font-bold uppercase tracking-widest rounded-lg border border-crimson/30 transition-all">Reject</button>
-                    <button onclick="hitlApprove('${data.traceId}')" class="px-6 py-2 bg-emerald/10 hover:bg-emerald/20 text-emerald text-[10px] font-bold uppercase tracking-widest rounded-lg border border-emerald/30 transition-all">Approve Trade</button>
+                <div class="flex flex-col gap-3 shrink-0 w-full md:w-48">
+                    <button onclick="hitlApprove('${data.traceId}')" class="w-full py-4 bg-emerald text-obsidian text-[11px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all active:scale-95 shadow-lg shadow-emerald/20">Approve</button>
+                    <button onclick="hitlReject('${data.traceId}')" class="w-full py-3 bg-white/5 hover:bg-white/10 text-crimson text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all border border-crimson/20">Reject</button>
                 </div>
             `;
             container.prepend(card);
@@ -1108,6 +1145,7 @@
                 row.className = "border-b border-white/2 hover:bg-white/2 transition-colors";
                 const actionColor = check.message.action === 'BUY' ? 'text-emerald' : check.message.action === 'SELL' ? 'text-crimson' : 'text-amber';
                 const amount = (parseFloat(check.message.amountUsdScaled) / 100).toLocaleString(undefined, {style: 'currency', currency: 'USD'});
+                const explorerUrl = `https://sepolia.etherscan.io/tx/${check.arcL1Proof}`;
 
                 row.innerHTML = `
                     <td class="px-8 py-4 text-gray-500">${new Date(parseInt(check.message.timestamp)*1000).toLocaleString()}</td>
@@ -1115,10 +1153,17 @@
                     <td class="px-8 py-4 text-gray-300">${check.message.pair}</td>
                     <td class="px-8 py-4 text-right font-bold text-gray-400">${amount}</td>
                     <td class="px-8 py-4 text-center">
-                        ${check.arcL1Proof ? `<span class="text-cyan/60 hover:text-cyan cursor-help" title="${check.arcL1Proof}">${check.arcL1Proof.substring(0,8)}...</span>` : '<span class="text-gray-700">—</span>'}
+                        ${check.arcL1Proof && check.arcL1Proof !== 'SKIP_AGENTSTACK' ?
+                            `<a href="${explorerUrl}" target="_blank" class="text-cyan/60 hover:text-cyan transition-colors flex items-center justify-center gap-1">
+                                <span class="mono">${check.arcL1Proof.substring(0,8)}</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>` : '<span class="text-gray-700">—</span>'}
                     </td>
                     <td class="px-8 py-4 text-center">
-                        <span class="px-2 py-0.5 rounded bg-cyan/5 text-cyan text-[9px] font-bold border border-cyan/20">EIP-712</span>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-cyan/5 text-cyan text-[9px] font-bold border border-cyan/20">EIP-712</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald shadow-[0_0_8px_rgba(16,185,129,0.5)]" title="Integrity Verified"></span>
+                        </div>
                     </td>
                     <td class="px-8 py-4 text-gray-500 truncate max-w-xs" title="${check.reasoning}">${check.reasoning}</td>
                 `;

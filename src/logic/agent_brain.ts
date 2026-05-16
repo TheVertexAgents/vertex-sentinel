@@ -230,7 +230,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
     logger.info({ step: 'RISK_ASSESSMENT', traceId, pair: intent.pair, score: decision.riskScore, reason: decision.reasoning });
 
     if (decision.action === 'HOLD') {
-       return { isAllowed: false, reason: `Risk too high or strategy HOLD: ${decision.reasoning}`, signature: '0x' };
+       return { isAllowed: false, reason: `Risk too high or strategy HOLD: ${decision.reasoning}`, signature: '0x', decision, traceId };
     }
 
     // Sign the intent using EIP-712 via RiskRouterClient
@@ -341,7 +341,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
       // Reputation will be built through external validator attestations.
     }
 
-    return { isAllowed: true, reason: decision.reasoning, signature };
+    return { isAllowed: true, reason: decision.reasoning, signature, decision, traceId };
   } catch (error: any) {
     if (error instanceof CriticalSecurityException) {
       // Only halt for TRUE security violations (e.g., env tampering, Verified-or-Die blocks)
@@ -363,6 +363,31 @@ const TRADING_INTERVAL_MS = parseInt(process.env.TRADING_INTERVAL_MS || '300000'
 let isRunning = true;
 let isAutomationEnabled = true; // Master Toggle State
 let sleepResolve: ((value: unknown) => void) | null = null;
+
+const AUTOMATION_STATE_PATH = path.join(process.cwd(), 'logs/automation_state.json');
+
+function loadAutomationState() {
+  if (fs.existsSync(AUTOMATION_STATE_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(AUTOMATION_STATE_PATH, 'utf8'));
+      isAutomationEnabled = data.enabled !== false;
+      logger.info({ module: 'AGENT_BRAIN', step: 'LOAD_AUTOMATION_STATE', enabled: isAutomationEnabled });
+    } catch (e) {
+      logger.warn({ module: 'AGENT_BRAIN', step: 'LOAD_AUTOMATION_STATE_FAILED', error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+}
+
+function saveAutomationState() {
+  try {
+    if (!fs.existsSync(path.dirname(AUTOMATION_STATE_PATH))) {
+      fs.mkdirSync(path.dirname(AUTOMATION_STATE_PATH), { recursive: true });
+    }
+    fs.writeFileSync(AUTOMATION_STATE_PATH, JSON.stringify({ enabled: isAutomationEnabled, timestamp: new Date().toISOString() }, null, 2));
+  } catch (e) {
+    logger.error({ module: 'AGENT_BRAIN', step: 'SAVE_AUTOMATION_STATE_FAILED', error: e instanceof Error ? e.message : String(e) });
+  }
+}
 
 async function shutdown() {
   logger.info({ step: 'SHUTDOWN_INITIATED', message: 'Received shutdown signal. Initiating graceful shutdown...' });
@@ -471,9 +496,13 @@ async function main() {
   reconciler.start();
   proxy.startListener();
 
+  // Load persisted state
+  loadAutomationState();
+
   // Listen for automation toggle
   agentEvents.on('automation.toggle', (data: { enabled: boolean }) => {
     isAutomationEnabled = data.enabled;
+    saveAutomationState();
     logger.info({ module: 'AGENT_BRAIN', step: 'AUTOMATION_SYNC', enabled: isAutomationEnabled });
   });
 
@@ -516,6 +545,17 @@ async function main() {
       
       const result = await signIntent(intent, pk);
       
+      // Emit risk update for dashboard widgets
+      if (result.decision) {
+        agentEvents.emit('risk.update', {
+          traceId: result.traceId,
+          riskScore: result.decision.riskScore,
+          breakdown: result.decision.breakdown,
+          reasoning: result.decision.reasoning,
+          pair: result.decision.pair
+        });
+      }
+
       if (result.isAllowed) {
         logger.info({ step: 'INTENT_SUBMITTED', nonce: currentNonce });
 
@@ -600,4 +640,4 @@ if (isMain && process.env.NODE_ENV !== 'test') {
   logger.info({ step: 'MODULE_LOADED', isMain, nodeEnv: process.env.NODE_ENV });
 }
 
-export { signIntent, getAssetResolution };
+export { signIntent, getAssetResolution, isAutomationEnabled };
