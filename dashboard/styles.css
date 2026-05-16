@@ -9,16 +9,16 @@
     --slate-900: #0F172A;
 
     /* Institutional Light (Default) */
-    --bg-color: #F8FAFC;
+    --bg-color: #F1F5F9;
     --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(15, 23, 42, 0.08);
+    --text-secondary: #334155;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(15, 23, 42, 0.1);
     --sidebar-bg: #FFFFFF;
-    --border-color: rgba(15, 23, 42, 0.06);
+    --border-color: rgba(15, 23, 42, 0.08);
     --card-hover-bg: #FFFFFF;
-    --overlay-bg: rgba(248, 250, 252, 0.95);
-    --muted-bg: rgba(15, 23, 42, 0.03);
+    --overlay-bg: rgba(241, 245, 249, 0.98);
+    --muted-bg: rgba(15, 23, 42, 0.05);
 }
 
 .dark-theme {
@@ -40,24 +40,29 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
-    background-image: radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.03) 0%, transparent 40%),
-                      radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.03) 0%, transparent 40%);
+    background-image: radial-gradient(circle at 0% 0%, rgba(0, 229, 255, 0.05) 0%, transparent 50%),
+                      radial-gradient(circle at 100% 100%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
     min-height: 100vh;
     margin: 0;
     transition: background-color 0.3s ease, color 0.3s ease;
+    letter-spacing: -0.01em;
 }
 
 .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass:hover {
-    border-color: rgba(0, 229, 255, 0.2);
+    border-color: rgba(0, 229, 255, 0.3);
     background: var(--card-hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
 }
 
 .text-cyan { color: var(--cyan); }
