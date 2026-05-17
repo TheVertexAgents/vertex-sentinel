@@ -3,6 +3,9 @@ import { createServer } from 'http';
 import { logger } from '../utils/logger.js';
 import { EventEmitter } from 'events';
 import { QuotaTracker } from '../utils/quota-tracker.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
@@ -41,6 +44,15 @@ export function startSocketServer() {
   io.on('connection', (socket) => {
     logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_CONNECTED', socketId: socket.id });
 
+    // Sync automation state on connect
+    const statePath = path.join(process.cwd(), 'logs/automation_state.json');
+    if (fs.existsSync(statePath)) {
+      try {
+        const data = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+        socket.emit('automation.sync', data);
+      } catch (e) {}
+    }
+
     socket.on('disconnect', () => {
       logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_DISCONNECTED', socketId: socket.id });
     });
@@ -67,6 +79,11 @@ export function startSocketServer() {
     io.emit('hitl.pending', data);
   });
 
+  agentEvents.on('risk.update', (data) => {
+    logger.info({ module: 'SOCKET_SERVER', step: 'BROADCAST_RISK_UPDATE', data });
+    io.emit('risk.update', data);
+  });
+
   io.on('connection', (socket) => {
     socket.on('hitl.approve', (data) => {
       logger.info({ module: 'SOCKET_SERVER', step: 'HITL_APPROVED', data });
@@ -76,6 +93,11 @@ export function startSocketServer() {
     socket.on('hitl.reject', (data) => {
       logger.info({ module: 'SOCKET_SERVER', step: 'HITL_REJECTED', data });
       agentEvents.emit(`hitl.reject.${data.traceId}`, data);
+    });
+
+    socket.on('automation.toggle', (data) => {
+      logger.info({ module: 'SOCKET_SERVER', step: 'AUTOMATION_TOGGLED', enabled: data.enabled });
+      agentEvents.emit('automation.toggle', data);
     });
   });
 
@@ -87,9 +109,6 @@ export function startSocketServer() {
 }
 
 // Start server if this is the main module
-import { fileURLToPath } from 'url';
-import path from 'path';
-
 const isMain = process.argv[1] && (
   path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
 );
