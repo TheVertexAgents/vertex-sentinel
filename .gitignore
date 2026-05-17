@@ -51,6 +51,7 @@ Thumbs.db
 
 # ── Logs ─────────────────────────────────────────────────────
 logs/
+pids/
 *.log
 
 # Added by ggshield
