@@ -1,260 +1,335 @@
-# Vertex Sentinel Layer — User Guide
+# Vertex Sentinel — Customer Navigation & Usage Guide
 
-Version: 1.0
-Audience: Operators, SREs, Integrators, DevOps
-
-⚠️ Purpose: This document is an operational, production-ready manual describing system initialization, the mathematical Risk Analysis engine, the differences between Paper Mode and Live Mode (with an explicit comparison table), notification and heartbeat internals, and how to read terminal metrics. It includes real-world terminal outputs and worked examples (SOL 32% vs ETH 22%).
+> A step-by-step walkthrough of how a new customer discovers, onboards, configures, and operates the Vertex Sentinel risk management layer for autonomous AI trading agents.
 
 ---
 
-## Table of Contents
+## Overview: The Customer Journey
 
-1. Overview
-2. Quick start & prerequisites
-3. System initialization (deep technical sequence)
-   - Real terminal output (Winston JSON format)
-4. How trade risk is analyzed — mathematical deep dive
-   - Signals and manual penalties
-   - AI risk assessment integration
-   - Worked example: SOL/USDC → Risk 0.32 (32%)
-   - Worked example: ETH/USDC → Risk 0.22 (22%)
-   - Operational interpretation
-5. Execution modes: Paper Mode vs Live Mode (detailed comparison)
-   - Full behavior table
-   - Configuration and safety checks
-6. Heartbeats and Verification — internals for operators
-   - Sequence of attestation
-   - Data formats (EIP-712)
-   - Failure modes
-7. Notifications, alerts, and operator workflows (SOPs)
-   - Example payloads
-8. Reading terminal & dashboard metrics — practical guide
-   - Key endpoints (Quota API)
-   - Troubleshooting & triage checklist
-9. Appendices
-   - Appendix A: Sample .env and risk-engine tuning
-   - Appendix B: Future Roadmap (Q3)
-
----
-
-## 1. Overview
-
-Vertex Sentinel Layer is a verifiable risk-management and execution gating layer for autonomous trading agents. It is intended to:
-
-- Enforce pre-execution safety via EIP-712 signed intents.
-- Provide economic attestation using small, verifiable nanopayments (CirclePayments) during heartbeat cycles.
-- Anchor signed system state snapshots via heartbeat transactions to an L1 ledger (Sepolia or local).
-- Offer both Paper Mode (safe simulation) and Live Mode (real execution) with a Fail-Closed architecture.
-
-This guide assumes familiarity with Node.js, EIP-712 signing, basic exchange connectivity (Kraken), and on-chain verification concepts.
-
----
-
-## 2. Quick start & prerequisites
-
-Minimum platform requirements:
-
-- Node 18+ (LTS recommended) and npm/yarn
-- Wallet for signing EIP-712 intents
-- Kraken API access: API key and secret
-- Optional: CirclePayments API key (for nanopayment settlement)
-- Optional: Telegram bot token for alerts
-
-Essential environment variables (example):
-
-```bash
-# Core
-AGENT_NAME="Vertex Sentinel Layer"
-NETWORK="sepolia"
-KRAKEN_PAPER_MODE=true
-
-# Exchange
-KRAKEN_API_KEY="your_key"
-KRAKEN_SECRET="your_secret"
-
-# AI Provider
-AI_PROVIDER="google" # or "groq"
-GOOGLE_GENAI_API_KEY="your_key"
-
-# Optional Verification
-USE_CIRCLE_WAAS=false
-CIRCLE_API_KEY="sk_live_xxx"
+```mermaid
+graph LR
+    A["🌐 Landing Page"] --> B["🔐 Onboarding Wizard"]
+    B --> C["📊 Risk Terminal"]
+    C --> D["⚙️ Operations"]
+    C --> E["🔔 HITL Approvals"]
+    C --> F["📝 Audit Trail"]
+    C --> G["🌱 ESG Sentinel"]
+    C --> H["👥 Agent Fleet"]
 ```
 
-Install and run:
+The customer journey has **3 phases**: **Discovery → Onboarding → Active Operations**.
 
-```bash
-npm ci
-# Run in paper mode (default if KRAKEN_PAPER_MODE=true)
-npm start
+---
+
+## Phase 1: Discovery & First Impression
+
+### Step 1 — Land on the Product Page
+
+**URL:** `http://localhost:3006/landing.html`
+
+The customer arrives at the **Vertex Sentinel landing page** — a premium dark-themed hero screen featuring:
+
+- The **VERTEX SENTINEL** brand with a glowing cyan wordmark
+- A one-line value proposition: *"The institutional-grade risk management layer for autonomous AI agents. Verifiable, fail-closed, and powered by Arc L1."*
+- Three feature pillars: **EIP-712 Integrity**, **Arc L1 Verification**, and **Circle WaaS**
+- Two clear CTAs:
+  - **"Onboard New Agent"** → starts the onboarding wizard
+  - **"Enter Risk Terminal"** → jumps directly to the dashboard (for returning users)
+
+> [!TIP]
+> Returning users who have already connected a wallet can skip onboarding entirely and go straight to the Risk Terminal via the second button.
+
+---
+
+## Phase 2: Onboarding Wizard (First-Time Setup)
+
+### Step 2 — Connect Operator Wallet
+
+**URL:** `http://localhost:3006/onboarding`
+
+The onboarding wizard presents a **4-step progress bar** at the top: `Wallet → Identity → Personality → Guardrails`.
+
+**Step 1 of 4: Wallet Connection**
+
+The customer sees a prominent **"Connect MetaMask"** button with a pulsing lock icon.
+
+- **With MetaMask installed:** Clicking the button triggers `eth_requestAccounts`. The wallet connects, and the user's Ethereum address is stored locally.
+- **Without MetaMask:** The system automatically activates **Demo Mode**, generating a simulated `0xDEMO...` address so the customer can explore the full product without a real wallet.
+
+> [!NOTE]
+> Demo Mode is clearly labeled with an amber banner: *"Demo Mode Active — Simulating Web3 Environment"*. All features remain fully functional for exploration.
+
+### Step 3 — Mint ERC-8004 Identity
+
+**Step 2 of 4: Identity Minting**
+
+After wallet connection, the wizard advances to identity creation:
+
+1. **Enter an Agent Name** (e.g., "Sentinel-Alpha") — a live SVG preview updates in real-time as you type
+2. A **gas estimate** and **registration fee** (50 ARC) are displayed
+3. The system simulates minting an **ERC-8004 identity NFT** that will serve as the agent's on-chain identity
+
+This identity is registered in the `AgentRegistry.sol` smart contract on Sepolia testnet.
+
+### Step 4 — Choose Agent Personality
+
+**Step 3 of 4: Trading Personality Selection**
+
+The customer selects one of three pre-configured risk profiles:
+
+| Personality | Bias | Risk Tolerance |
+|---|---|---|
+| **Guardian** | Conservative | Low |
+| **Scout** | Balanced | Medium |
+| **Predator** | Aggressive | High |
+
+Each personality card shows expected behavior characteristics. Clicking one highlights it with a cyan border.
+
+### Step 5 — Configure Initial Guardrails
+
+**Step 4 of 4: Risk Guardrails**
+
+The final onboarding step lets the customer set initial safety parameters:
+
+- **Max Position Size** — Maximum dollar exposure per trade (e.g., $1,000)
+- **Trades Per Hour** — Rate limit for trade execution (e.g., 5 trades/hour)
+- **Sentiment Weight** — How much AI sentiment analysis influences decisions (0.0 – 1.0)
+- **Liquidity Floor** — Minimum market liquidity required before executing ($10k default)
+
+These parameters are written to the on-chain `RiskRouter.sol` contract and enforced as **hard circuit breakers** — the agent physically cannot exceed them.
+
+After clicking **"Launch Agent"**, the customer is redirected to the main Risk Terminal.
+
+---
+
+## Phase 3: Active Operations — The Risk Terminal
+
+### Step 6 — Dashboard Overview (Risk Terminal Tab)
+
+**URL:** `http://localhost:3006/dashboard` → Default tab: **Risk Terminal**
+
+The Risk Terminal is the customer's command center. It displays:
+
+#### Top Metrics Bar (5 KPIs)
+
+| Metric | Description |
+|---|---|
+| **Sentinel Savings** | Total capital protected by blocked risky trades (cyan, glowing) |
+| **Total PnL / ROI** | Cumulative profit/loss with percentage return |
+| **Max Drawdown** | Peak-to-trough risk exposure (crimson) |
+| **Win Rate / Ratio** | Strategy consistency as percentage and win/loss ratio |
+| **Sharpe Ratio** | Risk-adjusted return measure (amber) |
+
+#### Middle Section
+
+- **TradingView Terminal** (left, 2/3 width) — Live `KRAKEN:BTCUSD` chart with RSI and Moving Average overlays. Customers can change symbols and timeframes.
+- **Risk Breakdown Radar** (right, top) — A 5-axis radar chart visualizing: Market Risk, Portfolio Risk, Sentiment Risk, Manual Penalty, AI Score.
+- **Market Momentum** (right, middle) — Volatility and Liquidity gauges with a live 10×10 heatmap that pulses with market activity.
+- **Distance to Circuit Breaker** (right, bottom) — Progress bars showing how close current activity is to hitting the on-chain guardrails (Position Limit & Hourly Volume).
+
+#### Bottom Section — Latest Sentinel Reasoning
+
+Three cards showing the most recent AI decisions, each containing:
+- **Action & Pair** (e.g., "BUY BTC/USDC")
+- **AI Reasoning summary**
+- **Confidence score**
+- **"Deep Dive →"** button to open the full reasoning modal
+
+### Step 7 — Deep Dive into AI Reasoning
+
+Clicking **"Deep Dive →"** on any reasoning card opens a full-screen modal:
+
+1. **Trace ID** — Unique identifier for audit linkage
+2. **Market Sentiment** — AI's assessment (Strong Bullish / Neutral / Strong Bearish)
+3. **Risk Assessment** — Percentage exposure
+4. **Chain of Thought** — Numbered step-by-step AI reasoning process
+5. **Final Decision Logic** — Complete decision summary
+6. **Verification Badges** — `EIP-712 Signed` and `Arc L1 Verified` stamps
+7. **"Download Audit Artifact"** — Export the full decision as a verifiable document
+
+### Step 8 — Enable AI Automation
+
+In the header, the customer sees the **AI Automation toggle** (defaults to OFF).
+
+- **OFF (Default):** The agent brain is idle. The system shows a semi-transparent amber overlay: *"Automation Paused — Manual Override Active — Agent Brain Idle"*
+- **ON:** Flipping the toggle sends a `POST /api/automation/toggle` request. The agent brain begins its continuous trading loop:
+  - Every 5 minutes (configurable via `TRADING_INTERVAL_MS`), it:
+    1. Selects a random pair from BTC/USDC, ETH/USDC, SOL/USDC
+    2. Runs AI risk assessment (via GROQ's Llama 3.3 70B)
+    3. Signs the trade intent with EIP-712
+    4. Submits to RiskRouter for on-chain validation
+    5. Executes on Kraken (or simulates in paper mode)
+  - The status indicator changes from amber pulse → emerald: *"System Live"*
+
+> [!IMPORTANT]
+> Automation defaults strictly to **OFF**. The customer must explicitly opt in. This is a core safety invariant of the Fail-Closed architecture.
+
+### Step 9 — Connect Your Wallet (Dashboard)
+
+The header also has a **"Connect Wallet"** button:
+
+- Clicking connects MetaMask (or enters Demo Mode if unavailable)
+- Once connected, the button is replaced with a green dot and truncated address (e.g., `0x5367...FdBC`)
+- Network badge shows `Sepolia Testnet` or `DEMO MODE`
+
+### Step 10 — View Session Report
+
+Clicking the **"Session Report"** button opens a purple-themed modal showing:
+
+- **Realized PnL** — Total profit/loss from closed trades
+- **Win Rate** — Percentage of profitable trades
+- **Max Drawdown** — Worst peak-to-trough decline
+- **Sentinel Saved** — Capital protected by blocked trades
+- **Trade History Table** — Timestamped list of every trade with pair, side, price, and individual PnL
+- **"Export Report (.JSON)"** — Downloads the full session data
+
+---
+
+## Phase 3b: Advanced Operations Tabs
+
+### Step 11 — Operations Tab (⚙️)
+
+Navigate via the sidebar gear icon. This tab provides:
+
+#### Agent Control Dashboard
+- **Max Position Size slider** ($100 – $10,000)
+- **Trades Per Hour slider** (1 – 50)
+- **Sentiment Weight slider** (0.0 – 1.0)
+- **Liquidity Floor slider** ($1k – $100k)
+- **"Update Risk Parameters"** button — Writes new parameters to the on-chain RiskRouter
+- **Manual Guardrail Pin toggle** — Locks parameters to prevent automated recalibration
+
+#### Emergency Protocol
+A prominent red **"DE-RISK / HALT"** button that:
+1. De-risks all open positions
+2. Halts the Agent Brain immediately
+3. Writes a `logs/HALTED` file requiring manual intervention to restart
+
+#### Agent Stack Ops (Sidebar)
+- **ARC Balance** — Current Arc L1 token balance
+- **Next Payment** — Upcoming payroll for agent compute
+- **Agent Reputation** — Trust score from validator attestations
+- **"Fund Agent Wallet"** button
+
+#### Expansion Port
+- **"Hire New Agent"** button — Opens a modal to deploy additional specialized agents
+
+### Step 12 — HITL Approval Tab (🔔)
+
+Navigate via the sidebar bell icon. This tab handles **Human-in-the-Loop** verification:
+
+- When a trade exceeds the **HITL threshold** (default: $1,000 USD), the agent brain **pauses execution** and emits a `hitl.pending` event
+- A notification badge pulses on the sidebar icon
+- The pending trade appears as an amber-bordered card showing:
+  - **Action & Pair** (e.g., "BUY ETH/USDC — $1,250.00")
+  - **AI Reasoning** for why this trade was proposed
+  - **Trace ID** for audit linkage
+- Two action buttons:
+  - **✅ Approve** — Resumes execution, signs the intent, and sends it on-chain
+  - **❌ Reject** — Cancels the trade and logs the rejection reason
+
+> [!WARNING]
+> If no action is taken within **10 minutes**, the trade is automatically rejected with reason: *"HITL approval timed out"*. This enforces the fail-closed safety guarantee.
+
+### Step 13 — Audit Trail Tab (📝)
+
+Navigate via the sidebar document icon. This tab shows:
+
+- **Full Verifiable Audit Trail** — A table with columns:
+  - **Timestamp** — When the decision occurred
+  - **Action** — BUY / SELL / HOLD (color-coded)
+  - **Trading Pair** — e.g., BTC/USDC
+  - **Volume** — Trade size in USD
+  - **Arc L1 Proof** — Clickable link to Sepolia Etherscan transaction
+  - **Integrity** — `EIP-712` badge confirming cryptographic signature
+  - **Justification** — AI reasoning summary (hover for full text)
+- **"Export JSONL"** button — Downloads the complete audit log for compliance
+
+Every row in this table is backed by an EIP-712 signed checkpoint stored in `logs/audit.json`.
+
+### Step 14 — ESG Sentinel Tab (💚)
+
+Navigate via the sidebar heart icon. This tab displays sustainability metrics:
+
+- **Energy Efficiency** — 94.2% Renewable Energy Compute Index
+- **Carbon Offset Proof** — 12.4t Verifiable CO2e Neutralized
+- **Social Impact Score** — A+ Governance & Inclusion Metrics
+- **ESG Scoring Breakdown** — Progress bars for Environmental (92/100), Social (88/100), Governance (98/100)
+- **ESG Tier Badge** — "Platinum"
+- **"Download ESG Audit Report"** — For institutional compliance reporting
+
+### Step 15 — Agent Fleet Tab (👥)
+
+Navigate via the sidebar people icon. This tab manages multi-agent operations:
+
+#### Fleet Metrics
+| Metric | Value |
+|---|---|
+| Active Agents | 1 |
+| Fleet ROI (24h) | +3.12% |
+| ARC Stake | 1,250 |
+| Resource Usage | 12% |
+
+#### Agent Management
+- List of active agents with **Mode**, **Uptime**, and **PnL** for each
+- **"Config"** and **"Halt"** buttons per agent
+- **"Hire New Agent"** button opens a modal to deploy:
+  1. Select agent model (Guardian / Scout / Predator)
+  2. Set initial ARC allocation
+  3. Review gas estimate and registration fee
+  4. Confirm hiring
+
+#### Payroll & ARC
+- Current ARC balance with Deposit button
+- Pending invoices for compute operations
+- Billing history
+
+---
+
+## Quick Reference: System Lifecycle Commands
+
+| Action | Command |
+|---|---|
+| **Start the system** | `./start-app.sh` |
+| **Stop the system** | `./stop-app.sh` |
+| **Monitor logs** | `tail -f logs/sentinel.log` |
+| **Access dashboard** | `http://localhost:3006/dashboard` |
+| **Force restart from HALT** | `npm start -- --force-restart` |
+| **Check process status** | `ps -p $(cat pids/sentinel.pid)` |
+
+---
+
+## Summary: Complete User Flow
+
+```mermaid
+sequenceDiagram
+    participant U as Customer
+    participant L as Landing Page
+    participant O as Onboarding Wizard
+    participant D as Risk Terminal
+    participant A as Agent Brain
+    participant R as RiskRouter (On-Chain)
+
+    U->>L: Visit landing page
+    L->>O: Click "Onboard New Agent"
+    O->>O: Step 1: Connect wallet (MetaMask/Demo)
+    O->>O: Step 2: Mint ERC-8004 identity
+    O->>O: Step 3: Choose trading personality
+    O->>O: Step 4: Set risk guardrails
+    O->>R: Write guardrails to RiskRouter.sol
+    O->>D: Redirect to Risk Terminal
+    U->>D: Toggle "AI Automation" → ON
+    D->>A: Start continuous trading loop
+    A->>A: AI risk assessment every 5 min
+    A->>R: Sign & submit EIP-712 intent
+    R-->>A: Authorize or reject
+    A->>D: Emit real-time updates (WebSocket)
+    D->>U: Live metrics, reasoning cards, charts
+    Note over A,D: High-stakes trade detected ($1000+)
+    A->>D: Emit hitl.pending event
+    D->>U: Show HITL approval card
+    U->>D: Click Approve / Reject
+    D->>A: Resume or cancel trade
+    U->>D: Click "Session Report"
+    D->>U: Show PnL, win rate, export JSON
 ```
-
----
-
-## 3. System initialization (deep technical sequence)
-
-Initialization ensures all security dependencies are satisfied before entering the trading loop:
-
-1. **Bootstrap**: Environment variables are loaded (`dotenv.config()`) to prevent race conditions.
-2. **Environment Validation**: `validateEnv()` checks for mandatory keys (Kraken, Infura, etc.).
-3. **Metadata Loading**: `agent-id.json` is parsed to set the agent's identity and scaling factors.
-4. **On-Chain Sync**: The agent fetches its current nonce from the `RiskRouter` contract.
-5. **Market Data initialization**: The `OHLCVCollector` subscribes to WebSocket feeds for BTC, ETH, and SOL.
-6. **Execution Proxy Start**: Background listeners for trade execution and event reconciliation are launched.
-
-### Real terminal output (Initialization)
-
-The system uses structured JSON logging via Winston. Below is a representative startup sequence:
-
-```json
-{"level":"info","message":"Agent brain script loading...","step":"SCRIPT_LOADING","service":"vertex-sentinel","timestamp":"2026-05-12T22:00:00.000Z"}
-{"level":"info","message":"Environment variables successfully validated.","step":"ENV_VALIDATED","service":"vertex-sentinel","timestamp":"2026-05-12T22:00:00.005Z"}
-{"level":"info","message":"Agent metadata successfully loaded.","step":"METADATA_LOADED","agentId":1,"name":"Vertex Sentinel Layer","service":"vertex-sentinel","timestamp":"2026-05-12T22:00:00.010Z"}
-{"level":"info","message":"VERTEX SENTINEL — LIVE TRADING AGENT","module":"AGENT_BRAIN","step":"STARTUP_BANNER","agentId":1,"wallet":"0x123...","interval":"300s","service":"vertex-sentinel","timestamp":"2026-05-12T22:00:00.015Z"}
-{"level":"info","message":"Initial nonce fetched from chain.","module":"AGENT_BRAIN","step":"INITIAL_NONCE","nonce":"1","service":"vertex-sentinel","timestamp":"2026-05-12T22:00:01.000Z"}
-{"level":"info","message":"Server started on port 3006","module":"SOCKET_SERVER","step":"SERVER_START","port":3006,"service":"vertex-sentinel","timestamp":"2026-05-12T22:00:01.050Z"}
-```
-
----
-
-## 4. How trade risk is analyzed — mathematical deep dive
-
-Vertex Sentinel uses a hybrid risk model that combines deterministic manual penalties with LLM-based qualitative analysis.
-
-### Signals and manual penalties
-
-The `RiskAssessment` engine calculates a `manualPenalty` (clamped between 0.0 and 1.0) by summing individual risk factors:
-
-- **Spread Penalty**: Up to 0.8. Penalizes wide Bid/Ask spreads.
-- **Volatility Penalty**: Up to 0.4. Penalizes high 24h price swings.
-- **Volume Penalty**: Up to 0.3. Penalizes large trades relative to liquidity.
-- **Sentiment Penalty**: Up to 0.5. Penalizes bearish AI-detected sentiment.
-- **News Penalty**: Up to 0.6. Penalizes high-impact negative headlines.
-
-$$manualPenalty = \min(1.0, \sum penalties)$$
-
-### AI Risk Assessment
-
-The agent queries an AI provider (Google or Groq) to provide a `riskScore` (0.0 to 1.0) based on market data, portfolio balance, and news.
-
-#### AI Provider Failover
-
-To improve resiliency, the system supports automatic provider failover. The `AI_PROVIDER` environment variable sets the preferred provider ("google" or "groq"). At runtime, the system attempts requests against the configured primary provider and, on failures (HTTP 5xx, timeouts, or unrecoverable errors), transparently falls back to the secondary provider. Operators can observe failover events in logs (Winston JSON entries with step `PRIMARY_FAILED` and `ATTEMPT_FALLBACK`). The helper `getAIResponse()` encapsulates this logic and preserves backward-compatible behavior for callers.
-
-Configuration knobs:
-- AI_PROVIDER (default: google)
-- AI_MODEL (provider-specific model override)
-- AI_FAILOVER_ENABLED (optional boolean to disable auto-failover during testing)
-
-### Final Risk Score
-
-The final risk score is the maximum of the manual penalty and the AI's suggested score:
-
-$$RiskScore = \max(manualPenalty, AI\_RiskScore)$$
-
-**Enforcement Logic**: If the `RiskScore` exceeds 0.8 (Confidence < 20%), the trade is blocked (`HOLD`).
-
-### Worked example: SOL/USDC → Risk 0.32 (32%)
-
-1. **Market Signals**: Spread is 0.1%, Volatility is moderate.
-2. **Manual Penalty**: Sum of penalties results in 0.15.
-3. **AI Score**: AI detects moderate social volatility and suggests a risk of **0.32**.
-4. **Result**: `max(0.15, 0.32) = 0.32`. In logs, this appears as a 32% risk assessment.
-
-### Worked example: ETH/USDC → Risk 0.22 (22%)
-
-1. **Market Signals**: Low spread, low volatility.
-2. **Manual Penalty**: Sum of penalties is 0.05.
-3. **AI Score**: AI sees "Bullish" sentiment and suggests a risk of **0.22**.
-4. **Result**: `max(0.05, 0.22) = 0.22`. In logs, this appears as a 22% risk assessment.
-
----
-
-## 5. Execution modes: Paper Mode vs Live Mode
-
-| Feature | Paper Mode (`KRAKEN_PAPER_MODE=true`) | Live Mode (`KRAKEN_PAPER_MODE=false`) |
-| :--- | :--- | :--- |
-| **Intent Signing** | EIP-712 signed intents generated | EIP-712 signed intents generated |
-| **On-Chain Auth** | Submitted to `RiskRouter` (Sepolia/Local) | Submitted to `RiskRouter` (Mainnet) |
-| **Execution** | Simulated fills; no real capital moved | Real fills via Kraken API; real capital moved |
-| **PnL Tracking** | Tracked in `logs/pnl.json` (simulated) | Tracked in `logs/pnl.json` (real) |
-| **Security** | Fail-Closed gating enforced | Fail-Closed gating enforced |
-
----
-
-## 6. Heartbeats and Verification
-
-The agent maintains liveness and auditability through heartbeats:
-
-- **Attestation**: Every cycle, the agent posts its state checkpoint to the `ValidationRegistry` contract.
-- **Circle Nanopayments**: If `USE_CIRCLE_WAAS` is enabled, heartbeats are attested via a symbolic **0.001 USDC** nanopayment on the Arc L1.
-- **Fail-Closed**: If `AGENTSTACK_REQUIRED` is true, the agent must verify its data with the AgentStack orchestrator; otherwise, the trade is blocked.
-
-### Protocol Pausing (Operator Safety & Multisig)
-
-A new protocol-level pause mechanism allows operators to immediately halt authorization and configuration changes. The `RiskRouter` contract exposes `pause()` and `unpause()` functions restricted to either the contract owner or a configured multisig owner (e.g., a Gnosis Safe). When paused:
-
-- `submitTradeIntent` will reject new intents with `Protocol Paused`.
-- Administrative functions such as `setRiskParams` and `setPriceFeed` will be disabled.
-
-Operators should configure a multisig address via `setMultisigOwner()` during deployment and include the multisig in incident response runbooks. Pausing is intended as an emergency safeguard during audits, oracle failures, or suspected security incidents.
-
----
-
-## 7. Notifications and Alerts
-
-The agent emits structured alerts to console and optionally to Telegram:
-
-- **Trade Authorized**: Sent when an intent passes risk checks and is authorized on-chain.
-- **Risk Alert**: Sent when `riskScore > 0.6`.
-- **HITL Pending**: Sent when a trade exceeds `HITL_THRESHOLD_USD` (default $1,000) and awaits manual approval.
-
----
-
-## 8. Reading terminal & dashboard metrics
-
-The Vertex Sentinel provides a minimal API for monitoring resource usage and quotas.
-
-### Key Endpoints
-
-- **GET `/api/quota`**: Returns current AI usage metrics for the active provider (Google or Groq).
-  - **Sample Response**:
-    ```json
-    {
-      "provider": "groq",
-      "dailyUsage": 45,
-      "dailyQuota": 14400,
-      "remaining": 14355
-    }
-    ```
-
-### Troubleshooting Checklist
-
-1. **System Halted?**: Check for the presence of `logs/HALTED`. This file is created on critical security failures (e.g., missing API keys).
-2. **Trade not executing?**: Check `logs/app.log` for `INTENT_SKIPPED` or `RISK_ASSESSMENT` scores > 0.8.
-3. **Nonce Mismatch?**: The agent will automatically attempt to refresh its nonce on the next cycle if a transaction fails.
-
----
-
-## 9. Appendices
-
-### Appendix A: Sample .env and risk-engine tuning
-
-```bash
-# Risk Weights (Internal to LLM prompt)
-# Adjust these via the prompt template in risk_assessment.ts
-# Global Thresholds
-HITL_THRESHOLD_USD=1000
-MIN_EXPECTED_ROI=-0.002
-```
-
-### Appendix B: Future Roadmap (Q3)
-
-The following features are planned for the Q3 release:
-- **Advanced /metrics Endpoint**: Full Prometheus-compatible exporter for Prometheus/Grafana.
-- **Operational Shell Scripts**: `nonce_force_sync.sh` and `heartbeat_status.sh` for automated SRE recovery.
-- **Unified Risk Dashboard**: Integrated visual terminal combining quota, PnL, and on-chain health in a single glassmorphism UI.
-- **Multi-Exchange Support**: Native execution support for Binance and Coinbase International.
-
----
-*End of User Guide.*
