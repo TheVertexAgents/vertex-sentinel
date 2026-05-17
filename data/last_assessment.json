@@ -1,9 +1,9 @@
 {
-  "volatility": 0.0012520483049956188,
+  "volatility": 0.0008600785597051848,
   "suggestion": {
-    "suggestedMaxPositionScaled": 10500,
-    "suggestedTradesPerHour": 105,
-    "reasoning": "Trailing volatility remains relatively low at 0.1252% and the price action over the last 8 minutes demonstrates a stable upward trend. Although candle lows show a consistent outlier value, closing prices are tightly clustered with healthy volume. A cautious 5% increase in position limits and trade frequency is recommended to capitalize on the current market stability while adhering to the institutional safety mandate."
+    "suggestedMaxPositionScaled": 8000,
+    "suggestedTradesPerHour": 100,
+    "reasoning": "High market volatility requires reducing position limits to mitigate potential losses."
   },
-  "timestamp": 1778065825515
+  "timestamp": 1779042323812
 }
