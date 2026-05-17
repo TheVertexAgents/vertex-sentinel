@@ -61,6 +61,11 @@ export class QuotaTracker {
     }
   }
 
+  public resetForTest() {
+    this.state = { date: new Date().toISOString().split('T')[0], count: 0 };
+    this.saveState();
+  }
+
   public getUsage() {
     this.resetIfNewDay();
     return {

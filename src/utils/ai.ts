@@ -77,6 +77,12 @@ class CircuitBreaker {
 
 const circuitBreaker = new CircuitBreaker();
 
+export function resetAIGlobals() {
+  (limiter as any).requests = [];
+  (circuitBreaker as any).failures = 0;
+  QuotaTracker.getInstance().resetForTest();
+}
+
 export function getCachedAI(key: string) {
   const cached = aiCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {

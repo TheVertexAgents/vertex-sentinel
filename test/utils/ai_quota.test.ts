@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { generateWithRetry } from '../../src/utils/ai.js';
+import { generateWithRetry, resetAIGlobals } from '../../src/utils/ai.js';
 import sinon from 'sinon';
 
 describe('AI Rate Limiter & Quota Management (#148)', function() {
@@ -10,6 +10,7 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
   beforeEach(async () => {
     const aiModule = await import('../../src/utils/ai.js');
     aiStub = sinon.stub(aiModule.ai, 'generate');
+    resetAIGlobals();
   });
 
   afterEach(() => {

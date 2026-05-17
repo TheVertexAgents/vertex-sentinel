@@ -41,6 +41,7 @@ export function startSocketServer() {
   if (fs.existsSync(dashboardPath)) {
     logger.info({ module: 'SERVER', step: 'SERVING_STATIC', path: dashboardPath });
     app.use(express.static(dashboardPath));
+    app.use('/dashboard', express.static(dashboardPath));
 
     app.get('/dashboard', (_req: Request, res: Response) => {
       res.sendFile(path.join(dashboardPath, 'index.html'));
@@ -50,6 +51,11 @@ export function startSocketServer() {
       res.sendFile(path.join(dashboardPath, 'onboarding.html'));
     });
   }
+
+  // Pitch Deck
+  app.get('/pitch-deck.html', (_req: Request, res: Response) => {
+    res.sendFile(path.join(process.cwd(), 'pitch-deck.html'));
+  });
 
   // Socket.io Setup
   const io = new Server(httpServer, {
