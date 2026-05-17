@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -9,9 +9,6 @@ import { EventEmitter } from 'events';
 import { logger } from '../utils/logger.js';
 import { QuotaTracker } from '../utils/quota-tracker.js';
 import { PnLTracker } from '../logic/pnl/tracker.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
@@ -45,11 +42,11 @@ export function startSocketServer() {
     logger.info({ module: 'SERVER', step: 'SERVING_STATIC', path: dashboardPath });
     app.use(express.static(dashboardPath));
 
-    app.get('/dashboard', (req, res) => {
+    app.get('/dashboard', (_req: Request, res: Response) => {
       res.sendFile(path.join(dashboardPath, 'index.html'));
     });
 
-    app.get('/onboarding', (req, res) => {
+    app.get('/onboarding', (_req: Request, res: Response) => {
       res.sendFile(path.join(dashboardPath, 'onboarding.html'));
     });
   }
@@ -63,11 +60,11 @@ export function startSocketServer() {
   });
 
   // REST Endpoints
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString(), version: '1.1.0' });
   });
 
-  app.get('/api/quota', (req, res) => {
+  app.get('/api/quota', (_req: Request, res: Response) => {
     const usage = QuotaTracker.getInstance().getUsage();
     res.json(usage);
   });
@@ -76,7 +73,7 @@ export function startSocketServer() {
    * GET /api/agent
    * Returns current agent metadata from agent-id.json
    */
-  app.get('/api/agent', (req, res) => {
+  app.get('/api/agent', (_req: Request, res: Response) => {
     const agentIdPath = path.join(process.cwd(), 'agent-id.json');
     if (fs.existsSync(agentIdPath)) {
       try {
@@ -94,7 +91,7 @@ export function startSocketServer() {
    * GET /api/pnl
    * Returns live PnL metrics from memory (with file-based fallback)
    */
-  app.get('/api/pnl', (req, res) => {
+  app.get('/api/pnl', (_req: Request, res: Response) => {
     try {
       const metrics = getPnLTracker().getMetrics();
       res.json(metrics);
@@ -118,7 +115,7 @@ export function startSocketServer() {
    * GET /api/audit
    * Returns paginated audit trail from logs/audit.json
    */
-  app.get('/api/audit', (req, res) => {
+  app.get('/api/audit', (req: Request, res: Response) => {
     const auditPath = path.join(process.cwd(), 'logs/audit.json');
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
@@ -155,7 +152,7 @@ export function startSocketServer() {
    * GET /api/automation
    * Returns current automation state
    */
-  app.get('/api/automation', (req, res) => {
+  app.get('/api/automation', (_req: Request, res: Response) => {
     const statePath = path.join(process.cwd(), 'logs/automation_state.json');
     if (fs.existsSync(statePath)) {
       try {
@@ -173,10 +170,11 @@ export function startSocketServer() {
    * POST /api/automation/toggle
    * Toggles automation state
    */
-  app.post('/api/automation/toggle', (req, res) => {
+  app.post('/api/automation/toggle', (req: Request, res: Response) => {
     const { enabled } = req.body;
     if (typeof enabled !== 'boolean') {
-      return res.status(400).json({ error: 'Invalid enabled state' });
+      res.status(400).json({ error: 'Invalid enabled state' });
+      return;
     }
 
     const statePath = path.join(process.cwd(), 'logs/automation_state.json');
