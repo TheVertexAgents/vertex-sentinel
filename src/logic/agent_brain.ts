@@ -361,7 +361,7 @@ async function signIntent(intent: TradeIntent, privateKey: Hex): Promise<Authori
 const TRADING_INTERVAL_MS = parseInt(process.env.TRADING_INTERVAL_MS || '300000', 10);
 
 let isRunning = true;
-let isAutomationEnabled = true; // Master Toggle State
+let isAutomationEnabled = false; // Master Toggle State (Default to OFF)
 let sleepResolve: ((value: unknown) => void) | null = null;
 
 const AUTOMATION_STATE_PATH = path.join(process.cwd(), 'logs/automation_state.json');
@@ -370,7 +370,7 @@ function loadAutomationState() {
   if (fs.existsSync(AUTOMATION_STATE_PATH)) {
     try {
       const data = JSON.parse(fs.readFileSync(AUTOMATION_STATE_PATH, 'utf8'));
-      isAutomationEnabled = data.enabled !== false;
+      isAutomationEnabled = data.enabled === true;
       logger.info({ module: 'AGENT_BRAIN', step: 'LOAD_AUTOMATION_STATE', enabled: isAutomationEnabled });
     } catch (e) {
       logger.warn({ module: 'AGENT_BRAIN', step: 'LOAD_AUTOMATION_STATE_FAILED', error: e instanceof Error ? e.message : String(e) });

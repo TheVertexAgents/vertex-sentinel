@@ -59,18 +59,14 @@ start_service() {
     echo "✅ $SERVICE_NAME started (PID: $NEW_PID). Logs at $LOG_FILE"
 }
 
-# Start the Agent Brain (Trading Logic)
-start_service "agent" "npm run start"
-
-# Start the Live Dashboard
-start_service "dashboard" "npm run dashboard"
+# Start the Unified Agent Server (Trading Logic + API + Dashboard)
+start_service "sentinel" "npm run start"
 
 echo ""
-echo "All requested services have been started in the background."
-echo "Use './stop-app.sh' to gracefully shut them down."
+echo "Vertex Sentinel has been started in the background (Unified Server)."
+echo "Use './stop-app.sh' to gracefully shut it down."
 echo ""
 echo "🔍 How to verify the services are running:"
-echo "  1. Monitor Agent Logs:      tail -f logs/agent.log"
-echo "  2. Monitor Dashboard Logs:  tail -f logs/dashboard.log"
-echo "  3. View Dashboard UI:       http://localhost:3005/dashboard/index.html"
-echo "  4. Check process status:    ps -p \$(cat pids/agent.pid) \$(cat pids/dashboard.pid)"
+echo "  1. Monitor Unified Logs:    tail -f logs/sentinel.log"
+echo "  2. View Dashboard UI:       http://localhost:3006/"
+echo "  3. Check process status:    ps -p \$(cat pids/sentinel.pid)"
