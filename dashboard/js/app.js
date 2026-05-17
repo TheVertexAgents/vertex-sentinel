@@ -451,4 +451,45 @@ document.getElementById('close-reasoning-modal').addEventListener('click', () =>
     document.getElementById('reasoning-modal').classList.add('hidden');
 });
 
+// Session Report Modal Listeners
+const pnlModal = document.getElementById('pnl-modal');
+document.getElementById('session-report-btn').addEventListener('click', async () => {
+    pnlModal.classList.remove('hidden');
+    document.getElementById('report-status-banner').textContent = 'FETCHING...';
+    try {
+        const metrics = await api.fetchPnL();
+        document.getElementById('report-session-id').textContent = 'SESSION: ' + (metrics.sessionId || 'ACTIVE');
+        document.getElementById('report-realized').textContent = '$' + (metrics.totalPnL || 0).toFixed(2);
+        document.getElementById('report-winrate').textContent = (metrics.winRate || 0).toFixed(0) + '%';
+        document.getElementById('report-mdd').textContent = (metrics.maxDrawdown || 0).toFixed(2) + '%';
+        document.getElementById('report-savings').textContent = '$' + (metrics.sentinelSavings || 0).toFixed(2);
+        document.getElementById('report-status-banner').textContent = 'LIVE';
+        document.getElementById('report-status-banner').className = 'px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs bg-emerald/20 text-emerald';
+    } catch (e) {
+        document.getElementById('report-status-banner').textContent = 'ERROR';
+    }
+});
+
+document.getElementById('close-pnl-modal').addEventListener('click', () => {
+    pnlModal.classList.add('hidden');
+});
+
+// Hire Agent Modal Listeners
+const hireModal = document.getElementById('hire-modal');
+const hireBtns = [document.getElementById('hire-agent-btn'), document.getElementById('hire-agent-fleet-btn')];
+hireBtns.forEach(btn => {
+    if (btn) {
+        btn.addEventListener('click', () => hireModal.classList.remove('hidden'));
+    }
+});
+
+document.getElementById('close-modal').addEventListener('click', () => {
+    hireModal.classList.add('hidden');
+});
+
+document.getElementById('confirm-hire-btn').addEventListener('click', () => {
+    alert("Hiring sequence initiated on Arc L1. Waiting for validator attestations...");
+    hireModal.classList.add('hidden');
+});
+
 init();
