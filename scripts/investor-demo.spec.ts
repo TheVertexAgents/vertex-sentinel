@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  */
 test('Investor Demo Walkthrough', async ({ page }) => {
   // Setup: Enable Demo Mode
-  await page.goto('http://localhost:3005/dashboard/onboarding.html');
+  await page.goto('http://localhost:3006/onboarding.html');
   await page.evaluate(() => {
     localStorage.setItem('DEMO_MODE', 'true');
     localStorage.setItem('THEME', 'light');
@@ -45,7 +45,7 @@ test('Investor Demo Walkthrough', async ({ page }) => {
 
   // Final Success Step
   await page.screenshot({ path: 'verification/investor/05-success.png' });
-  await page.goto('http://localhost:3005/dashboard/index.html');
+  await page.goto('http://localhost:3006/index.html');
 
   // Scene 3: The Risk Terminal (Institutional Light)
   await page.waitForTimeout(2000);
