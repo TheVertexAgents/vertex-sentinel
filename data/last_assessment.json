@@ -1,9 +1,9 @@
 {
-  "volatility": 0.0008600785597051848,
+  "volatility": 0.002124625662287382,
   "suggestion": {
     "suggestedMaxPositionScaled": 8000,
     "suggestedTradesPerHour": 100,
-    "reasoning": "High market volatility requires reducing position limits to mitigate potential losses."
+    "reasoning": "Volatility is higher than the current limit, thus a reduction in position limits is suggested to mitigate risk. The new suggested max position is $8000.00, representing a 20% decrease from the current limit."
   },
-  "timestamp": 1779042323812
+  "timestamp": 1779098523012
 }
