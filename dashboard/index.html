@@ -300,11 +300,10 @@
 
             <!-- TAB: HITL APPROVAL -->
             <section id="view-hitl" class="hidden space-y-6">
-                <div class="glass p-8">
-                    <h3 class="text-xl font-bold mb-2">High-Stakes Pending Approvals</h3>
-                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Human-in-the-Loop Verification Module</p>
+                <div class="glass p-8 border-white/5">
+                    <h3 class="text-xl font-bold mb-8 uppercase italic tracking-tight">Pending Trade Authorizations</h3>
 
-                    <div id="hitl-container" class="space-y-4">
+                    <div id="hitl-container" class="space-y-6">
                         <!-- Pending requests will appear here -->
                         <div class="text-gray-600 text-xs italic p-12 text-center border border-dashed border-white/5 rounded-xl">
                             No pending high-stakes trade authorizations...
@@ -315,80 +314,110 @@
 
             <!-- TAB: AGENT OPERATIONS -->
             <section id="view-operations" class="hidden space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Arc L1 Control -->
-                    <div class="lg:col-span-2 glass p-8">
-                        <div class="flex justify-between items-start mb-8">
-                            <div>
-                                <h3 class="text-xl font-bold">Agent Control Dashboard</h3>
-                                <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Arc L1 Infrastructure & Risk Tuning</p>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="px-3 py-1 bg-emerald/10 text-emerald text-[10px] font-bold rounded border border-emerald/20 uppercase tracking-widest">Arc L1: Connected</span>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Control Center -->
+                    <div class="glass p-8 border-cyan/10">
+                        <h3 class="text-xl font-bold mb-8 uppercase italic tracking-tight">Control Center</h3>
+
+                        <div class="flex flex-col md:flex-row gap-12">
+                            <!-- Vertical Slider + Value Display -->
+                            <div class="flex items-center gap-6 h-64">
+                                <div class="h-full w-1.5 bg-white/5 rounded-full relative">
+                                    <div class="absolute bottom-0 w-full bg-cyan shadow-[0_0_10px_rgba(0,229,255,0.5)] rounded-full" id="slider-max-pos-v-bar" style="height: 30%"></div>
+                                    <input type="range" id="slider-max-pos-v" min="100" max="10000" step="100" value="3000"
+                                           style="transform: rotate(-90deg); width: 256px; position: absolute; top: 125px; left: -127px; opacity: 0; cursor: pointer;">
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Risk Calibration</p>
+                                    <h2 class="text-4xl font-black text-cyan glow-cyan italic" id="val-max-pos-large">$10,000</h2>
+
+                                    <div class="mt-8 space-y-6">
+                                        <div>
+                                            <p class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Max Position $)</p>
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex-grow h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-cyan" style="width: 40%"></div>
+                                                </div>
+                                                <span class="text-cyan font-bold mono">5</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-bold text-white uppercase tracking-widest mb-2">Trades Per Hour</p>
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex-grow h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-cyan" style="width: 20%"></div>
+                                                </div>
+                                                <span class="text-cyan font-bold mono">5</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                            <!-- Tuning -->
-                            <div class="space-y-8">
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Max Position Size ($)</label>
-                                        <span id="val-max-pos" class="text-sm font-bold text-cyan mono">$1,000</span>
-                                    </div>
-                                    <input type="range" id="slider-max-pos" min="100" max="10000" step="100" value="1000">
-                                </div>
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trades Per Hour</label>
-                                        <span id="val-max-trades" class="text-sm font-bold text-amber mono">5</span>
-                                    </div>
-                                    <input type="range" id="slider-max-trades" min="1" max="50" step="1" value="5">
-                                </div>
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sentiment Weight</label>
-                                        <span id="val-sent-weight" class="text-sm font-bold text-purple-400 mono">0.5</span>
-                                    </div>
-                                    <input type="range" id="slider-sent-weight" min="0" max="1" step="0.1" value="0.5">
-                                </div>
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Liquidity Floor ($)</label>
-                                        <span id="val-liq-floor" class="text-sm font-bold text-emerald mono">$10k</span>
-                                    </div>
-                                    <input type="range" id="slider-liq-floor" min="1000" max="100000" step="1000" value="10000">
-                                </div>
-                                <button id="update-risk-btn" class="w-full py-4 bg-cyan/10 hover:bg-cyan/20 text-cyan text-xs font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all active:scale-95">
-                                    Update Risk Parameters
-                                </button>
-                                <div class="flex items-center justify-between p-4 bg-amber/5 border border-amber/20 rounded-lg">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-2 h-2 rounded-full bg-amber animate-pulse"></div>
-                                        <span class="text-[10px] font-bold text-amber uppercase tracking-widest">Manual Guardrail Pin</span>
-                                    </div>
-                                    <label class="switch scale-75">
-                                        <input type="checkbox" id="guardrail-pin">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Panic & Operations -->
-                            <div class="space-y-6 flex flex-col justify-center">
-                                <div class="p-6 bg-crimson/5 rounded-xl border border-crimson/20 text-center">
-                                    <h4 class="text-crimson text-sm font-bold uppercase tracking-widest mb-2">Emergency Protocol</h4>
-                                    <p class="text-[10px] text-gray-500 mb-6">De-Risk all assets and halt Agent Brain immediately via on-chain deactivation.</p>
-                                    <button id="panic-btn" class="w-full py-4 bg-crimson hover:bg-red-600 text-white text-xs font-black uppercase tracking-[0.3em] rounded-lg shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all active:scale-95">
-                                        DE-RISK / HALT
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="mt-12">
+                            <button id="update-risk-btn" class="px-8 py-3 bg-cyan/10 hover:bg-cyan/20 text-cyan text-[11px] font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all active:scale-95">
+                                Update Risk Parameters
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Sidebar: Arc L1 Stats & Hiring -->
-                    <div class="space-y-6">
+                    <!-- Emergency Protocol -->
+                    <div class="glass p-8 border-white/5 flex flex-col">
+                        <h3 class="text-xl font-bold mb-8 uppercase italic tracking-tight">Emergency Protocol</h3>
+
+                        <div class="flex-grow flex items-center justify-center">
+                            <div id="panic-btn" class="panic-button-large">
+                                <div>
+                                    <div class="text-[18px] font-black tracking-tighter leading-none mb-1">DE-RISK /</div>
+                                    <div class="text-[18px] font-black tracking-tighter leading-none">HALT</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 p-4 bg-amber/5 border border-amber/20 rounded-lg flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-amber animate-pulse"></div>
+                                <span class="text-[11px] font-bold text-amber uppercase tracking-widest">Manual Guardrail Pin</span>
+                            </div>
+                            <label class="switch scale-75">
+                                <input type="checkbox" id="guardrail-pin">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console -->
+                <div class="glass p-8 border-white/5">
+                    <h3 class="text-xl font-bold mb-6 uppercase italic tracking-tight">Console</h3>
+                    <div class="bg-black/40 rounded-xl p-6 border border-white/5 h-48 overflow-y-auto font-mono text-[13px] leading-relaxed text-emerald/80" id="console-output">
+                        <div class="flex gap-4">
+                            <span class="opacity-40">|</span>
+                            <p>[TXN-HASH-82X..] Agent SENTINEL updated</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <span class="opacity-40">|</span>
+                            <p>Agent SENTINEL-007 parameters updated.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <span class="opacity-40">|</span>
+                            <p>[TXN-HASH-3YJ..] Risk protocol initated.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs for existing logic compatibility -->
+                <div class="hidden">
+                    <input type="range" id="slider-max-pos" min="100" max="10000" value="1000">
+                    <input type="range" id="slider-max-trades" min="1" max="50" value="5">
+                    <input type="range" id="slider-sent-weight" min="0" max="1" step="0.1" value="0.5">
+                    <input type="range" id="slider-liq-floor" min="1000" max="100000" value="10000">
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Sidebar: Arc L1 Stats & Hiring (Restored) -->
+                    <div class="lg:col-span-1 space-y-6">
                         <div class="glass p-6">
                             <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Agent Stack Ops</h4>
                             <div class="space-y-4">
@@ -602,28 +631,28 @@
             <section id="view-audit" class="hidden space-y-6">
                 <div class="glass overflow-hidden">
                     <div class="p-6 border-b border-white/5 bg-white/2 flex justify-between items-center">
-                        <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Full Verifiable Audit Trail</h4>
+                        <h2 class="text-2xl font-bold tracking-tight text-white uppercase italic">Technical Audit Log</h2>
                         <div class="flex gap-4">
-                             <button id="export-btn" class="text-[10px] font-bold text-cyan hover:underline uppercase tracking-widest">Export JSONL</button>
+                             <button id="export-btn" class="px-4 py-2 bg-cyan/10 hover:bg-cyan/20 text-cyan text-[11px] font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all">Export JSONL</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="text-gray-500 text-[10px] uppercase tracking-[0.2em]">
-                                    <th class="px-8 py-5 font-bold">Timestamp</th>
-                                    <th class="px-8 py-5 font-bold">Action</th>
-                                    <th class="px-8 py-5 font-bold">Trading Pair</th>
-                                    <th class="px-8 py-5 font-bold text-right">Volume</th>
-                                    <th class="px-8 py-5 font-bold text-center">Arc L1 Proof</th>
-                                    <th class="px-8 py-5 font-bold text-center">Integrity</th>
-                                    <th class="px-8 py-5 font-bold">Justification</th>
+                                <tr class="text-gray-500 text-[11px] uppercase tracking-widest border-b border-white/5">
+                                    <th class="px-8 py-6 font-bold">Timestph</th>
+                                    <th class="px-8 py-6 font-bold">Action</th>
+                                    <th class="px-8 py-6 font-bold">Pair</th>
+                                    <th class="px-8 py-6 font-bold text-right">Pair</th>
+                                    <th class="px-8 py-6 font-bold text-right">Volume (Proof)</th>
+                                    <th class="px-8 py-6 font-bold text-right">Volume ($)</th>
+                                    <th class="px-8 py-6 font-bold text-center">Integrity Badge</th>
                                 </tr>
                             </thead>
-                            <tbody id="log-body" class="text-[11px] mono">
+                            <tbody id="log-body" class="text-[13px] mono">
                                 <!-- Rows injected here -->
                                 <tr>
-                                    <td colspan="7" class="px-8 py-12 text-center text-gray-600 italic">Initializing Audit Engine...</td>
+                                    <td colspan="7" class="px-8 py-16 text-center text-gray-600 italic">Initializing Audit Engine...</td>
                                 </tr>
                             </tbody>
                         </table>
