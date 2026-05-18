@@ -1,11 +1,12 @@
 import { expect } from 'chai';
-import { generateWithRetry, ai } from '../../src/utils/ai.js';
+import { generateWithRetry, ai, resetAIGlobals } from '../../src/utils/ai.js';
 import sinon from 'sinon';
 
 describe('AI Provider Integration (Groq)', function() {
   let aiStub: sinon.SinonStub;
 
   beforeEach(() => {
+    resetAIGlobals();
     aiStub = sinon.stub(ai, 'generate');
   });
 
