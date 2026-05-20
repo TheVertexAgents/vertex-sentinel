@@ -249,3 +249,12 @@ input[type=range]::-webkit-slider-thumb {
 .dark-theme ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
 .dark-theme ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
 .dark-theme ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Emergency Fix: Ensure TradingView toolbar is visible (temporary) */
+#tradingview-widget iframe {
+    min-width: 100% !important;
+    height: 100% !important;
+}
+.tv-embed-widget-wrapper__body {
+    overflow: visible !important;
+}
