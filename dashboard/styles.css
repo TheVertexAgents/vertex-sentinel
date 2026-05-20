@@ -249,3 +249,16 @@ input[type=range]::-webkit-slider-thumb {
 .dark-theme ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
 .dark-theme ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
 .dark-theme ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Emergency: force TradingView side toolbar visibility (TEMPORARY) */
+/* TODO: Remove this emergency override after root-cause is remediated and verified (see PR #187) */
+.tradingview-widget-container .tv-side-toolbar,
+.tradingview-widget-container .tv-side-toolbar * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  z-index: 99999 !important;
+}
+

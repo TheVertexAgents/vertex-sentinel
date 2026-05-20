@@ -1,0 +1,252 @@
+◇ injected env (32) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+
+  Vertex Sentinel — E2E PnL Scenario
+{"level":"info","message":{"amountUsd":187.5,"module":"PnLTracker","step":"SAVINGS_RECORDED","totalSavings":187.5},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.453Z"}
+
+╔══════════════════════════════════════════╗
+║      VERTEX SENTINEL — SESSION REPORT    ║
+╠══════════════════════════════════════════╣
+║  Total Trades   : 6                      ║
+║  Realized PnL   : +$99.07          ✅ PROFIT  ║
+║  Win Rate       : 66.67                  %║
+║  Max Drawdown   : 82.11                  %║
+║  Sharpe Ratio   : 0.27                   ║
+║  Sentinel Saved : $187.50                ║
+╚══════════════════════════════════════════╝
+
+Session report saved to logs/pnl_report.json
+    ✔ should process a full session of 6 trades and generate a PnL report
+
+  Execution Proxy Unit Tests
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.532Z"}
+    ✔ should initialize correctly with given address
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.536Z"}
+    ✔ should throw CriticalSecurityException if AGENT_PRIVATE_KEY is missing
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.540Z"}
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":11155111,"contractAddress":"0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"sepolia","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.542Z"}
+    ✔ should use fallback RiskRouter address if network is sepolia and deployments file is missing
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.545Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:09.550Z"}
+{"TRACE_ID":"TEST-TRACE-REAL-123","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.573Z","volume":"1000000000000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.575Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:09.576Z"}
+{"level":"info","message":{"event":"get_ticker","module":"KrakenService","symbol":"XBTUSD","timestamp":"2026-05-20T08:27:09.582Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:09.582Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.126Z"}
+{"TRACE_ID":"TEST-TRACE-REAL-123","consecutiveFailures":1,"error":"kraken does not have market symbol XBTUSD","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.127Z"}
+    ✔ should attempt real MCP loopback execution for trade (1583ms)
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.135Z"}
+{"TRACE_ID":"TEST-TRACE-BTC","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.139Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.140Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:11.140Z"}
+{"TRACE_ID":"TEST-TRACE-BTC","calculatedLimitPrice":50500,"level":"error","message":"Executing Limit Order with Slippage Enforcement","module":"ExecutionProxy","referencePrice":50000,"service":"vertex-sentinel","side":"BUY","slippageBps":"100","timestamp":"2026-05-20T08:27:11.148Z"}
+{"TRACE_ID":"TEST-TRACE-ETH","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"ETH/USDT","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.151Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.152Z"}
+{"TRACE_ID":"TEST-TRACE-ETH","calculatedLimitPrice":50500,"level":"error","message":"Executing Limit Order with Slippage Enforcement","module":"ExecutionProxy","referencePrice":50000,"service":"vertex-sentinel","side":"BUY","slippageBps":"100","timestamp":"2026-05-20T08:27:11.152Z"}
+    ✔ should map BTC/USD to XBTUSD and ETH/USDT to ETHUSD correctly
+    Day 3-4 Resilience: Circuit Breaker & Retry Logic
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.156Z"}
+{"TRACE_ID":"TEST-FORMAT","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.164Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.165Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:11.165Z"}
+{"TRACE_ID":"TEST-FORMAT","calculatedLimitPrice":50500.12469136,"level":"error","message":"Executing Limit Order with Slippage Enforcement","module":"ExecutionProxy","referencePrice":50000.123456789,"service":"vertex-sentinel","side":"BUY","slippageBps":"100","timestamp":"2026-05-20T08:27:11.180Z"}
+      ✔ should format volume and price correctly for Kraken
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.201Z"}
+{"TRACE_ID":"TEST-NO-RETRY-IN-PROXY","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.205Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.205Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:11.206Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.211Z"}
+{"TRACE_ID":"TEST-NO-RETRY-IN-PROXY","consecutiveFailures":1,"error":"502 Bad Gateway","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.212Z"}
+      ✔ should NOT retry in proxy because retry is now in KrakenService
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.233Z"}
+{"TRACE_ID":"TEST-CB-0","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.236Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.237Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:11.237Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.243Z"}
+{"TRACE_ID":"TEST-CB-0","consecutiveFailures":1,"error":"Exchange error: Connection lost","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.243Z"}
+{"TRACE_ID":"TEST-CB-1","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.243Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.244Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.244Z"}
+{"TRACE_ID":"TEST-CB-1","consecutiveFailures":2,"error":"Exchange error: Connection lost","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.244Z"}
+{"TRACE_ID":"TEST-CB-2","action":"buy","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.244Z","volume":"100000"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.245Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.245Z"}
+{"TRACE_ID":"TEST-CB-2","consecutiveFailures":3,"level":"error","message":"CIRCUIT BREAKER TRIPPED OPEN","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.245Z"}
+{"TRACE_ID":"TEST-CB-2","consecutiveFailures":3,"error":"Exchange error: Connection lost","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.245Z"}
+{"TRACE_ID":"TEST-CB-BLOCKED","level":"error","message":"Circuit Breaker is OPEN. Trade blocked.","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.246Z"}
+      ✔ should open Circuit Breaker after 3 consecutive execution failures
+
+  Sentinel Full Loop Integration
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.249Z"}
+{"level":"info","message":{"module":"RISK_STRATEGY","pair":"BTC/USD","step":"ANALYSIS_START"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.250Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:11.251Z"}
+{"level":"info","message":{"event":"get_ticker","module":"KrakenService","symbol":"BTC/USD","timestamp":"2026-05-20T08:27:11.257Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.257Z"}
+{"level":"info","message":{"event":"get_balance","module":"KrakenService","timestamp":"2026-05-20T08:27:11.257Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.257Z"}
+{"level":"info","message":{"event":"get_trade_history","module":"KrakenService","timestamp":"2026-05-20T08:27:11.257Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.257Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"SENTIMENT","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:11.262Z"}
+{"level":"info","message":{"module":"SENTIMENT","pair":"BTC/USD","step":"FETCH_SUCCESS"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:14.760Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:17.744Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:17.744Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"AI_RISK","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:17.745Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:22.972Z"}
+{"level":"info","message":{"module":"AGENT_STACK_CLIENT","pair":"BTC/USD","step":"REQUEST_START","url":"http://localhost:3003/orchestrate"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:22.972Z"}
+{"level":"error","message":{"error":"fetch failed","module":"AGENT_STACK_CLIENT","step":"FAILED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:22.982Z"}
+{"error":"fetch failed","level":"error","message":"Fail-Closed: AgentStack verification failed. Blocking trade per Verified-or-Die rule.","module":"RISK_ASSESSMENT","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:22.982Z"}
+{"agentAddress":"0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf","chainId":31337,"contractAddress":"0x0000000000000000000000000000000000000000","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"local","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:22.996Z"}
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:22.998Z"}
+{"level":"error","message":"Processing direct trade authorization","module":"ExecutionProxy","pair":"BTC/USD","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.006Z","traceId":"TEST-E2E-LOOP-1779265643006","volume":"0"}
+{"TRACE_ID":"TEST-E2E-LOOP-1779265643006","action":"HOLD","level":"error","maxSlippageBps":"100","message":"Submitting order via KrakenService...","module":"ExecutionProxy","pair":"BTC/USD","paperMode":false,"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.006Z","volume":"0"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.007Z"}
+{"level":"info","message":{"event":"get_ticker","module":"KrakenService","symbol":"XBTUSD","timestamp":"2026-05-20T08:27:23.007Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.007Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.007Z"}
+{"TRACE_ID":"TEST-E2E-LOOP-1779265643006","consecutiveFailures":1,"error":"kraken does not have market symbol XBTUSD","errorCode":"ERR_KRAKEN_API_FAIL","level":"error","message":"Order Execution Failed (Fail-Closed)","module":"ExecutionProxy","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.007Z"}
+    ✔ Should assessment, sign, authorize on-chain, and execute on Kraken (11760ms)
+
+  Sentiment Integration (Issue #110)
+{"level":"warn","message":{"attempt":1,"error":"Network error","module":"NEWS_FEED","nextAction":"RETRYING","provider":"CoinGecko","step":"FETCH_ATTEMPT_FAILED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:23.010Z"}
+{"level":"warn","message":{"attempt":2,"error":"Network error","module":"NEWS_FEED","nextAction":"RETRYING","provider":"CoinGecko","step":"FETCH_ATTEMPT_FAILED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:25.013Z"}
+{"level":"warn","message":{"attempt":3,"error":"Network error","module":"NEWS_FEED","nextAction":"FALLBACK","provider":"CoinGecko","step":"FETCH_ATTEMPT_FAILED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.015Z"}
+    ✔ Should fetch news and return neutral fallback if API is down (6006ms)
+    ✔ Should parse CoinGecko response correctly
+    ✔ Should apply news manual penalty for negative high-impact news
+
+  Sepolia Connectivity & Configuration
+◇ injected env (24) from .env // tip: ⌘ override existing { override: true }
+{"level":"info","message":{"aiProvider":"groq","groqKeyPresent":true,"module":"BOOTSTRAP","step":"ENV_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.072Z"}
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.304Z"}
+{"level":"info","message":"Agent brain script loading...","service":"vertex-sentinel","step":"SCRIPT_LOADING","timestamp":"2026-05-20T08:27:29.304Z"}
+{"level":"info","message":{"isMain":false,"nodeEnv":"test","step":"MODULE_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.304Z"}
+    ✔ should initialize Brain with fallback if NETWORK=sepolia and deployments file is missing (285ms)
+{"level":"info","message":{"agentId":1,"name":"Vertex Sentinel Layer","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.328Z"}
+{"level":"info","message":"Agent brain script loading...","service":"vertex-sentinel","step":"SCRIPT_LOADING","timestamp":"2026-05-20T08:27:29.329Z"}
+{"level":"info","message":{"isMain":false,"nodeEnv":"test","step":"MODULE_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.329Z"}
+    ✔ should correctly load addresses from deployments_sepolia.json in Brain
+{"agentAddress":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","chainId":11155111,"contractAddress":"0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"sepolia","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.335Z"}
+    ✔ should initialize Proxy with fallback if network=sepolia and deployments file is missing
+{"agentAddress":"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","chainId":11155111,"contractAddress":"0x1234567890123456789012345678901234567890","level":"error","message":"Execution Layer Proxy Initialized","module":"ExecutionProxy","network":"sepolia","service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.337Z"}
+    ✔ should correctly load address in Proxy from deployments_sepolia.json
+
+  Agent Brain PnL Integration
+    ✔ should initialize PnLTracker and record trade after signIntent
+
+  Agent Metadata Loader Unit Tests
+    ✔ should throw CriticalSecurityException if agent-id.json is missing
+    ✔ should throw CriticalSecurityException if agent-id.json is invalid
+{"level":"info","message":{"agentId":42,"name":"Sentinel-Test","step":"METADATA_LOADED"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.347Z"}
+    ✔ should correctly load and return valid metadata
+
+  Environment Validation Unit Tests
+    ✔ should throw CriticalSecurityException if required variables are missing
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.349Z"}
+    ✔ should pass if all required variables are present
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.350Z"}
+    ✔ should pass with GROQ_API_KEY if AI_PROVIDER is groq
+    ✔ should throw if AI_PROVIDER is groq but GROQ_API_KEY is missing
+
+  Kraken MCP Server (TDD)
+    ✔ should fail initialization if environment variables are missing
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.355Z"}
+    ✔ should list available tools correctly
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.367Z"}
+{"level":"error","message":{"event":"tool_call","symbol":"BTC/USD","timestamp":"2026-05-20T08:27:29.374Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.374Z"}
+    ✔ should fetch ticker data correctly via CCXT
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.377Z"}
+{"level":"error","message":{"event":"tool_call","params":{"amount":0.1,"side":"buy","symbol":"BTC/USD","type":"market"},"timestamp":"2026-05-20T08:27:29.383Z","tool":"place_order"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.383Z"}
+{"level":"error","message":{"error":"CCXT: Insufficient funds","event":"tool_error","timestamp":"2026-05-20T08:27:29.384Z","tool":"place_order"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.384Z"}
+    ✔ should throw CriticalSecurityException on exchange error during place_order
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.386Z"}
+{"level":"error","message":{"event":"tool_call","symbol":"BTC/USD","timestamp":"2026-05-20T08:27:29.390Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.391Z"}
+{"level":"error","message":{"error":"CCXT: connection lost","event":"tool_error","timestamp":"2026-05-20T08:27:29.391Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.391Z"}
+    ✔ should return MCP error response on exchange error during non-sensitive operations
+
+  Kraken MCP Stability (#148)
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:29.392Z"}
+{"level":"error","message":{"event":"tool_call","symbol":"BTC/USD","timestamp":"2026-05-20T08:27:29.400Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:29.400Z"}
+{"level":"error","message":{"attempt":1,"delay":2000,"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 request timed out (10000 ms)","event":"retry","timestamp":"2026-05-20T08:27:41.435Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:41.435Z"}
+{"level":"error","message":{"attempt":2,"delay":4000,"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 request timed out (10000 ms)","event":"retry","timestamp":"2026-05-20T08:27:54.451Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:54.451Z"}
+    ✔ should retry on ETIMEDOUT and eventually succeed (30068ms)
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:27:59.466Z"}
+{"level":"error","message":{"event":"tool_call","symbol":"BTC/USD","timestamp":"2026-05-20T08:27:59.481Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:27:59.481Z"}
+{"level":"error","message":{"attempt":1,"delay":2000,"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 502 Bad Gateway Bad Gateway","event":"retry","timestamp":"2026-05-20T08:28:01.505Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:01.505Z"}
+    ✔ should retry on 502 Bad Gateway (5035ms)
+{"level":"info","message":"Environment variables successfully validated.","service":"vertex-sentinel","step":"ENV_VALIDATED","timestamp":"2026-05-20T08:28:04.516Z"}
+{"level":"error","message":{"event":"tool_call","symbol":"BTC/USD","timestamp":"2026-05-20T08:28:04.523Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:04.524Z"}
+{"level":"error","message":{"attempt":1,"delay":2000,"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 503 Service Unavailable Service Unavailable","event":"retry","timestamp":"2026-05-20T08:28:06.547Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:06.547Z"}
+{"level":"error","message":{"attempt":2,"delay":4000,"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 503 Service Unavailable Service Unavailable","event":"retry","timestamp":"2026-05-20T08:28:09.555Z"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:09.555Z"}
+{"level":"error","message":{"error":"kraken GET https://api.kraken.com/0/public/Ticker?pair=XXBTZUSD&timeout=10000 503 Service Unavailable Service Unavailable","event":"tool_error","timestamp":"2026-05-20T08:28:14.567Z","tool":"get_ticker"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:14.567Z"}
+    ✔ should fail after max retries (10046ms)
+
+  Identity Client Unit Tests
+    ✔ Should throw CriticalSecurityException if registry address is uninitialized (zero address)
+    ✔ Should throw CriticalSecurityException if registration check fails on a non-zero address (2158ms)
+
+  On-Chain Registry Clients Unit Tests
+    ✔ ValidationRegistryClient should handle zero address gracefully
+    ✔ ReputationRegistryClient should handle zero address gracefully
+
+  Risk Router Client Unit Tests
+    ✔ should compute an intent hash correctly
+    ✔ should sign an intent with EIP-712
+    ✔ should throw CriticalSecurityException if signing fails
+
+  AI Provider Integration (Groq)
+{"level":"info","message":{"modelName":"llama-3.3-70b-versatile","module":"test","provider":"groq","resolvedModel":"groq/llama-3.3-70b-versatile","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.743Z"}
+    ✔ should use Groq provider and default model when AI_PROVIDER=groq
+{"level":"info","message":{"modelName":"mixtral-8x7b-32768","module":"test","provider":"groq","resolvedModel":"groq/mixtral-8x7b-32768","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.745Z"}
+    ✔ should use Groq provider and specified model when AI_MODEL is set
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.747Z"}
+    ✔ should fallback to Google provider if AI_PROVIDER is unset
+{"level":"info","message":{"modelName":"llama-3.3-70b-versatile","module":"test","provider":"groq","resolvedModel":"groq/llama-3.3-70b-versatile","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.749Z"}
+    ✔ should automatically switch to Groq model if AI_PROVIDER=groq even if AI_MODEL is gemini default
+
+  AI Rate Limiter & Quota Management (#148)
+{"level":"warn","message":{"module":"RateLimiter","step":"WAIT","waitTimeMs":60000},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.752Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.753Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.753Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.753Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.753Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.753Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.754Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.754Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.754Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.754Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:28:16.754Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:29:16.808Z"}
+    ✔ should enforce 10 RPM cap (60057ms)
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:29:16.812Z"}
+{"level":"warn","message":{"attempt":1,"delay":10000,"error":"RESOURCE_EXHAUSTED","module":"test","step":"RETRY"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:29:16.813Z"}
+{"level":"info","message":{"modelName":"gemini-flash-latest","module":"test","provider":"google","resolvedModel":"googleai/gemini-flash-latest","step":"MODEL_RESOLUTION"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:29:26.821Z"}
+    ✔ should apply conservative backoff for RESOURCE_EXHAUSTED (10011ms)
+
+  Checkpoint PnL Integration
+    ✔ should include PnL metrics in signed checkpoints and persist to logs/audit.json
+
+  Checkpoint Utility Unit Tests
+    ✔ Should generate a valid EIP-712 signed checkpoint
+    ✔ Should persist the checkpoint to logs/audit.json
+
+  Explainability Utility Unit Tests
+    ✔ should format a BUY decision correctly with color markers (45ms)
+    ✔ should format a HOLD decision correctly with color markers
+
+  QuotaTracker
+    ✔ should track usage and persist to file
+
+[36m[NOTIFY][0m [1mTELEGRAM FALLBACK:[0m WARNING: AI Quota usage at 80% (16/20).
+
+{"level":"info","message":"Telegram credentials missing, using console fallback.","module":"Notifications","service":"vertex-sentinel","timestamp":"2026-05-20T08:29:26.901Z"}
+
+[36m[NOTIFY][0m [1mTELEGRAM FALLBACK:[0m CRITICAL: AI Quota fully exhausted (20/20). Sentiment analysis will fail-closed.
+
+{"level":"info","message":"Telegram credentials missing, using console fallback.","module":"Notifications","service":"vertex-sentinel","timestamp":"2026-05-20T08:29:26.903Z"}
+    ✔ should exhaust quota after 20 requests
+{"level":"info","message":{"module":"QuotaTracker","newDate":"2026-05-20","oldDate":"2026-05-19","step":"RESET_DAY"},"service":"vertex-sentinel","timestamp":"2026-05-20T08:29:26.904Z"}
+    ✔ should reset quota on a new day
+
+  safeParseJSON
+    ✔ should successfully parse valid JSON
+    ✔ should return fallback and log error on invalid JSON
+    ✔ should return fallback and log error on empty string
+
+
+  57 passing (2m)
