@@ -14,3 +14,4 @@ The software is provided "as is" under the MIT license. There are no warranties 
 
 ## 5. Security
 You are responsible for maintaining the security of your private keys and API credentials.
+Approved-by: Jules — 2026-05-20
