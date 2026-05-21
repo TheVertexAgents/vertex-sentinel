@@ -24,7 +24,7 @@
         }
     </style>
 </head>
-<body>
+<body class="light-mode"> <!-- Added light-mode class for explicit default -->
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -56,7 +56,7 @@
 
         <main class="main-content">
         <!-- Header -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 border-b border-white/5 pb-6">
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 border-b border-gray-200 dark:border-white/5 pb-6">
             <div class="flex items-center gap-4">
                 <img src="/logo.png" alt="Vertex Logo" class="w-14 h-14 object-contain">
                 <div>
@@ -65,11 +65,11 @@
                     </h1>
                     <div class="flex items-center gap-3 mt-1">
                         <span id="agent-id-display" class="text-[10px] font-bold uppercase tracking-widest text-cyan/70">Agent #42</span>
-                        <span class="w-1 h-1 rounded-full bg-gray-700"></span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
                         <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Professional Risk Terminal</span>
-                        <span class="w-1 h-1 rounded-full bg-gray-700"></span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
                         <span id="network-badge" class="text-[10px] font-bold uppercase tracking-widest text-cyan/70">Sepolia Testnet</span>
-                        <span class="w-1 h-1 rounded-full bg-gray-700"></span>
+                        <span class="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
                         <div class="flex items-center gap-2">
                              <span id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-emerald"></span>
                              <span id="status-text" class="text-[10px] font-bold uppercase tracking-widest text-emerald/80">System Idle</span>
@@ -89,13 +89,13 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                <button id="session-report-btn" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-purple-500/30 transition-all active:scale-95">
+                <button id="session-report-btn" class="px-4 py-2 bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-400 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-purple-500/20 dark:border-purple-500/30 transition-all active:scale-95">
                     Session Report
                 </button>
                 <button id="connect-wallet" class="px-6 py-2 bg-cyan/10 hover:bg-cyan/20 text-cyan text-[11px] font-bold uppercase tracking-widest rounded-lg border border-cyan/30 transition-all active:scale-95 shadow-[0_0_15px_rgba(0,229,255,0.1)]">
                     Connect Wallet
                 </button>
-                <div id="wallet-status" class="hidden flex items-center gap-3 glass px-4 py-2 border-white/10">
+                <div id="wallet-status" class="hidden flex items-center gap-3 glass px-4 py-2 border-gray-200 dark:border-white/10">
                     <span class="w-2 h-2 rounded-full bg-emerald shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mono" id="wallet-address">0x...</span>
                 </div>
@@ -105,25 +105,25 @@
         <!-- Main Content Area -->
         <div id="content-area" class="relative">
             <!-- Deep Dive Reasoning Modal -->
-            <div id="reasoning-modal" class="fixed inset-0 bg-obsidian/95 backdrop-blur-2xl hidden z-[60] flex items-center justify-center p-4">
+            <div id="reasoning-modal" class="fixed inset-0 bg-white/90 dark:bg-obsidian/95 backdrop-blur-2xl hidden z-[60] flex items-center justify-center p-4">
                 <div class="glass max-w-2xl w-full p-8 border-cyan/30 shadow-[0_0_50px_rgba(0,229,255,0.1)]">
-                    <div class="flex justify-between items-start mb-8 border-b border-white/5 pb-6">
+                    <div class="flex justify-between items-start mb-8 border-b border-gray-100 dark:border-white/5 pb-6">
                         <div>
-                            <h2 class="text-2xl font-black italic tracking-tighter text-white">AI REASONING <span class="text-cyan">— DEEP DIVE</span></h2>
+                            <h2 class="text-2xl font-black italic tracking-tighter text-gray-900 dark:text-white">AI REASONING <span class="text-cyan">— DEEP DIVE</span></h2>
                             <p id="rd-trace-id" class="text-[10px] text-gray-500 mono uppercase mt-1">TRACE: —</p>
                         </div>
-                        <button id="close-reasoning-modal" class="text-gray-500 hover:text-white transition-colors">
+                        <button id="close-reasoning-modal" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
 
                     <div class="space-y-8">
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-white/2 rounded-xl border border-white/5">
+                            <div class="p-4 bg-gray-50 dark:bg-white/2 rounded-xl border border-gray-100 dark:border-white/5">
                                 <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Market Sentiment</p>
                                 <h4 id="rd-sentiment" class="text-lg font-bold text-cyan">Analyzing...</h4>
                             </div>
-                            <div class="p-4 bg-white/2 rounded-xl border border-white/5">
+                            <div class="p-4 bg-gray-50 dark:bg-white/2 rounded-xl border border-gray-100 dark:border-white/5">
                                 <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Risk Assessment</p>
                                 <h4 id="rd-risk" class="text-lg font-bold text-amber">Calculating...</h4>
                             </div>
@@ -133,37 +133,37 @@
                             <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-cyan"></span> Chain of Thought
                             </h4>
-                            <div id="rd-cot" class="p-6 bg-slate-900/50 rounded-xl border border-white/5 text-xs text-gray-300 leading-relaxed font-medium italic">
+                            <div id="rd-cot" class="p-6 bg-gray-100 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-white/5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium italic">
                                 <!-- COT steps injected here -->
                             </div>
                         </div>
 
                         <div class="p-6 bg-cyan/5 rounded-xl border border-cyan/10">
                             <h4 class="text-[10px] font-bold text-cyan uppercase tracking-widest mb-3">Final Decision Logic</h4>
-                            <p id="rd-decision" class="text-xs text-white font-bold leading-relaxed">
+                            <p id="rd-decision" class="text-xs text-gray-900 dark:text-white font-bold leading-relaxed">
                                 <!-- Decision summary -->
                             </p>
                         </div>
                     </div>
 
-                    <div class="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+                    <div class="mt-8 pt-6 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <span class="px-2 py-0.5 bg-cyan/10 text-cyan text-[8px] font-bold rounded uppercase">EIP-712 Signed</span>
-                            <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[8px] font-bold rounded uppercase">Arc L1 Verified</span>
+                            <span class="px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[8px] font-bold rounded uppercase">Arc L1 Verified</span>
                         </div>
-                        <button class="px-4 py-2 bg-white/5 hover:bg-white/10 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all">Download Audit Artifact</button>
+                        <button class="px-4 py-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-[9px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest rounded-lg transition-all">Download Audit Artifact</button>
                     </div>
                 </div>
             </div>
 
             <!-- Automation Paused Overlay -->
-            <div id="paused-overlay" class="hidden absolute inset-0 z-40 bg-obsidian/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+            <div id="paused-overlay" class="hidden absolute inset-0 z-40 bg-white/60 dark:bg-obsidian/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
                 <div class="glass p-8 border-amber/30 bg-amber/5 text-center space-y-4 animate-in fade-in zoom-in duration-300">
                     <div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center mx-auto border border-amber/30">
                         <svg class="w-8 h-8 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <h3 class="text-xl font-bold text-amber uppercase tracking-widest">Automation Paused</h3>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Manual Override Active • Agent Brain Idle</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest">Manual Override Active • Agent Brain Idle</p>
                 </div>
             </div>
 
@@ -174,43 +174,43 @@
                     <div class="glass p-5 border-cyan/10">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Sentinel Savings</p>
                         <div class="flex items-baseline gap-2">
-                            <h3 id="metric-savings" class="text-3xl font-bold text-cyan glow-cyan">$0.00</h3>
+                            <h3 id="metric-savings" class="text-3xl font-bold text-cyan glow-cyan">-bash.00</h3>
                         </div>
-                        <p class="text-[9px] text-gray-600 mt-2">Blocked Capital Risks</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Blocked Capital Risks</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Total PnL / ROI</p>
                         <div class="flex items-baseline gap-2">
-                            <h3 id="metric-total-pnl" class="text-3xl font-bold">$0.00</h3>
+                            <h3 id="metric-total-pnl" class="text-3xl font-bold">-bash.00</h3>
                             <span id="metric-roi" class="text-xs font-bold text-emerald">0.00%</span>
                         </div>
-                        <p class="text-[9px] text-gray-600 mt-2">Combined Session Performance</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Combined Session Performance</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Max Drawdown</p>
                         <h3 id="metric-mdd" class="text-3xl font-bold text-crimson">0.00%</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Peak-to-Trough Risk</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Peak-to-Trough Risk</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Win Rate / Ratio</p>
                         <div class="flex items-baseline gap-2">
-                            <h3 id="metric-winrate" class="text-3xl font-bold">0%</h3>
+                            <h3 id="metric-winrate" class="text-3xl font-bold text-gray-900 dark:text-white">0%</h3>
                             <span id="metric-winloss" class="text-xs font-bold text-cyan">0.00</span>
                         </div>
-                        <p class="text-[9px] text-gray-600 mt-2">Strategy Consistency</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Strategy Consistency</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Sharpe Ratio</p>
                         <h3 id="metric-sharpe" class="text-3xl font-bold text-amber">0.00</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Risk-Adjusted Return</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Risk-Adjusted Return</p>
                     </div>
                 </div>
 
                 <!-- Middle Row: Charts & Market Context -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass overflow-hidden h-[500px] flex flex-col">
-                        <div class="p-4 border-b border-white/5 flex justify-between items-center bg-white/2">
-                            <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <div class="p-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50 dark:bg-white/2">
+                            <span class="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest flex items-center gap-2">
                                 <svg class="w-3 h-3 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
                                 Technical Analysis Terminal
                             </span>
@@ -218,7 +218,7 @@
                         </div>
                         <div class="flex-grow w-full" id="tradingview-widget">
                             <!-- TradingView Widget placeholder -->
-                            <div class="w-full h-full bg-slate-900/50 flex items-center justify-center text-gray-600 text-xs italic">
+                            <div class="w-full h-full bg-gray-50 dark:bg-slate-900/50 flex items-center justify-center text-gray-400 text-xs italic">
                                 Loading TradingView Engine...
                             </div>
                         </div>
@@ -239,14 +239,14 @@
                                 <div class="flex gap-2">
                                     <div id="gauge-volatility" class="w-12 h-12 relative">
                                         <svg viewBox="0 0 100 50" class="w-full h-full">
-                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-white/5" />
+                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-gray-100 dark:text-white/5" />
                                             <path id="volatility-gauge-path" d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="var(--cyan)" stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6" class="transition-all duration-1000" />
                                         </svg>
                                         <span class="absolute bottom-0 left-0 right-0 text-[7px] text-center font-bold">VOL</span>
                                     </div>
                                     <div id="gauge-volume" class="w-12 h-12 relative">
                                         <svg viewBox="0 0 100 50" class="w-full h-full">
-                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-white/5" />
+                                            <path d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="currentColor" stroke-width="8" class="text-gray-100 dark:text-white/5" />
                                             <path id="volume-gauge-path" d="M10 45 A 40 40 0 0 1 90 45" fill="none" stroke="var(--amber)" stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6" class="transition-all duration-1000" />
                                         </svg>
                                         <span class="absolute bottom-0 left-0 right-0 text-[7px] text-center font-bold">LIQ</span>
@@ -265,9 +265,9 @@
                                 <div>
                                     <div class="flex justify-between text-[10px] font-bold uppercase mb-2">
                                         <span>Position Limit</span>
-                                        <span id="cb-pos-text" class="text-gray-400">$0 / $0</span>
+                                        <span id="cb-pos-text" class="text-gray-500">-bash / -bash</span>
                                     </div>
-                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div id="cb-pos-bar" class="h-full bg-cyan transition-all" style="width: 0%"></div>
                                     </div>
                                 </div>
@@ -276,7 +276,7 @@
                                         <span>Hourly Volume</span>
                                         <span id="cb-vol-text" class="text-gray-400">0 / 0 trades</span>
                                     </div>
-                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div id="cb-vol-bar" class="h-full bg-amber transition-all" style="width: 0%"></div>
                                     </div>
                                 </div>
@@ -293,7 +293,7 @@
                     </div>
                     <div id="reasoning-stream" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <!-- Cards injected here -->
-                        <div class="text-gray-600 text-xs italic p-4">Awaiting execution reasoning...</div>
+                        <div class="text-gray-400 italic p-4 text-xs">Awaiting execution reasoning...</div>
                     </div>
                 </div>
             </section>
@@ -301,12 +301,12 @@
             <!-- TAB: HITL APPROVAL -->
             <section id="view-hitl" class="hidden space-y-6">
                 <div class="glass p-8">
-                    <h3 class="text-xl font-bold mb-2">High-Stakes Pending Approvals</h3>
+                    <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">High-Stakes Pending Approvals</h3>
                     <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Human-in-the-Loop Verification Module</p>
 
                     <div id="hitl-container" class="space-y-4">
                         <!-- Pending requests will appear here -->
-                        <div class="text-gray-600 text-xs italic p-12 text-center border border-dashed border-white/5 rounded-xl">
+                        <div class="text-gray-400 text-xs italic p-12 text-center border border-dashed border-gray-200 dark:border-white/5 rounded-xl">
                             No pending high-stakes trade authorizations...
                         </div>
                     </div>
@@ -320,7 +320,7 @@
                     <div class="lg:col-span-2 glass p-8">
                         <div class="flex justify-between items-start mb-8">
                             <div>
-                                <h3 class="text-xl font-bold">Agent Control Dashboard</h3>
+                                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Agent Control Dashboard</h3>
                                 <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Arc L1 Infrastructure & Risk Tuning</p>
                             </div>
                             <div class="flex items-center gap-3">
@@ -333,29 +333,29 @@
                             <div class="space-y-8">
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Max Position Size ($)</label>
-                                        <span id="val-max-pos" class="text-sm font-bold text-cyan mono">$1,000</span>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Max Position Size ($)</label>
+                                        <span id="val-max-pos" class="text-sm font-bold text-cyan mono">,000</span>
                                     </div>
                                     <input type="range" id="slider-max-pos" min="100" max="10000" step="100" value="1000">
                                 </div>
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trades Per Hour</label>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Trades Per Hour</label>
                                         <span id="val-max-trades" class="text-sm font-bold text-amber mono">5</span>
                                     </div>
                                     <input type="range" id="slider-max-trades" min="1" max="50" step="1" value="5">
                                 </div>
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sentiment Weight</label>
-                                        <span id="val-sent-weight" class="text-sm font-bold text-purple-400 mono">0.5</span>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sentiment Weight</label>
+                                        <span id="val-sent-weight" class="text-sm font-bold text-purple-600 dark:text-purple-400 mono">0.5</span>
                                     </div>
                                     <input type="range" id="slider-sent-weight" min="0" max="1" step="0.1" value="0.5">
                                 </div>
                                 <div class="space-y-4">
                                     <div class="flex justify-between items-center">
-                                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Liquidity Floor ($)</label>
-                                        <span id="val-liq-floor" class="text-sm font-bold text-emerald mono">$10k</span>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Liquidity Floor ($)</label>
+                                        <span id="val-liq-floor" class="text-sm font-bold text-emerald mono">0k</span>
                                     </div>
                                     <input type="range" id="slider-liq-floor" min="1000" max="100000" step="1000" value="10000">
                                 </div>
@@ -390,13 +390,13 @@
                     <!-- Sidebar: Arc L1 Stats & Hiring -->
                     <div class="space-y-6">
                         <div class="glass p-6">
-                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Agent Stack Ops</h4>
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center lg:text-left">Agent Stack Ops</h4>
                             <div class="space-y-4">
-                                <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                                <div class="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-3">
                                     <span class="text-[10px] text-gray-400">ARC Balance</span>
-                                    <span id="arc-balance" class="text-sm font-bold mono">— ARC</span>
+                                    <span id="arc-balance" class="text-sm font-bold text-gray-900 dark:text-white mono">— ARC</span>
                                 </div>
-                                <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                                <div class="flex justify-between items-center border-b border-gray-100 dark:border-white/5 pb-3">
                                     <span class="text-[10px] text-gray-400">Next Payment</span>
                                     <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest" id="arc-next-payment">N/A</span>
                                 </div>
@@ -404,7 +404,7 @@
                                     <span class="text-[10px] text-gray-400">Agent Reputation</span>
                                     <span class="text-[10px] font-bold text-emerald uppercase tracking-widest">High Trust</span>
                                 </div>
-                                <button class="w-full py-3 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest rounded-lg transition-all mt-4">
+                                <button class="w-full py-3 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest rounded-lg transition-all mt-4 border border-gray-200 dark:border-white/10">
                                     Fund Agent Wallet
                                 </button>
                             </div>
@@ -413,7 +413,7 @@
                         <div class="glass p-6 border-cyan/20 bg-gradient-to-br from-cyan/5 to-transparent">
                             <h4 class="text-[10px] font-bold text-cyan uppercase tracking-widest mb-2">Expansion Port</h4>
                             <p class="text-[10px] text-gray-500 mb-4 leading-relaxed">Scale your verifiable fleet by hiring new specialized agents on Arc L1.</p>
-                            <button id="hire-agent-btn" class="w-full py-3 bg-cyan text-obsidian text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg hover:scale-[1.02] transition-all">
+                            <button id="hire-agent-btn" class="w-full py-3 bg-cyan text-white lg:text-obsidian text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg hover:scale-[1.02] transition-all">
                                 Hire New Agent
                             </button>
                         </div>
@@ -424,27 +424,27 @@
             <!-- TAB: ESG SENTINEL -->
             <section id="view-esg" class="hidden space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
-                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Energy Efficiency</p>
-                        <h3 class="text-3xl font-bold">94.2%</h3>
+                    <div class="glass p-6 border-emerald-500/20 bg-emerald-500/5">
+                        <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">Energy Efficiency</p>
+                        <h3 class="text-3xl font-bold text-gray-900 dark:text-white">94.2%</h3>
                         <p class="text-[9px] text-gray-500 mt-2">Renewable Energy Compute Index</p>
                     </div>
-                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
-                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Carbon Offset Proof</p>
-                        <h3 class="text-3xl font-bold">12.4t</h3>
+                    <div class="glass p-6 border-emerald-500/20 bg-emerald-500/5">
+                        <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">Carbon Offset Proof</p>
+                        <h3 class="text-3xl font-bold text-gray-900 dark:text-white">12.4t</h3>
                         <p class="text-[9px] text-gray-500 mt-2">Verifiable CO2e Neutralized</p>
                     </div>
-                    <div class="glass p-6 border-emerald/20 bg-emerald/5">
-                        <p class="text-[10px] font-bold text-emerald/70 uppercase tracking-widest mb-3">Social Impact Score</p>
-                        <h3 class="text-3xl font-bold">A+</h3>
+                    <div class="glass p-6 border-emerald-500/20 bg-emerald-500/5">
+                        <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">Social Impact Score</p>
+                        <h3 class="text-3xl font-bold text-gray-900 dark:text-white">A+</h3>
                         <p class="text-[9px] text-gray-500 mt-2">Governance & Inclusion Metrics</p>
                     </div>
                 </div>
 
-                <div class="glass p-8 border-emerald/10">
+                <div class="glass p-8 border-emerald-500/10">
                     <div class="flex justify-between items-center mb-8">
                         <div>
-                            <h3 class="text-xl font-bold text-emerald">Sustainability Strategy</h3>
+                            <h3 class="text-xl font-bold text-emerald-600 dark:text-emerald-400">Sustainability Strategy</h3>
                             <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Verifiable ESG Guardrails for Institutional Compliance</p>
                         </div>
                         <span class="px-3 py-1 bg-emerald/10 text-emerald text-[10px] font-bold rounded border border-emerald/20 uppercase tracking-widest">ESG Tier: Platinum</span>
@@ -452,35 +452,35 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div class="space-y-6">
-                            <div class="p-4 bg-white/2 rounded-xl border border-white/5">
+                            <div class="p-4 bg-gray-50 dark:bg-white/2 rounded-xl border border-gray-100 dark:border-white/5">
                                 <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">ESG Scoring Breakdown</h4>
                                 <div class="space-y-4">
-                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                    <div class="flex justify-between text-[10px] font-bold uppercase text-gray-700 dark:text-gray-300">
                                         <span>Environmental</span>
                                         <span class="text-emerald">92/100</span>
                                     </div>
-                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div class="h-full bg-emerald" style="width: 92%"></div>
                                     </div>
-                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                    <div class="flex justify-between text-[10px] font-bold uppercase text-gray-700 dark:text-gray-300">
                                         <span>Social</span>
                                         <span class="text-emerald">88/100</span>
                                     </div>
-                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div class="h-full bg-emerald" style="width: 88%"></div>
                                     </div>
-                                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                                    <div class="flex justify-between text-[10px] font-bold uppercase text-gray-700 dark:text-gray-300">
                                         <span>Governance</span>
                                         <span class="text-emerald">98/100</span>
                                     </div>
-                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                         <div class="h-full bg-emerald" style="width: 98%"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="flex flex-col justify-center gap-4">
-                            <div class="p-6 bg-emerald/5 rounded-xl border border-emerald/20">
+                            <div class="p-6 bg-emerald-500/5 rounded-xl border border-emerald-500/20 text-center lg:text-left">
                                 <h4 class="text-emerald text-sm font-bold uppercase tracking-widest mb-2">Institutional Proof</h4>
                                 <p class="text-[10px] text-gray-500 mb-6 leading-relaxed">Vertex Sentinel automatically generates on-chain attestations of energy consumption and ESG compliance for every trade cycle.</p>
                                 <button class="w-full py-4 bg-emerald/10 hover:bg-emerald/20 text-emerald text-xs font-bold uppercase tracking-widest rounded-lg border border-emerald/30 transition-all">
@@ -498,41 +498,41 @@
                     <div class="glass p-5 border-cyan/10">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Active Agents</p>
                         <h3 id="fleet-active-count" class="text-3xl font-bold text-cyan glow-cyan">1</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Verifiable Fleet Size</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Verifiable Fleet Size</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Fleet ROI (24h)</p>
                         <h3 class="text-3xl font-bold text-emerald">+3.12%</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Aggregate Performance</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Aggregate Performance</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">ARC Stake</p>
                         <h3 class="text-3xl font-bold text-amber">1,250</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Total L1 Collateral</p>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Total L1 Collateral</p>
                     </div>
                     <div class="glass p-5">
                         <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Resource Usage</p>
-                        <h3 class="text-3xl font-bold">12%</h3>
-                        <p class="text-[9px] text-gray-600 mt-2">Compute Allocation</p>
+                        <h3 class="text-3xl font-bold text-gray-900 dark:text-white">12%</h3>
+                        <p class="text-[9px] text-gray-400 dark:text-gray-600 mt-2">Compute Allocation</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass p-8">
                         <div class="flex justify-between items-center mb-8">
-                            <h3 class="text-xl font-bold">Manage Agent Fleet</h3>
-                            <button id="hire-agent-fleet-btn" class="px-4 py-2 bg-cyan text-obsidian text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95">Hire New Agent</button>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Manage Agent Fleet</h3>
+                            <button id="hire-agent-fleet-btn" class="px-4 py-2 bg-cyan text-white lg:text-obsidian text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95">Hire New Agent</button>
                         </div>
                         <div class="space-y-4" id="fleet-list">
                             <!-- Active Agent Item -->
-                            <div class="p-6 bg-white/2 rounded-xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div class="p-6 bg-gray-50 dark:bg-white/2 rounded-xl border border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                                 <div class="flex items-center gap-4">
                                     <div class="w-12 h-12 rounded-full bg-cyan/10 border border-cyan/30 flex items-center justify-center">
                                         <span class="text-cyan font-bold">A1</span>
                                     </div>
-                                    <div>
-                                        <h4 class="text-sm font-bold">Sentinel Primary #42</h4>
-                                        <div class="flex items-center gap-2 mt-1">
+                                    <div class="text-center md:text-left">
+                                        <h4 class="text-sm font-bold text-gray-900 dark:text-white">Sentinel Primary #42</h4>
+                                        <div class="flex items-center justify-center md:justify-start gap-2 mt-1">
                                             <span class="px-2 py-0.5 bg-emerald/10 text-emerald text-[8px] font-bold rounded border border-emerald/20 uppercase">Active</span>
                                             <span class="text-[9px] text-gray-500 mono">0x97b0...ca3</span>
                                         </div>
@@ -541,56 +541,56 @@
                                 <div class="grid grid-cols-3 gap-8 text-center">
                                     <div>
                                         <p class="text-[8px] text-gray-500 uppercase font-bold">Mode</p>
-                                        <p class="text-[10px] font-bold">Aggregator</p>
+                                        <p class="text-[10px] font-bold text-gray-700 dark:text-gray-300">Aggregator</p>
                                     </div>
                                     <div>
                                         <p class="text-[8px] text-gray-500 uppercase font-bold">Uptime</p>
-                                        <p class="text-[10px] font-bold">99.9%</p>
+                                        <p class="text-[10px] font-bold text-gray-700 dark:text-gray-300">99.9%</p>
                                     </div>
                                     <div>
                                         <p class="text-[8px] text-gray-500 uppercase font-bold">PnL</p>
-                                        <p class="text-[10px] font-bold text-emerald">+$42.10</p>
+                                        <p class="text-[10px] font-bold text-emerald">+2.10</p>
                                     </div>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button class="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all">Config</button>
+                                    <button class="px-3 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg text-[9px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest transition-all">Config</button>
                                     <button class="px-3 py-2 bg-crimson/10 hover:bg-crimson/20 text-crimson rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all">Halt</button>
                                 </div>
                             </div>
 
-                            <div class="p-6 border border-dashed border-white/5 rounded-xl flex items-center justify-center text-gray-600 text-[10px] uppercase font-bold tracking-widest">
+                            <div class="p-6 border border-dashed border-gray-200 dark:border-white/5 rounded-xl flex items-center justify-center text-gray-400 text-[10px] uppercase font-bold tracking-widest">
                                 Capacity Available for 4 Additional Agents
                             </div>
                         </div>
                     </div>
 
                     <div class="glass p-8">
-                        <h3 class="text-xl font-bold mb-6">Payroll & ARC</h3>
+                        <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">Payroll & ARC</h3>
                         <div class="space-y-6">
                             <div class="p-4 bg-amber/5 rounded-xl border border-amber/10">
                                 <div class="flex justify-between items-center mb-4">
                                     <span class="text-[10px] font-bold text-amber uppercase tracking-widest">ARC Balance</span>
                                     <button class="text-[10px] text-amber hover:underline uppercase font-bold">Deposit</button>
                                 </div>
-                                <h4 class="text-2xl font-bold text-white mono">1,250.00 <span class="text-amber/50 text-xs">ARC</span></h4>
+                                <h4 class="text-2xl font-bold text-gray-900 dark:text-white mono">1,250.00 <span class="text-amber/50 text-xs">ARC</span></h4>
                                 <p class="text-[9px] text-gray-500 mt-2">Verified on Arc L1</p>
                             </div>
 
                             <div class="space-y-4">
                                 <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pending Invoices</h4>
-                                <div class="flex justify-between items-center p-3 bg-white/2 rounded-lg border border-white/5">
+                                <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-white/2 rounded-lg border border-gray-100 dark:border-white/5">
                                     <div class="flex flex-col">
-                                        <span class="text-[10px] font-bold">Compute Ops #42</span>
+                                        <span class="text-[10px] font-bold text-gray-900 dark:text-white">Compute Ops #42</span>
                                         <span class="text-[8px] text-gray-500 uppercase mt-0.5">Due in 2 days</span>
                                     </div>
                                     <div class="flex items-center gap-3">
-                                        <span class="text-[10px] font-bold mono">42.0 ARC</span>
+                                        <span class="text-[10px] font-bold text-gray-700 dark:text-gray-300 mono">42.0 ARC</span>
                                         <button class="px-2 py-1 bg-cyan/10 text-cyan text-[8px] font-bold uppercase rounded border border-cyan/20">Pay</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <button class="w-full py-4 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-white/5">
+                            <button class="w-full py-4 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest rounded-xl transition-all border border-gray-200 dark:border-white/5">
                                 View Billing History
                             </button>
                         </div>
@@ -601,7 +601,7 @@
             <!-- TAB: TECHNICAL AUDIT -->
             <section id="view-audit" class="hidden space-y-6">
                 <div class="glass overflow-hidden">
-                    <div class="p-6 border-b border-white/5 bg-white/2 flex justify-between items-center">
+                    <div class="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/2 flex justify-between items-center">
                         <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Full Verifiable Audit Trail</h4>
                         <div class="flex gap-4">
                              <button id="export-btn" class="text-[10px] font-bold text-cyan hover:underline uppercase tracking-widest">Export JSONL</button>
@@ -610,7 +610,7 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="text-gray-500 text-[10px] uppercase tracking-[0.2em]">
+                                <tr class="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-[0.2em] border-b border-gray-100 dark:border-white/5">
                                     <th class="px-8 py-5 font-bold">Timestamp</th>
                                     <th class="px-8 py-5 font-bold">Action</th>
                                     <th class="px-8 py-5 font-bold">Trading Pair</th>
@@ -620,10 +620,10 @@
                                     <th class="px-8 py-5 font-bold">Justification</th>
                                 </tr>
                             </thead>
-                            <tbody id="log-body" class="text-[11px] mono">
+                            <tbody id="log-body" class="text-[11px] mono text-gray-700 dark:text-gray-300">
                                 <!-- Rows injected here -->
                                 <tr>
-                                    <td colspan="7" class="px-8 py-12 text-center text-gray-600 italic">Initializing Audit Engine...</td>
+                                    <td colspan="7" class="px-8 py-12 text-center text-gray-400 dark:text-gray-600 italic">Initializing Audit Engine...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -632,11 +632,11 @@
             </section>
         </div>
 
-        <footer class="mt-12 py-8 flex flex-col md:flex-row justify-between items-center border-t border-white/5 gap-4 text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
+        <footer class="mt-12 py-8 flex flex-col md:flex-row justify-between items-center border-t border-gray-100 dark:border-white/5 gap-4 text-gray-400 dark:text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
             <div class="flex items-center gap-6">
                 <span>Vertex Sentinel v1.1.0</span>
-                <span class="w-1 h-1 rounded-full bg-gray-800"></span>
-                <span class="text-cyan/40">Powered by Arc L1 & Genkit AI</span>
+                <span class="w-1 h-1 rounded-full bg-gray-200 dark:bg-gray-800"></span>
+                <span class="text-cyan/60">Powered by Arc L1 & Genkit AI</span>
             </div>
             <span>© 2026 Vertex Agents</span>
         </footer>
@@ -644,11 +644,11 @@
     </div>
 
     <!-- Session Report Modal -->
-    <div id="pnl-modal" class="fixed inset-0 bg-obsidian/90 backdrop-blur-xl hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div id="pnl-modal" class="fixed inset-0 bg-white/95 dark:bg-obsidian/90 backdrop-blur-xl hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="glass max-w-4xl w-full p-8 border-purple-500/30 shadow-[0_0_50px_rgba(124,58,237,0.15)]">
             <div class="flex justify-between items-start mb-8">
                 <div>
-                    <h2 class="text-2xl font-black italic tracking-tighter text-white">VERTEX SENTINEL <span class="text-purple-500">— SESSION REPORT</span></h2>
+                    <h2 class="text-2xl font-black italic tracking-tighter text-gray-900 dark:text-white">VERTEX SENTINEL <span class="text-purple-600 dark:text-purple-500">— SESSION REPORT</span></h2>
                     <p id="report-session-id" class="text-[10px] text-gray-500 mono uppercase mt-1">SESSION: —</p>
                 </div>
                 <div id="report-status-banner" class="px-6 py-2 rounded-full font-black uppercase tracking-widest text-xs">
@@ -657,19 +657,19 @@
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                <div class="bg-gray-50 dark:bg-white/2 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                     <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Realized PnL</p>
-                    <h4 id="report-realized" class="text-xl font-bold mono">—</h4>
+                    <h4 id="report-realized" class="text-xl font-bold mono text-gray-900 dark:text-white">—</h4>
                 </div>
-                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                <div class="bg-gray-50 dark:bg-white/2 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                     <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Win Rate</p>
-                    <h4 id="report-winrate" class="text-xl font-bold mono">—</h4>
+                    <h4 id="report-winrate" class="text-xl font-bold mono text-gray-900 dark:text-white">—</h4>
                 </div>
-                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                <div class="bg-gray-50 dark:bg-white/2 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                     <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Max Drawdown</p>
                     <h4 id="report-mdd" class="text-xl font-bold mono text-crimson">—</h4>
                 </div>
-                <div class="bg-white/2 p-4 rounded-xl border border-white/5">
+                <div class="bg-gray-50 dark:bg-white/2 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                     <p class="text-[9px] font-bold text-gray-500 uppercase mb-1">Sentinel Saved</p>
                     <h4 id="report-savings" class="text-xl font-bold mono text-cyan">—</h4>
                 </div>
@@ -677,7 +677,7 @@
 
             <div class="space-y-4 mb-8 max-h-64 overflow-y-auto pr-2">
                 <table class="w-full text-left text-[10px] uppercase font-bold mono">
-                    <thead class="text-gray-500 border-b border-white/10">
+                    <thead class="text-gray-500 border-b border-gray-100 dark:border-white/10">
                         <tr>
                             <th class="py-2">Time</th>
                             <th class="py-2">Pair</th>
@@ -686,29 +686,29 @@
                             <th class="py-2 text-right">PnL</th>
                         </tr>
                     </thead>
-                    <tbody id="report-trades-body" class="text-gray-400">
+                    <tbody id="report-trades-body" class="text-gray-600 dark:text-gray-400">
                         <!-- Trades injected here -->
                     </tbody>
                 </table>
             </div>
 
             <div class="flex gap-4">
-                <button id="close-pnl-modal" class="flex-1 py-4 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest rounded-xl transition-all">Close</button>
+                <button id="close-pnl-modal" class="flex-1 py-4 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-bold text-gray-700 dark:text-white uppercase tracking-widest rounded-xl transition-all">Close</button>
                 <button id="export-pnl-btn" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-purple-900/20">Export Report (.JSON)</button>
             </div>
         </div>
     </div>
 
     <!-- Hire Agent Modal (Mock) -->
-    <div id="hire-modal" class="fixed inset-0 bg-obsidian/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+    <div id="hire-modal" class="fixed inset-0 bg-white/90 dark:bg-obsidian/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
         <div class="glass max-w-lg w-full p-8 border-cyan/30">
-            <h3 class="text-2xl font-bold mb-2">Hire New Agent</h3>
+            <h3 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Hire New Agent</h3>
             <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Deploy Specialized Market Sentinel on Arc L1</p>
 
             <div class="space-y-6">
                 <div>
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Select Agent Model</label>
-                    <select class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan transition-all appearance-none">
+                    <select class="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan transition-all appearance-none text-gray-900 dark:text-white">
                         <option>Guardian (Institutional Conservative)</option>
                         <option>Scout (Balanced Alpha Search)</option>
                         <option>Predator (Aggressive Growth)</option>
@@ -716,7 +716,7 @@
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Initial ARC Allocation</label>
-                    <input type="number" value="100" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan transition-all">
+                    <input type="number" value="100" class="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan transition-all text-gray-900 dark:text-white">
                 </div>
                 <div class="p-4 bg-cyan/5 rounded-lg border border-cyan/10">
                     <div class="flex justify-between text-[10px] font-bold uppercase mb-1">
@@ -729,8 +729,8 @@
                     </div>
                 </div>
                 <div class="flex gap-4">
-                    <button id="close-modal" class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-widest rounded-lg transition-all">Cancel</button>
-                    <button id="confirm-hire-btn" class="flex-1 py-3 bg-cyan text-obsidian text-xs font-bold uppercase tracking-widest rounded-lg font-black transition-all active:scale-95">Confirm Hiring</button>
+                    <button id="close-modal" class="flex-1 py-3 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest rounded-lg transition-all border border-gray-200 dark:border-white/10">Cancel</button>
+                    <button id="confirm-hire-btn" class="flex-1 py-3 bg-cyan text-white lg:text-obsidian text-xs font-bold uppercase tracking-widest rounded-lg font-black transition-all active:scale-95 shadow-lg">Confirm Hiring</button>
                 </div>
             </div>
         </div>
