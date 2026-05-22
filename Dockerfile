@@ -18,10 +18,10 @@ WORKDIR /app
 
 # Copy package metadata first to leverage cache
 COPY package*.json ./
-COPY packages/sentinel-sdk/package*.json packages/sentinel-sdk/ || true
+COPY packages/sentinel-sdk/package*.json packages/sentinel-sdk/
 
 # Install dependencies for build
-RUN npm ci --silent
+RUN npm ci --silent --ignore-scripts
 
 # Copy source and build
 COPY . .
@@ -46,10 +46,10 @@ RUN groupadd -r sentinel && useradd -r -g sentinel -d /app sentinel
 # Copy compiled output and package metadata
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
-COPY package-lock.json ./ || true
+COPY package-lock.json ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev --silent
+RUN npm ci --silent --ignore-scripts
 
 # Copy dashboard static assets if present
 COPY --from=builder /app/dashboard ./dashboard
