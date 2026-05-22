@@ -51,10 +51,15 @@ COPY package-lock.json ./
 # Install production dependencies only
 RUN npm ci --silent --ignore-scripts
 
+# Ensure critical runtime packages that may be listed in devDependencies are present
+RUN npm install viem@^2.47.6 --silent --no-audit --no-fund || true
+
 # Copy dashboard static assets if present
 COPY --from=builder /app/dashboard ./dashboard
 
 # Create runtime directories and set permissions
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 RUN mkdir -p /app/logs /app/data && chown -R sentinel:sentinel /app
 
 ENV NODE_ENV=production
@@ -67,4 +72,4 @@ EXPOSE 3006
 # Simple http healthcheck; adjust path if API root differs
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD wget --quiet --tries=1 --spider http://localhost:3006/ || exit 1
 
-ENTRYPOINT ["node","dist/src/logic/agent_brain.js"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
