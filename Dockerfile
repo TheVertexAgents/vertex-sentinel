@@ -54,6 +54,11 @@ COPY package-lock.json ./
 # Copy node_modules from builder (includes built deps)
 COPY --from=builder /app/node_modules ./node_modules
 
+# Add shim for genkitx-groq to ensure ESM resolution of groq_models without extension
+RUN if [ -d "node_modules/genkitx-groq/lib" ]; then \
+  printf "export * from './groq_models.mjs';\n" > node_modules/genkitx-groq/lib/groq_models.js; \
+fi
+
 # Copy dashboard static assets if present
 COPY --from=builder /app/dashboard ./dashboard
 
