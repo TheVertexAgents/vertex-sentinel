@@ -23,12 +23,12 @@ RUN npm ci --legacy-peer-deps --ignore-scripts
 # Copy the rest of the source code (respecting .dockerignore)
 COPY . .
 
-# Generate types and compile TypeScript
-RUN npm run generate:types
-RUN npx tsc
-
-# Prune dev dependencies to keep production image light
-RUN npm prune --production
+# Rebuild native modules now that source code is available
+# Generate types, compile TypeScript, and prune dev dependencies
+RUN npm rebuild \
+    && npm run generate:types \
+    && npx tsc \
+    && npm prune --production
 
 
 # --- Stage 2: Runner ---
@@ -40,17 +40,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3006
 
-# Install runtime dependencies
+# Install runtime dependencies, create non-root user, and setup directories
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
+    && groupadd -r sentinel && useradd -r -g sentinel sentinel \
+    && mkdir -p /app/logs /app/data \
+    && chown -R sentinel:sentinel /app/logs /app/data \
     && rm -rf /var/lib/apt/lists/*
-
-# Create a non-root user
-RUN groupadd -r sentinel && useradd -r -g sentinel sentinel
-
-# Pre-create logs and data directories with correct ownership
-RUN mkdir -p /app/logs /app/data && chown -R sentinel:sentinel /app/logs /app/data
 
 # Copy built assets and production node_modules from builder
 COPY --from=builder --chown=sentinel:sentinel /app/dist ./dist
