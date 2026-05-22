@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  sentinel:
+    build: .
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    volumes:
+      - ./:/app:cached
+      - /app/node_modules
+    command: npm run start
+    profiles:
+      - dev
+
+  # Optional sibling agent-stack-arc dev service.
+  # The service is defined but will only run when the 'agent-stack' profile is enabled.
+  agent-stack-arc:
+    build:
+      # If the sibling repo is present in the parent directory, compose can build it from ../agent-stack-arc
+      context: ../agent-stack-arc
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    profiles:
+      - agent-stack
+    # Uncomment the volumes line below to use local source bind-mounting for active development
+    # volumes:
+    #   - ../agent-stack-arc:/app:cached
+
+networks:
+  default:
+    name: vertex-sentinel-dev
