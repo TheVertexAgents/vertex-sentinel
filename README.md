@@ -163,9 +163,65 @@ The dashboard is served on port **3005** to avoid conflicts with the AgentStack 
 ```bash
 npm run dashboard
 ```
-Access at **`http://localhost:3005`**.
+Access at **`http://localhost:3006`**.
 
 > **Note**: Ensure the AgentStack Orchestrator is running on port **3000** (as configured in `.env`) to enable data verification features.
+
+---
+
+## 🐳 Docker Usage
+
+Vertex Sentinel is fully containerized for institutional reliability and ease of deployment.
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Quick Start with Docker Compose
+
+1. **Configure Environment**: Ensure your `.env` file is populated with necessary API keys.
+2. **Build and Run**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up --build
+   ```
+3. **Access Dashboard**: Open `http://localhost:3006` in your browser.
+
+### Building Manually
+
+```bash
+# Build the image
+docker build -t vertex-sentinel .
+
+# Run the container
+docker run -p 3006:3006 --env-file .env vertex-sentinel
+```
+
+### Health Checks
+
+The container includes a built-in health check that monitors the `/api/health` endpoint:
+```bash
+docker inspect --format='{{json .State.Health}}' vertex-sentinel
+```
+
+### Cloud Deployment (GCP)
+
+Vertex Sentinel is designed to run on **Google Cloud Run** for maximum scalability and institutional reliability.
+
+#### 1. Setup Infrastructure
+Infrastructure is managed via Terraform in the `terraform/` directory.
+```bash
+make deploy-infra
+```
+
+#### 2. Deploy Application
+The included `Makefile` automates the build-push-deploy loop.
+```bash
+# Build, push to Artifact Registry, and deploy to Cloud Run
+make all
+```
+
+#### 3. Configuration
+Sensitive keys should be passed via Terraform variables or managed through GCP Secret Manager (recommended for production).
 
 ---
 

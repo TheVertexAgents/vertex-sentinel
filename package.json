@@ -65,6 +65,7 @@
     "sinon": "^21.0.3",
     "sqlite3": "^6.0.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.3",
     "ws": "^8.20.0"
   },
   "engines": {
@@ -99,7 +100,6 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "solidity-coverage": "^0.8.17",
-    "tsx": "^4.22.0",
     "typechain": "^8.3.2",
     "typescript": "^6.0.3",
     "viem": "^2.47.6",
