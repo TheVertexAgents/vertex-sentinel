@@ -26,6 +26,9 @@ RUN npm ci --silent --ignore-scripts
 # Copy source and build
 COPY . .
 
+# Install dependencies (with scripts) so packages with postinstall/build scripts are prepared
+RUN npm ci --silent
+
 # Generate types and build project
 RUN npm run generate:types && npm run build
 
@@ -48,11 +51,8 @@ COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 COPY package-lock.json ./
 
-# Install production dependencies only
-RUN npm ci --silent --ignore-scripts
-
-# Ensure critical runtime packages that may be listed in devDependencies are present
-RUN npm install viem@^2.47.6 --silent --no-audit --no-fund || true
+# Copy node_modules from builder (includes built deps)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy dashboard static assets if present
 COPY --from=builder /app/dashboard ./dashboard
