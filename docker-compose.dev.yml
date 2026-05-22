@@ -1,0 +1,35 @@
+services:
+  vertex-sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vertex-sentinel
+    ports:
+      - "${PORT:-3006}:3006"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./agent-id.json:/app/agent-id.json
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3006/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Sibling service for integration testing (uncomment to enable)
+  # agent-stack-arc:
+  #   image: thevertexagents/agent-stack-arc:latest
+  #   container_name: agent-stack-arc
+  #   ports:
+  #     - "3000:3000"
+  #   env_file:
+  #     - .env.arc
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: sentinel-network
