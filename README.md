@@ -203,6 +203,26 @@ The container includes a built-in health check that monitors the `/api/health` e
 docker inspect --format='{{json .State.Health}}' vertex-sentinel
 ```
 
+### Cloud Deployment (GCP)
+
+Vertex Sentinel is designed to run on **Google Cloud Run** for maximum scalability and institutional reliability.
+
+#### 1. Setup Infrastructure
+Infrastructure is managed via Terraform in the `terraform/` directory.
+```bash
+make deploy-infra
+```
+
+#### 2. Deploy Application
+The included `Makefile` automates the build-push-deploy loop.
+```bash
+# Build, push to Artifact Registry, and deploy to Cloud Run
+make all
+```
+
+#### 3. Configuration
+Sensitive keys should be passed via Terraform variables or managed through GCP Secret Manager (recommended for production).
+
 ---
 
 ## 🔗 Smart Contract Ecosystem

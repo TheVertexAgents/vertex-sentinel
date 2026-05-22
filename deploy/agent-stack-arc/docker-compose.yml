@@ -1,0 +1,15 @@
+# Standalone docker-compose for agent-stack-arc
+# Copy this to the root of the agent-stack-arc repository
+services:
+  agent-stack-arc:
+    build: .
+    container_name: agent-stack-arc
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+networks:
+  default:
+    name: arc-network
