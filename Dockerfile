@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy package files and install ALL dependencies (including devDeps for build)
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+# Use --ignore-scripts to prevent the 'prepare' script from failing before source code is copied
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Copy the rest of the source code (respecting .dockerignore)
 COPY . .
