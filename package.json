@@ -68,7 +68,9 @@
     "ws": "^8.20.0",
     "viem": "^2.47.6",
     "winston": "^3.19.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -100,8 +102,6 @@
     "json-schema-to-typescript": "^15.0.4",
     "nock": "^14.0.14",
     "patch-package": "^8.0.1",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "solidity-coverage": "^0.8.17",
     "tsx": "^4.22.0",
     "typechain": "^8.3.2",
