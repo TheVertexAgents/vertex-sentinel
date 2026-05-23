@@ -137,7 +137,28 @@ npm run demo
 
 ```bash
 npm run dashboard
-# Open http://localhost:3005
+# Open http://localhost:3006
+```
+
+### Docker (Quick Start)
+
+```bash
+# Build and run locally
+docker build -t vertex-sentinel .
+docker run -p 3006:3006 --env-file .env vertex-sentinel
+
+# Interactive Debugging
+docker run --rm -it --entrypoint /bin/sh vertex-sentinel
+```
+
+### Docker Compose (Dev)
+
+```bash
+# Start Sentinel in development mode
+docker-compose --profile dev up
+
+# Start with optional AgentStack ARC sibling
+docker-compose --profile dev --profile agent-stack up
 ```
 
 ---
@@ -158,12 +179,12 @@ The **Vertex Sentinel: Professional Risk Terminal** provides institutional-grade
 *   **Technical Audit**: A verifiable, EIP-712 signed audit stream showing every trade intent, AI reasoning, and **Arc L1 Verification Proofs**.
 
 #### Accessing the Dashboard
-The dashboard is served on port **3005** to avoid conflicts with the AgentStack Orchestrator.
+The dashboard is served on port **3006** by default.
 
 ```bash
 npm run dashboard
 ```
-Access at **`http://localhost:3005`**.
+Access at **`http://localhost:3006`**.
 
 > **Note**: Ensure the AgentStack Orchestrator is running on port **3000** (as configured in `.env`) to enable data verification features.
 
