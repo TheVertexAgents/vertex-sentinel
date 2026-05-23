@@ -1,0 +1,13 @@
+diff --git a/node_modules/genkitx-groq/lib/index.mjs b/node_modules/genkitx-groq/lib/index.mjs
+index 789d277..c6870ab 100644
+--- a/node_modules/genkitx-groq/lib/index.mjs
++++ b/node_modules/genkitx-groq/lib/index.mjs
+@@ -17,7 +17,7 @@ import {
+   allam2x7b,
+   deepseekR1DistillLlamax70b,
+   SUPPORTED_GROQ_MODELS
+-} from "./groq_models";
++} from "./groq_models.mjs";
+ import { genkitPlugin } from "genkit/plugin";
+ const groq = (options) => genkitPlugin("groq", (ai) => __async(void 0, null, function* () {
+   const apiKey = (options == null ? void 0 : options.apiKey) || process.env.GROQ_API_KEY;
