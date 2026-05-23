@@ -59,6 +59,8 @@ RUN groupadd -r sentinel && useradd -r -g sentinel -d /app sentinel
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 COPY package-lock.json ./
+# Include agent metadata required at runtime
+COPY agent-id.json ./
 
 # Install production node modules in runner
 RUN npm ci --production --silent --no-audit || true
