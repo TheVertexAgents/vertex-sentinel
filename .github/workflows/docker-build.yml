@@ -1,0 +1,60 @@
+name: Docker Build & Smoke Test
+
+on:
+  push:
+    branches: [ "main", "containerization/docker" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  ENABLE_IMAGE_PUSH: ${{ vars.ENABLE_IMAGE_PUSH || 'false' }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: vertex-sentinel:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tier 1 Smoke Test: Health Check
+        run: |
+          docker run -d --name sentinel-test -p 3006:3006 -e NODE_ENV=test vertex-sentinel:test
+          sleep 10
+          curl -f http://localhost:3006/api/health || (docker logs sentinel-test && exit 1)
+          docker rm -f sentinel-test
+
+      - name: Tier 2 Smoke Test: Startup Logs
+        run: |
+          docker run --name sentinel-logs -e NODE_ENV=test vertex-sentinel:test > startup.log 2>&1 || true
+          grep -E "Starting vertex-sentinel|health server listening on" startup.log || (cat startup.log && exit 1)
+          docker rm -f sentinel-logs
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request' && env.ENABLE_IMAGE_PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        if: github.event_name != 'pull_request' && env.ENABLE_IMAGE_PUSH == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: vertex-sentinel:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

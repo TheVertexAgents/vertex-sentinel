@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  sentinel:
+    build: .
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    environment:
+      - SENTINEL_MODE=agent
+      - NODE_ENV=development
+    volumes:
+      - ./:/app:cached
+      - /app/node_modules
+    command: npm run start
+    profiles:
+      - dev
+
+  # Optional sibling agent-stack-arc dev service.
+  # Requires local clone of agent-stack-arc at ../agent-stack-arc
+  agent-stack-arc:
+    build:
+      context: ../agent-stack-arc
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    profiles:
+      - agent-stack
+
+networks:
+  default:
+    name: vertex-sentinel-dev

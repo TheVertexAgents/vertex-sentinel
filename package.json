@@ -12,6 +12,8 @@
     "build": "npx tsc",
     "generate:types": "node scripts/generate_types.js",
     "start": "npm run generate:types && NODE_OPTIONS='--import tsx --no-warnings' npx ts-node src/logic/agent_brain.ts",
+    "start:agent": "node dist/src/logic/agent_brain.js",
+    "start:server": "node dist/src/orchestrator/socket-server.js",
     "compile": "npx hardhat compile",
     "test": "NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx hardhat test test/RiskRouter.test.ts test/contracts/*.test.ts && NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx mocha test/**/*.test.ts --exclude 'test/RiskRouter.test.ts' --exclude 'test/contracts/*.test.ts'",
     "demo": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/demo_flow.ts --network hardhat",
@@ -21,7 +23,8 @@
     "test:e2e": "NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx mocha --timeout 15000 test/e2e/pnl_scenario.test.ts",
     "node": "npx hardhat node",
     "dashboard": "npm start",
-    "prepare": "bash scripts/setup-hooks.sh"
+    "prepare": "bash scripts/setup-hooks.sh",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "ai-trading",
@@ -47,12 +50,8 @@
     "@google-cloud/firestore": "^8.3.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@openzeppelin/contracts": "^5.6.1",
-    "@types/cors": "^2.8.19",
-    "@types/node-fetch": "^2.6.13",
-    "@types/sqlite3": "^3.1.11",
     "axios": "^1.15.2",
     "ccxt": "^4.5.46",
-    "chai": "^4.3.4",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
@@ -62,10 +61,13 @@
     "genkitx-groq": "^0.30.0",
     "node-fetch": "^3.3.2",
     "serve": "^14.2.6",
-    "sinon": "^21.0.3",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "sqlite3": "^6.0.1",
-    "ts-node": "^10.9.2",
-    "ws": "^8.20.0"
+    "viem": "^2.47.6",
+    "winston": "^3.19.0",
+    "ws": "^8.20.0",
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -84,26 +86,28 @@
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "@types/chai": "^4.3.20",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.10",
     "@types/nock": "^10.0.3",
     "@types/node": "^25.8.0",
+    "@types/node-fetch": "^2.6.13",
     "@types/sinon": "^21.0.1",
+    "@types/sqlite3": "^3.1.11",
     "@types/ws": "^8.18.1",
+    "chai": "^4.3.4",
     "ethers": "^6.10.0",
     "hardhat": "^2.28.6",
     "hardhat-gas-reporter": "^1.0.10",
     "json-schema-to-typescript": "^15.0.4",
     "nock": "^14.0.14",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
+    "patch-package": "^8.0.1",
+    "sinon": "^21.0.3",
     "solidity-coverage": "^0.8.17",
+    "ts-node": "^10.9.2",
     "tsx": "^4.22.0",
     "typechain": "^8.3.2",
-    "typescript": "^6.0.3",
-    "viem": "^2.47.6",
-    "winston": "^3.19.0",
-    "zod": "^3.25.76"
+    "typescript": "^6.0.3"
   }
 }
