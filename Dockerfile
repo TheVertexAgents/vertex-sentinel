@@ -38,7 +38,16 @@ FROM node:20-slim AS runner
 
 # Install only runtime OS dependencies (ffmpeg for fluent-ffmpeg, ca-certificates)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+  && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    build-essential \
+    pkg-config \
+    libsqlite3-dev \
+    libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -51,12 +60,16 @@ COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 COPY package-lock.json ./
 
-# Copy node_modules from builder (includes built deps)
-COPY --from=builder /app/node_modules ./node_modules
+# Install production node modules in runner
+RUN npm ci --production --silent --no-audit || true
+# Rebuild sqlite3 in the runner to ensure native binary links against runner glibc
+RUN if [ -d "node_modules/sqlite3" ]; then \
+  npm rebuild sqlite3 --build-from-source --silent || true; \
+fi
 
-# Add shim for genkitx-groq to ensure ESM resolution of groq_models without extension
+# Patch genkitx-groq ESM import to reference .mjs explicitly (fix resolution)
 RUN if [ -d "node_modules/genkitx-groq/lib" ]; then \
-  printf "export * from './groq_models.mjs';\n" > node_modules/genkitx-groq/lib/groq_models.js; \
+  perl -0777 -pe "s/from \"\.\/groq_models\"/from \"\.\/groq_models.mjs\"/g" -i node_modules/genkitx-groq/lib/index.mjs || true; \
 fi
 
 # Copy dashboard static assets if present
