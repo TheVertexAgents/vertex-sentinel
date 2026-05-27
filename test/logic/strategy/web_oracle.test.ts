@@ -66,27 +66,35 @@ describe('Risk Assessment with Web Oracle Integration', function () {
 
   it('Should return HOLD when Web Oracle detects a critical threat', async function () {
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
+        asset: 'BTC',
         critical: true,
         threatLevel: 'CRITICAL',
-        reasoning: 'Critical exploit detected on chain',
-        evidence: [{ title: 'Exploit Alert', url: 'http://news.com', timestamp: 'now' }]
+        summary: 'Critical exploit detected',
+        evidence: [{ title: 'Exploit Alert', url: 'http://news.com' }],
+        timestamp: new Date().toISOString(),
+        riskAction: 'HOLD',
+        riskReason: 'Critical exploit confirmed on chain'
     });
 
     const decision = await analyzeRisk('BTC/USD', 10000n);
     expect(decision.action).to.equal('HOLD');
     expect(decision.riskScore).to.equal(1.0);
-    expect(decision.reasoning).to.contain('ORACLE_ALERT');
-    expect(decision.reasoning).to.contain('Critical exploit detected on chain');
+    expect(decision.reasoning).to.contain('ORACLE_HOLD');
+    expect(decision.reasoning).to.contain('Critical exploit confirmed on chain');
   });
 
   it('Should continue with BUY when Web Oracle is disabled', async function () {
     process.env.WEB_ORACLE_ENABLED = 'false';
 
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
+        asset: 'BTC',
         critical: true,
         threatLevel: 'CRITICAL',
-        reasoning: 'Critical exploit detected',
-        evidence: []
+        summary: 'Critical exploit detected',
+        evidence: [],
+        timestamp: new Date().toISOString(),
+        riskAction: 'HOLD',
+        riskReason: 'Exploit'
     });
 
     const decision = await analyzeRisk('BTC/USD', 10000n);

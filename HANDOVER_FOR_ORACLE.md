@@ -1,7 +1,7 @@
 # Handover Guide: Building the Sentinel Web Oracle (Agentic Deep-Dive)
 
 ## 🎯 Goal
-Build `sentinel-web-oracle` as a high-fidelity **Agentic MCP Server**. It must perform autonomous research to detect critical crypto threats (exploits, hacks, regulatory "black swans") using Bright Data's infrastructure.
+Build `sentinel-web-oracle` as a high-fidelity **Agentic Threat Microservice**. It must perform autonomous research to detect critical crypto threats (exploits, hacks, regulatory "black swans") using Bright Data's infrastructure.
 
 ## 🛠️ Infrastructure Setup (Bright Data)
 You need three specialized zones in the Bright Data dashboard:
@@ -10,7 +10,7 @@ You need three specialized zones in the Bright Data dashboard:
 3.  **Scraping Browser**: `scraping_browser1`. Used for JS-heavy sites like Twitter/X or TradingView news feeds.
 
 ## 🧩 The "Deep-Dive" Agentic Loop
-Do not implement a simple linear script. Use a **Tool-Use Loop** (Claude 3.5 Sonnet or GPT-4o) to enable "reasoning" between steps.
+Use a **Tool-Use Loop** (Claude 3.5 Sonnet `claude-sonnet-4-20250514` or GPT-4o) to enable "reasoning" between steps.
 
 ### 1. Step: Disambiguation & Search
 The agent should first search to confirm the asset's canonical name.
@@ -32,12 +32,23 @@ For every suspicious headline, the agent **must** read the full page.
 - **Logic**: Use the **Web Unlocker** or **Scraping Browser** to extract the article text.
 - **Validation**: The LLM compares the article text against known attack patterns.
 
-### 4. Step: Final Synthesis & Verdict
-- **Logic**: If the agent finds a confirmed technical vulnerability or a regulatory "Cease and Desist" with a timestamp < 4 hours old, it returns `threatLevel: "CRITICAL"`.
+### 4. Step: Final Synthesis & Verdict (API Contract)
+The server must implement a `POST /analyze` endpoint that returns:
+```typescript
+{
+  asset:      string;
+  threatLevel: "CRITICAL" | "ELEVATED" | "NOMINAL";
+  summary:    string;
+  evidence:   { title: string; url: string }[];
+  timestamp:  string;
+  riskAction: "HOLD" | "MONITOR" | "CLEAR";
+  riskReason: string;
+}
+```
 
-## 🤖 Implementation Code Snippets
+## 🤖 Implementation Code Snippets (Node.js)
 
-### SERP API Implementation (Node.js)
+### SERP API Implementation
 ```typescript
 async function searchWeb(query: string) {
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbs=qdr:h`;
@@ -53,27 +64,14 @@ async function searchWeb(query: string) {
 }
 ```
 
-### Web Unlocker Implementation (Node.js)
-```typescript
-async function scrapeUrl(url: string) {
-    const response = await axios.post('https://api.brightdata.com/request', {
-        zone: process.env.UNLOCKER_ZONE,
-        url: url,
-        format: 'raw'
-    }, {
-        headers: { 'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY}` }
-    });
-    // Strip HTML tags and scripts
-    return response.data.replace(/<script[^>]*>.*?<\/script>/gs, '').replace(/<[^>]+>/g, ' ').substring(0, 5000);
-}
-```
-
 ## 🔗 Vertex Sentinel Integration Details
-- **Port**: The oracle server should run on **port 3008** (to avoid conflict with Sentinel Dashboard on 3005 and Socket Server on 3006).
-- **Client**: `src/logic/clients/web_oracle_client.ts` is pre-configured to point to `http://localhost:3008`.
-- **Logic Hook**: `src/logic/strategy/risk_assessment.ts` is already wired to trigger a `HOLD` if `threatLevel === 'CRITICAL'`.
+- **Oracle Port**: **3008** (Base URL: `http://localhost:3008`)
+- **Sentinel Dashboard Port**: 3005
+- **Sentinel Socket Server Port**: 3006
+- **AgentStack (Sibling) Port**: 3000
+- **Logic Hook**: `src/logic/strategy/risk_assessment.ts` is already wired to trigger a `HOLD` if `riskAction === 'HOLD'`.
 
 ## 🏆 Hackathon "Winning" Tips
-1.  **Transparency**: In the MCP tool output, always include the `evidence` array with direct links to the scraped articles.
-2.  **Speed**: Use parallel tool calls for the initial discovery phase.
-3.  **Safety**: Implement a "System Prompt" that instructs the agent to be extremely conservative—false positives for "CRITICAL" are better than missed hacks.
+1.  **Conservative by Design**: A false positive (HOLD with no real threat) is better than a missed real attack.
+2.  **Transparency**: Always include direct links to the scraped articles in the `evidence` field.
+3.  **Speed**: Use parallel tool calls for the initial discovery phase.

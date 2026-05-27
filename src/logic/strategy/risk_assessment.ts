@@ -248,9 +248,12 @@ Output your response in valid JSON format:
     if (oracleEnabled) {
       try {
         const threats = await WebOracleClient.getThreats(baseAsset);
-        if (threats.critical) {
+        if (threats && threats.riskAction === 'HOLD') {
           webThreatRisk = 1.0;
-          oracleReason = `ORACLE_ALERT: ${threats.reasoning}`;
+          oracleReason = `ORACLE_HOLD: ${threats.riskReason}`;
+        } else if (threats && threats.riskAction === 'MONITOR') {
+          webThreatRisk = 0.5;
+          oracleReason = `ORACLE_MONITOR: ${threats.summary}`;
         }
       } catch (e: any) {
         logger.warn({ module: 'RISK_ASSESSMENT', step: 'WEB_ORACLE_FAILED', error: e.message });
