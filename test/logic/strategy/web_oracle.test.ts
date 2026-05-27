@@ -67,7 +67,6 @@ describe('Risk Assessment with Web Oracle Integration', function () {
   it('Should return HOLD when Web Oracle detects a critical threat', async function () {
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
         asset: 'BTC',
-        critical: true,
         threatLevel: 'CRITICAL',
         summary: 'Critical exploit detected',
         evidence: [{ title: 'Exploit Alert', url: 'http://news.com' }],
@@ -88,7 +87,6 @@ describe('Risk Assessment with Web Oracle Integration', function () {
 
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
         asset: 'BTC',
-        critical: true,
         threatLevel: 'CRITICAL',
         summary: 'Critical exploit detected',
         evidence: [],
