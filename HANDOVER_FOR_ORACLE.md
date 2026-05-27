@@ -1,63 +1,79 @@
-# Handover Guide: Building the Sentinel Web Oracle (Agentic Version)
+# Handover Guide: Building the Sentinel Web Oracle (Agentic Deep-Dive)
 
 ## 🎯 Goal
-Build the `sentinel-web-oracle` as a standalone **Agentic MCP Server**. It must perform autonomous research to detect critical crypto threats using Bright Data's infrastructure. This serves as the submission for the **Web Data UNLOCKED Hackathon**.
+Build `sentinel-web-oracle` as a high-fidelity **Agentic MCP Server**. It must perform autonomous research to detect critical crypto threats (exploits, hacks, regulatory "black swans") using Bright Data's infrastructure.
 
 ## 🛠️ Infrastructure Setup (Bright Data)
-You will need three zones in your Bright Data dashboard:
-1.  **SERP API**: For Google News/Search results. (Format: JSON)
-2.  **Web Unlocker**: For scraping structured data from sites like Crunchbase or LinkedIn.
-3.  **Scraping Browser**: For JS-heavy sites like Twitter/X or complex news portals.
+You need three specialized zones in the Bright Data dashboard:
+1.  **SERP API**: `serp_api1` (Format: JSON). Used for high-level headline discovery.
+2.  **Web Unlocker**: `web_unlocker1` (Format: RAW). Used for scraping structured data from news archives and blogs while bypassing CAPTCHAs.
+3.  **Scraping Browser**: `scraping_browser1`. Used for JS-heavy sites like Twitter/X or TradingView news feeds.
 
-## 🧩 Agentic Research Loop
-The Oracle should not just "search"; it should "reason." Implement a tool-use loop (e.g., using Claude or GPT-4o) with the following pattern:
+## 🧩 The "Deep-Dive" Agentic Loop
+Do not implement a simple linear script. Use a **Tool-Use Loop** (Claude 3.5 Sonnet or GPT-4o) to enable "reasoning" between steps.
 
-1.  **Search**: Use `search_web(query)` (SERP API) to find headlines.
-2.  **Analyze**: The LLM reviews snippets. If a headline looks critical (e.g., "Protocol X exploited for $20M"), it proceeds to step 3.
-3.  **Verify**: Use `scrape_url(url)` (Web Unlocker/Browser) to fetch the full article.
-4.  **Synthesize**: The LLM determines if the threat is "Active" and "Critical."
+### 1. Step: Disambiguation & Search
+The agent should first search to confirm the asset's canonical name.
+- **Tool**: `search_web(query)`
+- **Query**: `"What is the official Twitter and news source for [ASSET] protocol?"`
+- **Logic**: This prevents the agent from confusing "Linear" (the protocol) with "Linear" (the mathematical concept).
 
-### Example Bright Data Payloads (Node.js/Axios)
+### 2. Step: Multi-Angle Discovery
+The agent fires parallel searches to cover different risk vectors.
+- **Tool**: `search_web(query)`
+- **Queries**:
+    - `"[ASSET] + exploit news last 24h"`
+    - `"[ASSET] + SEC enforcement"`
+    - `"[ASSET] + flash loan attack"`
 
-**SERP Search:**
-```json
-{
-  "zone": "serp_api_zone",
-  "url": "https://www.google.com/search?q=BTC+exploit+news&tbs=qdr:h",
-  "format": "json"
+### 3. Step: Deep Scrape & Verification
+For every suspicious headline, the agent **must** read the full page.
+- **Tool**: `scrape_url(url)`
+- **Logic**: Use the **Web Unlocker** or **Scraping Browser** to extract the article text.
+- **Validation**: The LLM compares the article text against known attack patterns.
+
+### 4. Step: Final Synthesis & Verdict
+- **Logic**: If the agent finds a confirmed technical vulnerability or a regulatory "Cease and Desist" with a timestamp < 4 hours old, it returns `threatLevel: "CRITICAL"`.
+
+## 🤖 Implementation Code Snippets
+
+### SERP API Implementation (Node.js)
+```typescript
+async function searchWeb(query: string) {
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbs=qdr:h`;
+    const response = await axios.post('https://api.brightdata.com/request', {
+        zone: process.env.SERP_ZONE,
+        url: searchUrl,
+        format: 'json'
+    }, {
+        headers: { 'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY}` }
+    });
+    const body = JSON.parse(response.data.body);
+    return body.organic.slice(0, 5).map(r => `${r.title}: ${r.url}\n${r.description}`).join('\n---\n');
 }
 ```
 
-**Web Unlocker Scrape:**
-```json
-{
-  "zone": "web_unlocker_zone",
-  "url": "https://coindesk.com/policy/...",
-  "format": "raw"
+### Web Unlocker Implementation (Node.js)
+```typescript
+async function scrapeUrl(url: string) {
+    const response = await axios.post('https://api.brightdata.com/request', {
+        zone: process.env.UNLOCKER_ZONE,
+        url: url,
+        format: 'raw'
+    }, {
+        headers: { 'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY}` }
+    });
+    // Strip HTML tags and scripts
+    return response.data.replace(/<script[^>]*>.*?<\/script>/gs, '').replace(/<[^>]+>/g, ' ').substring(0, 5000);
 }
 ```
 
-## 🤖 MCP Tool Interface
+## 🔗 Vertex Sentinel Integration Details
+- **Port**: The oracle server should run on **port 3008** (to avoid conflict with Sentinel Dashboard on 3005 and Socket Server on 3006).
+- **Client**: `src/logic/clients/web_oracle_client.ts` is pre-configured to point to `http://localhost:3008`.
+- **Logic Hook**: `src/logic/strategy/risk_assessment.ts` is already wired to trigger a `HOLD` if `threatLevel === 'CRITICAL'`.
 
-### `get_threat_report(asset: string)`
-- **Input**: `asset` (e.g., "SOL", "USDC")
-- **Internal Loop**: Performs 2-3 searches and 1-2 deep scrapes.
-- **Output (JSON)**:
-    ```json
-    {
-      "threatLevel": "CRITICAL" | "HIGH" | "LOW" | "NONE",
-      "reasoning": "Brief explanation of the finding",
-      "evidence": [
-        { "title": "...", "url": "...", "timestamp": "..." }
-      ]
-    }
-    ```
-
-## 🔗 Vertex Sentinel Integration
-The `vertex-sentinel` project has been prepared with a `WebOracleClient`.
-1.  **Implement the MCP Client**: In `src/logic/clients/web_oracle_client.ts`, use the MCP SDK to connect to this new server.
-2.  **Enable the Hook**: Set `WEB_ORACLE_ENABLED=true` in `.env`.
-3.  **Fail-Closed**: The logic in `src/logic/strategy/risk_assessment.ts` already checks `threatLevel === 'CRITICAL'` to trigger a `HOLD`.
-
-## 💡 System Prompt for Oracle LLM
-> "You are the Sentinel Threat Analyst. Your goal is to determine if there is an active technical exploit, regulatory halt, or major security breach affecting [ASSET]. Use the provided tools to search the web and scrape full articles to confirm details. Do not rely on old data. If you find a confirmed exploit from the last 4 hours, set threatLevel to CRITICAL."
+## 🏆 Hackathon "Winning" Tips
+1.  **Transparency**: In the MCP tool output, always include the `evidence` array with direct links to the scraped articles.
+2.  **Speed**: Use parallel tool calls for the initial discovery phase.
+3.  **Safety**: Implement a "System Prompt" that instructs the agent to be extremely conservative—false positives for "CRITICAL" are better than missed hacks.

@@ -16,7 +16,7 @@ export interface WebThreat {
  * This is a placeholder for the hackathon integration.
  */
 export class WebOracleClient {
-    private static oracleUrl = process.env.WEB_ORACLE_URL || 'http://localhost:3005';
+    private static oracleUrl = process.env.WEB_ORACLE_URL || 'http://localhost:3008';
 
     /**
      * @dev Fetches real-time threat intelligence for a specific asset.
