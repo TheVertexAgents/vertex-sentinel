@@ -6,6 +6,7 @@ import { loadAgentMetadata } from '../config.js';
 import { getKrakenService } from '../../services/kraken_service.js';
 import { getNewsFeed } from './news_feed.js';
 import { AgentStackClient } from '../clients/agent_stack.js';
+import { WebOracleClient } from '../clients/web_oracle_client.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -239,7 +240,24 @@ Output your response in valid JSON format:
       };
     }
 
-    // 6. Arc L1 Verification Layer (Milestone 3 Integration)
+    // 6. Web Oracle Threat Intel (Hackathon Track 3 Integration)
+    // Integrate Bright Data-powered threat intelligence from sentinel-web-oracle.
+    const oracleEnabled = process.env.WEB_ORACLE_ENABLED === 'true';
+    let webThreatRisk = 0;
+    let oracleReason = "";
+    if (oracleEnabled) {
+      try {
+        const threats = await WebOracleClient.getThreats(baseAsset);
+        if (threats.critical) {
+          webThreatRisk = 1.0;
+          oracleReason = `ORACLE_ALERT: ${threats.reasoning}`;
+        }
+      } catch (e: any) {
+        logger.warn({ module: 'RISK_ASSESSMENT', step: 'WEB_ORACLE_FAILED', error: e.message });
+      }
+    }
+
+    // 7. Arc L1 Verification Layer (Milestone 3 Integration)
     // The Sentinel MUST "hire" the AgentStack Orchestrator to verify local data.
     const agentStackRequired = process.env.AGENTSTACK_REQUIRED !== 'false';
     let verification: { verified: boolean; proof?: string; error?: string } = { verified: true, proof: 'SKIP_AGENTSTACK' };
@@ -275,8 +293,8 @@ Output your response in valid JSON format:
       logger.warn({ module: 'RISK_ASSESSMENT', step: 'AGENTSTACK_SKIPPED', message: 'AgentStack verification skipped (AGENTSTACK_REQUIRED=false)' });
     }
 
-    // 7. Hybrid Enforcement (Fail-Closed) - Updated for Issue #171
-    const riskScore = Math.max(manualPenalty, aiResult.riskScore);
+    // 8. Hybrid Enforcement (Fail-Closed) - Updated for Issue #171
+    const riskScore = Math.max(manualPenalty, aiResult.riskScore, webThreatRisk);
     const confidence = 1.0 - riskScore;
     const confidenceThreshold = 0.2; // Equivalent to risk 0.8
 
@@ -284,6 +302,7 @@ Output your response in valid JSON format:
     const newsHighlights = news.headlines.map(h => `[${h.impact.toUpperCase()}] ${h.title} (${h.source})`);
 
     let reasons = [aiResult.justification];
+    if (oracleReason) reasons.push(oracleReason);
 
     // ROI Check Reasoning
     reasons.push(`Expected ROI: ${(expectedRoi * 100).toFixed(2)}% (Edge: ${(expectedEdge * 100).toFixed(2)}%, Spread: ${(spread * 100).toFixed(2)}%)`);
