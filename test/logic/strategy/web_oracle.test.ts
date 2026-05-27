@@ -67,8 +67,9 @@ describe('Risk Assessment with Web Oracle Integration', function () {
   it('Should return HOLD when Web Oracle detects a critical threat', async function () {
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
         critical: true,
+        threatLevel: 'CRITICAL',
         reasoning: 'Critical exploit detected on chain',
-        source: 'PeckShield'
+        evidence: [{ title: 'Exploit Alert', url: 'http://news.com', timestamp: 'now' }]
     });
 
     const decision = await analyzeRisk('BTC/USD', 10000n);
@@ -83,8 +84,9 @@ describe('Risk Assessment with Web Oracle Integration', function () {
 
     sandbox.stub(WebOracleClient, 'getThreats').resolves({
         critical: true,
+        threatLevel: 'CRITICAL',
         reasoning: 'Critical exploit detected',
-        source: 'PeckShield'
+        evidence: []
     });
 
     const decision = await analyzeRisk('BTC/USD', 10000n);

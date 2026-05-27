@@ -1,43 +1,63 @@
-# Handover Guide: Building the Sentinel Web Oracle
+# Handover Guide: Building the Sentinel Web Oracle (Agentic Version)
 
 ## 🎯 Goal
-Create a standalone MCP Server called `sentinel-web-oracle` for the **Web Data UNLOCKED Hackathon (Track 3: Security & Compliance)**. This server will provide live "Threat Intelligence" to the `vertex-sentinel` trading agent using Bright Data's infrastructure.
+Build the `sentinel-web-oracle` as a standalone **Agentic MCP Server**. It must perform autonomous research to detect critical crypto threats using Bright Data's infrastructure. This serves as the submission for the **Web Data UNLOCKED Hackathon**.
 
-## 🛠️ Project Setup
-1.  **Directory**: `../sentinel-web-oracle` (Initialize as a separate git repository).
-2.  **Environment**: Node.js, TypeScript, Model Context Protocol (MCP) SDK.
-3.  **Bright Data Credentials**: (To be provided by the operator in `.env`)
-    - `BRIGHTDATA_API_KEY`
-    - `BRIGHTDATA_SERP_ZONE`
-    - `BRIGHTDATA_SCRAPER_ZONE`
+## 🛠️ Infrastructure Setup (Bright Data)
+You will need three zones in your Bright Data dashboard:
+1.  **SERP API**: For Google News/Search results. (Format: JSON)
+2.  **Web Unlocker**: For scraping structured data from sites like Crunchbase or LinkedIn.
+3.  **Scraping Browser**: For JS-heavy sites like Twitter/X or complex news portals.
 
-## 🧩 Required MCP Tools
+## 🧩 Agentic Research Loop
+The Oracle should not just "search"; it should "reason." Implement a tool-use loop (e.g., using Claude or GPT-4o) with the following pattern:
 
-### 1. `get_web_threats(asset: string)`
-- **Technology**: Bright Data **SERP API**.
-- **Source**: Google News / Bing.
-- **Query Pattern**: `[asset] + "exploit" OR "hack" OR "vulnerability" OR "SEC investigation"`.
-- **Reasoning**: If a critical news item is found with a timestamp < 2 hours old, return `threatLevel: "CRITICAL"`.
+1.  **Search**: Use `search_web(query)` (SERP API) to find headlines.
+2.  **Analyze**: The LLM reviews snippets. If a headline looks critical (e.g., "Protocol X exploited for $20M"), it proceeds to step 3.
+3.  **Verify**: Use `scrape_url(url)` (Web Unlocker/Browser) to fetch the full article.
+4.  **Synthesize**: The LLM determines if the threat is "Active" and "Critical."
 
-### 2. `verify_news_integrity(url: string)`
-- **Technology**: Bright Data **Scraping Browser**.
-- **Action**: Visit the provided URL and extract the full article body.
-- **Analysis**: Use an LLM to determine if the article confirms a live technical threat or if it is just general market sentiment.
+### Example Bright Data Payloads (Node.js/Axios)
 
-### 3. `regulatory_monitor()`
-- **Technology**: Bright Data **Web Scraper API**.
-- **Sources**:
-    - `https://www.sec.gov/news/pressreleases`
-    - `https://www.cftc.gov/PressRoom/PressReleases/index.htm`
-- **Keyword Match**: `crypto`, `stablecoin`, `enforcement`, `exchange`.
+**SERP Search:**
+```json
+{
+  "zone": "serp_api_zone",
+  "url": "https://www.google.com/search?q=BTC+exploit+news&tbs=qdr:h",
+  "format": "json"
+}
+```
 
-## 🔗 Integration into Vertex Sentinel
-1.  **Config**: Set `WEB_ORACLE_ENABLED=true` in `.env`.
-2.  **Client**: A placeholder client has been created at `src/logic/clients/web_oracle_client.ts`. You must implement the MCP connection logic inside this class.
-3.  **Logic**: `src/logic/strategy/risk_assessment.ts` has been pre-hooked to use `webThreatRisk`. You need to uncomment the call to `WebOracleClient.getThreats(baseAsset)`.
-3.  **Fail-Closed Action**: If Oracle returns `threatLevel: "CRITICAL"`, the Sentinel **MUST** return `action: 'HOLD'`.
+**Web Unlocker Scrape:**
+```json
+{
+  "zone": "web_unlocker_zone",
+  "url": "https://coindesk.com/policy/...",
+  "format": "raw"
+}
+```
 
-## 🏆 Hackathon Submission Criteria
-- Must demonstrably use at least one Bright Data product (we are using three).
-- Must solve a real enterprise problem (Institutional Risk Compliance).
-- Must include a public GitHub repository for `sentinel-web-oracle`.
+## 🤖 MCP Tool Interface
+
+### `get_threat_report(asset: string)`
+- **Input**: `asset` (e.g., "SOL", "USDC")
+- **Internal Loop**: Performs 2-3 searches and 1-2 deep scrapes.
+- **Output (JSON)**:
+    ```json
+    {
+      "threatLevel": "CRITICAL" | "HIGH" | "LOW" | "NONE",
+      "reasoning": "Brief explanation of the finding",
+      "evidence": [
+        { "title": "...", "url": "...", "timestamp": "..." }
+      ]
+    }
+    ```
+
+## 🔗 Vertex Sentinel Integration
+The `vertex-sentinel` project has been prepared with a `WebOracleClient`.
+1.  **Implement the MCP Client**: In `src/logic/clients/web_oracle_client.ts`, use the MCP SDK to connect to this new server.
+2.  **Enable the Hook**: Set `WEB_ORACLE_ENABLED=true` in `.env`.
+3.  **Fail-Closed**: The logic in `src/logic/strategy/risk_assessment.ts` already checks `threatLevel === 'CRITICAL'` to trigger a `HOLD`.
+
+## 💡 System Prompt for Oracle LLM
+> "You are the Sentinel Threat Analyst. Your goal is to determine if there is an active technical exploit, regulatory halt, or major security breach affecting [ASSET]. Use the provided tools to search the web and scrape full articles to confirm details. Do not rely on old data. If you find a confirmed exploit from the last 4 hours, set threatLevel to CRITICAL."

@@ -2,8 +2,13 @@ import { logger } from '../../utils/logger.js';
 
 export interface WebThreat {
     critical: boolean;
+    threatLevel: 'CRITICAL' | 'HIGH' | 'LOW' | 'NONE';
     reasoning: string;
-    source: string;
+    evidence: Array<{
+        title: string;
+        url: string;
+        timestamp: string;
+    }>;
 }
 
 /**
@@ -18,7 +23,7 @@ export class WebOracleClient {
      */
     static async getThreats(asset: string): Promise<WebThreat> {
         if (process.env.WEB_ORACLE_ENABLED !== 'true') {
-            return { critical: false, reasoning: 'Oracle disabled', source: 'none' };
+            return { critical: false, threatLevel: 'NONE', reasoning: 'Oracle disabled', evidence: [] };
         }
 
         try {
@@ -28,14 +33,15 @@ export class WebOracleClient {
             // For now, we provide the structure for the next agent to implement.
 
             /*
-            const response = await mcpClient.callTool('get_web_threats', { asset });
-            return response.result as WebThreat;
+            const response = await mcpClient.callTool('get_threat_report', { asset });
+            const report = response.result as WebThreat;
+            return { ...report, critical: report.threatLevel === 'CRITICAL' };
             */
 
-            return { critical: false, reasoning: 'Oracle client awaiting MCP implementation', source: 'none' };
+            return { critical: false, threatLevel: 'NONE', reasoning: 'Oracle client awaiting MCP implementation', evidence: [] };
         } catch (error: any) {
             logger.error({ module: 'WEB_ORACLE', step: 'FETCH_ERROR', error: error.message });
-            return { critical: false, reasoning: 'Error reaching oracle', source: 'none' };
+            return { critical: false, threatLevel: 'NONE', reasoning: 'Error reaching oracle', evidence: [] };
         }
     }
 }
