@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('Sentinel Dashboard Walkthrough', async ({ page }) => {
   // 1. Load Dashboard
-  await page.goto('http://localhost:3005/dashboard/index.html');
+  await page.goto('http://localhost:3006/dashboard/index.html');
   await page.waitForTimeout(2000);
   await page.screenshot({ path: 'docs/demo/01-risk-terminal.png' });
 

@@ -137,7 +137,7 @@ npm run demo
 
 ```bash
 npm run dashboard
-# Open http://localhost:3005
+# Open http://localhost:3006
 ```
 
 ---
@@ -158,12 +158,12 @@ The **Vertex Sentinel: Professional Risk Terminal** provides institutional-grade
 *   **Technical Audit**: A verifiable, EIP-712 signed audit stream showing every trade intent, AI reasoning, and **Arc L1 Verification Proofs**.
 
 #### Accessing the Dashboard
-The dashboard is served on port **3005** to avoid conflicts with the AgentStack Orchestrator.
+The dashboard is served on port **3006** to avoid conflicts with the AgentStack Orchestrator (port 3000).
 
 ```bash
 npm run dashboard
 ```
-Access at **`http://localhost:3005`**.
+Access at **`http://localhost:3006/dashboard`**.
 
 > **Note**: Ensure the AgentStack Orchestrator is running on port **3000** (as configured in `.env`) to enable data verification features.
 

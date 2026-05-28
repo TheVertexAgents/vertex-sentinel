@@ -13,6 +13,7 @@ import { PnLTracker } from '../logic/pnl/tracker.js';
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
 
+// Unified port 3006 for API and Dashboard to match User Guide and Recording standards
 const PORT = process.env.PORT || process.env.SOCKET_PORT || 3006;
 
 /**
