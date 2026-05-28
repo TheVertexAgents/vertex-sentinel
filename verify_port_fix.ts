@@ -8,11 +8,11 @@ import { chromium } from 'playwright';
   const page = await context.newPage();
 
   // Try the new port
-  await page.goto('http://localhost:3005/index.html');
+  await page.goto('http://localhost:3006/index.html');
   await page.waitForTimeout(3000);
 
-  console.log('Taking Risk Terminal screenshot from port 3005...');
-  await page.screenshot({ path: 'pro_terminal_port_3005.png' });
+  console.log('Taking Risk Terminal screenshot from port 3006...');
+  await page.screenshot({ path: 'pro_terminal_port_3006.png' });
 
   await browser.close();
 })();

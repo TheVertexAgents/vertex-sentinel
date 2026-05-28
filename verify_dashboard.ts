@@ -8,7 +8,7 @@ import { chromium } from 'playwright';
   const page = await context.newPage();
 
   console.log('Navigating to Sentinel Risk Terminal...');
-  await page.goto('http://localhost:3005/dashboard/index.html', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:3006/dashboard/index.html', { waitUntil: 'networkidle' });
 
   // Wait for data to render
   await page.waitForTimeout(5000);
