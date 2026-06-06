@@ -181,7 +181,7 @@ class ExecutionProxy {
               throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`, ERR_UNAUTHORIZED_AGENT);
           }
 
-          this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch(err => {
+          this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch((err: any) => {
               this.log('ERROR', 'Background trade execution failed', { error: err.message });
           });
         }
@@ -213,7 +213,7 @@ class ExecutionProxy {
    * @dev Calls the Kraken service to execute an order.
    * Implements "Fail-Closed" behavior.
    */
-  private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1) {
+  private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1): Promise<void> {
     if (Date.now() < this.circuitBreakerOpenUntil) {
       this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
       throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);

@@ -266,7 +266,7 @@ export function startSocketServer() {
    * POST /api/keys/rotate
    * Rotates API keys
    */
-  app.post('/api/keys/rotate', (req: Request, res: Response) => {
+  app.post('/api/keys/rotate', (_req: Request, res: Response) => {
     try {
       const manager = ApiKeyManager.getInstance();
       const newKey = manager.rotateKey();
