@@ -69,6 +69,15 @@
                 <button id="btn-connect" class="w-full py-5 bg-cyan text-obsidian font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all active:scale-95 shadow-lg shadow-cyan/20">
                     Connect MetaMask
                 </button>
+
+                <!-- Faucet Button -->
+                <div id="faucet-container" class="mt-8 pt-8 border-t border-white/10 hidden">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Need Sepolia ETH?</p>
+                    <button id="btn-faucet" class="w-full py-3 bg-white/5 border border-white/10 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-white/10 transition-all">
+                        Request Testnet Funds
+                    </button>
+                    <p id="faucet-status" class="text-[9px] mt-2 hidden"></p>
+                </div>
             </section>
 
             <!-- Step 2: Mint Identity -->
@@ -238,6 +247,42 @@
             document.getElementById('step-2').classList.remove('hidden');
             updateStepIndicator(2);
             localStorage.setItem('USER_ADDRESS', userAddress);
+        });
+
+        document.getElementById('btn-connect').addEventListener('mouseover', () => {
+             document.getElementById('faucet-container').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-faucet').addEventListener('click', async () => {
+            if (!userAddress && !window.ethereum) {
+                alert("Please connect wallet first or use demo mode.");
+                return;
+            }
+
+            const addr = userAddress || (await signer.getAddress());
+            const status = document.getElementById('faucet-status');
+            status.classList.remove('hidden');
+            status.textContent = 'Requesting...';
+            status.className = 'text-[9px] mt-2 text-cyan animate-pulse';
+
+            try {
+                const response = await fetch('/api/faucet/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: addr })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    status.textContent = `Success! Tx: ${data.txHash.substring(0,10)}...`;
+                    status.className = 'text-[9px] mt-2 text-emerald-500';
+                } else {
+                    status.textContent = `Error: ${data.error}`;
+                    status.className = 'text-[9px] mt-2 text-crimson';
+                }
+            } catch (e) {
+                status.textContent = `Failed to connect to faucet service.`;
+                status.className = 'text-[9px] mt-2 text-crimson';
+            }
         });
 
         function updateSVGName(name) {

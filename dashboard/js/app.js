@@ -98,7 +98,7 @@ function updateHeatmap(value) {
 
 // Tab Management
 window.switchTab = function(tabId) {
-    ['terminal', 'operations', 'audit', 'hitl', 'esg', 'fleet'].forEach(t => {
+    ['terminal', 'operations', 'audit', 'hitl', 'esg', 'fleet', 'leaderboard'].forEach(t => {
         const view = document.getElementById('view-' + t);
         if (view) view.classList.add('hidden');
         const sideItem = document.getElementById('side-' + t);
@@ -119,6 +119,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'hitl') {
         const indicator = document.getElementById('hitl-indicator');
         if (indicator) indicator.classList.add('hidden');
+    }
+    if (tabId === 'leaderboard') {
+        refreshLeaderboard();
     }
 }
 
@@ -336,6 +339,47 @@ function updateCircuitBreaker(log) {
     const volText = document.getElementById('cb-vol-text');
     if (volBar) volBar.style.width = volPerc + '%';
     if (volText) volText.textContent = `${currentTrades} / ${maxTrades} trades`;
+}
+
+// Leaderboard Logic
+async function refreshLeaderboard() {
+    try {
+        const response = await api.fetchLeaderboard(1, 10);
+        renderLeaderboard(response.data);
+    } catch (e) {
+        console.error("Leaderboard refresh failed:", e);
+    }
+}
+
+function renderLeaderboard(data) {
+    const body = document.getElementById('leaderboard-body');
+    if (!body) return;
+    body.innerHTML = '';
+
+    if (data.length === 0) {
+        body.innerHTML = '<tr><td colspan="6" class="px-8 py-12 text-center text-gray-600 italic">No agent data found on-chain.</td></tr>';
+        return;
+    }
+
+    const localAgentId = localStorage.getItem('AGENT_ID') || '42';
+
+    data.forEach((agent, index) => {
+        const row = document.createElement('tr');
+        const isLocal = agent.agentId == localAgentId;
+        row.className = `border-b border-white/2 hover:bg-white/2 transition-colors ${isLocal ? 'bg-cyan/5 border-l-2 border-l-cyan' : ''}`;
+
+        row.innerHTML = `
+            <td class="px-8 py-4 ${isLocal ? 'text-cyan font-black' : 'text-gray-500'}">#${index + 1}</td>
+            <td class="px-8 py-4 font-bold ${isLocal ? 'text-cyan' : 'text-gray-300'}">Agent #${agent.agentId} ${isLocal ? '<span class="text-[8px] bg-cyan/10 px-1 ml-1 rounded">LOCAL</span>' : ''}</td>
+            <td class="px-8 py-4 text-center font-bold ${agent.reputationScore >= 80 ? 'text-emerald' : 'text-amber'}">${agent.reputationScore}</td>
+            <td class="px-8 py-4 text-center text-gray-400">${agent.totalTrades}</td>
+            <td class="px-8 py-4 text-right font-bold ${agent.pnlBps >= 0 ? 'text-emerald' : 'text-crimson'}">${agent.pnlBps >= 0 ? '+' : ''}${agent.pnlBps}</td>
+            <td class="px-8 py-4 text-center">
+                <span class="px-2 py-0.5 rounded bg-emerald/10 text-emerald text-[9px] font-bold uppercase">${agent.status}</span>
+            </td>
+        `;
+        body.appendChild(row);
+    });
 }
 
 // HITL Logic
@@ -592,6 +636,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateRiskRadar(data.breakdown);
         updateHeatmap(data.riskScore);
         updateGauges(data.breakdown);
+    });
+
+    api.on('leaderboard.update', (data) => {
+        if (Array.isArray(data)) {
+            renderLeaderboard(data);
+        } else if (data.data) {
+            renderLeaderboard(data.data);
+        }
     });
 
     // Start initial load

@@ -30,6 +30,22 @@
 
 ---
 
+## 🗓️ June 2026 Sprint: Institutional Hardening (v1.1.0)
+*Goal: Transitioning from hackathon demo to production-safe platform.*
+
+| Issue | Label | Status |
+| :--- | :--- | :--- |
+| **[SECURITY]** API Rate Limiting & Socket Throttling | `P0: Critical` | `DONE` ✅ |
+| **[SECURITY]** Encrypted API Key Management & Rotation | `P0: Critical` | `DONE` ✅ |
+| **[SDK]** Publish-ready `@vertex-agents/sentinel-sdk@1.0.0` | `P1: Feature` | `DONE` ✅ |
+| **[RESILIENCE]** ExecutionProxy Auto-Recovery & Backoff | `P1: Feature` | `DONE` ✅ |
+| **[UX]** Testnet Faucet Integration in Onboarding | `P2: DevEx` | `DONE` ✅ |
+| **[UX]** Live Leaderboard (On-Chain Reputation) | `P1: Demo` | `DONE` ✅ |
+| **[EXPANSION]** Binance Adapter (Scaffold + Auth) | `P2: Strategic` | `DONE` ✅ |
+| **[STRATEGY]** Kelly Criterion Position Sizing | `P2: Strategic` | `DONE` ✅ |
+
+---
+
 ## 🏷️ Label Definitions:
 - `P0: Critical`: Essential for any functional demo or security integrity.
 - `P1: Feature`: High-impact features that drive the "Security SDK" narrative.
@@ -52,7 +68,7 @@
 | **[FEATURE]** Dynamic Agent Identity & Multi-Tenancy | `Medium` | `DONE` ✅ |
 | **[FEATURE]** Genkit-Powered Dynamic Risk Sizing | `Medium` | `DONE` ✅ |
 | **[INDUSTRY 5.0]** High-Stakes Human-in-the-Loop Approval Module | `High` | `DONE` ✅ |
-| **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `STAGED` ⏳ |
+| **[EXPANSION]** Multi-Asset & Exchange Support (Coinbase/Binance) | `Low` | `IN_PROGRESS` 🚧 |
 | **[INDUSTRY 5.0]** ESG & Sustainability Scoring in RiskCalibrator | `Medium` | `STAGED` ⏳ |
 | **[ANALYTICS]** Compliance Report Generation (PDF Audit Logs) | `Low` | `DONE` ✅ |
 | **[TECH DEBT]** Fix dangling MCP Server connections in tests | `Medium` | `DONE` ✅ |

@@ -5,6 +5,27 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "sentinel",
+    "ai",
+    "trading",
+    "risk-management",
+    "eip-712",
+    "ethereum"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheVertexAgents/vertex-sentinel.git",
+    "directory": "packages/sentinel-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "test": "NODE_OPTIONS='--import tsx' mocha test/**/*.test.ts",

@@ -6,6 +6,7 @@ import { loadAgentMetadata } from '../config.js';
 import { getKrakenService } from '../../services/kraken_service.js';
 import { getNewsFeed } from './news_feed.js';
 import { AgentStackClient } from '../clients/agent_stack.js';
+import { KellyCriterion } from '../sizing/kelly.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -277,6 +278,24 @@ Output your response in valid JSON format:
 
     // 7. Hybrid Enforcement (Fail-Closed) - Updated for Issue #171
     const riskScore = Math.max(manualPenalty, aiResult.riskScore);
+
+    // Apply Kelly Criterion for Position Sizing Cap
+    let kellyCap = 1.0;
+    const fraction = parseFloat(process.env.KELLY_FRACTION || '0.25');
+    if (history.count >= 5) { // Only apply Kelly after some history
+        // Calculate historical win rate and avg win/loss
+        const trades = Object.values(history.trades) as any[];
+        const wins = trades.filter(t => t.pnl > 0);
+        const losses = trades.filter(t => t.pnl < 0);
+
+        const winRate = wins.length / trades.length;
+        const avgWin = wins.reduce((a, b) => a + b.pnl, 0) / (wins.length || 1);
+        const avgLoss = Math.abs(losses.reduce((a, b) => a + b.pnl, 0) / (losses.length || 1));
+
+        kellyCap = KellyCriterion.getFractionalSize(winRate, avgWin, avgLoss, fraction);
+        logger.info({ module: 'KELLY_SIZING', winRate, avgWin, avgLoss, kellyCap });
+    }
+
     const confidence = 1.0 - riskScore;
     const confidenceThreshold = 0.2; // Equivalent to risk 0.8
 
@@ -305,10 +324,20 @@ Output your response in valid JSON format:
       reasons.push(`ROI Block: Expected return (${(expectedRoi * 100).toFixed(2)}%) below threshold (${(minRoi * 100).toFixed(2)}%).`);
     }
 
+    // Apply Kelly Cap to amountUsdScaled
+    let finalAmountUsdScaled = amountUsdScaled;
+    if (action !== 'HOLD' && kellyCap < 1.0) {
+        const cappedAmount = BigInt(Math.floor(Number(amountUsdScaled) * kellyCap));
+        if (cappedAmount < amountUsdScaled) {
+            reasons.push(`Kelly Cap Applied: ${Math.round(kellyCap * 100)}%`);
+            finalAmountUsdScaled = cappedAmount;
+        }
+    }
+
     return {
       action,
       pair,
-      amountUsdScaled: action === 'HOLD' ? 0n : amountUsdScaled,
+      amountUsdScaled: action === 'HOLD' ? 0n : finalAmountUsdScaled,
       confidence,
       riskScore,
       reasoning: reasons.join(" | "),

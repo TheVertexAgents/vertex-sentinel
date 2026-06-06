@@ -50,6 +50,12 @@ class ApiClient {
         return res.json();
     }
 
+    async fetchLeaderboard(page = 1, limit = 10) {
+        const res = await fetch(`${this.baseUrl}/api/leaderboard?page=${page}&limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to fetch leaderboard');
+        return res.json();
+    }
+
     // WebSocket Methods
     initSocket() {
         if (this.socket) return;
@@ -74,7 +80,8 @@ class ApiClient {
             'balance.update',
             'hitl.pending',
             'risk.update',
-            'fleet.update'
+            'fleet.update',
+            'leaderboard.update'
         ];
 
         events.forEach(event => {

@@ -39,9 +39,3 @@ export interface SentinelConfig {
   agentId: number;
 }
 
-export class FailClosedException extends Error {
-  constructor(message: string) {
-    super(`Fail-Closed Security Exception: ${message}`);
-    this.name = 'FailClosedException';
-  }
-}

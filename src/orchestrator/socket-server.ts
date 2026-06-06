@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import express, { Request, Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -9,6 +10,9 @@ import { EventEmitter } from 'events';
 import { logger } from '../utils/logger.js';
 import { QuotaTracker } from '../utils/quota-tracker.js';
 import { PnLTracker } from '../logic/pnl/tracker.js';
+import { ApiKeyManager } from '../utils/api-key-manager.js';
+import { FaucetService } from '../services/faucet.js';
+import { LeaderboardService } from '../services/leaderboard.js';
 
 // Shared Event Emitter for standalone Socket.io server
 export const agentEvents = new EventEmitter();
@@ -35,6 +39,45 @@ export function startSocketServer() {
   // Middleware
   app.use(cors());
   app.use(express.json());
+
+  // Rate Limiting
+  const generalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    limit: 100,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+  });
+
+  const auditLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    limit: 30,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Too many audit requests, please try again later.' }
+  });
+
+  const toggleLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    limit: 10,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Too many automation toggle requests, please try again later.' }
+  });
+
+  const faucetLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    limit: 1,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Faucet limit exceeded. One request per hour.' }
+  });
+
+  // Apply limiters
+  app.use('/api/', generalLimiter);
+  app.use('/api/audit', auditLimiter);
+  app.use('/api/automation/toggle', toggleLimiter);
+  app.use('/api/faucet/request', faucetLimiter);
 
   // Static Dashboard Files
   const dashboardPath = path.join(process.cwd(), 'dashboard');
@@ -63,6 +106,23 @@ export function startSocketServer() {
       origin: "*",
       methods: ["GET", "POST"]
     }
+  });
+
+  // Socket.io connection throttling
+  const connectionCounts = new Map<string, number>();
+  const MAX_CONNECTIONS_PER_IP = 5;
+
+  io.use((socket, next) => {
+    const ip = socket.handshake.address;
+    const count = connectionCounts.get(ip) || 0;
+
+    if (count >= MAX_CONNECTIONS_PER_IP) {
+      logger.warn({ module: 'SOCKET_SERVER', step: 'CONNECTION_THROTTLED', ip, count });
+      return next(new Error('Too many connections from this IP'));
+    }
+
+    connectionCounts.set(ip, count + 1);
+    next();
   });
 
   // REST Endpoints
@@ -202,9 +262,66 @@ export function startSocketServer() {
     }
   });
 
+  /**
+   * POST /api/keys/rotate
+   * Rotates API keys
+   */
+  app.post('/api/keys/rotate', (req: Request, res: Response) => {
+    try {
+      const manager = ApiKeyManager.getInstance();
+      const newKey = manager.rotateKey();
+      res.json(newKey);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to rotate API keys' });
+    }
+  });
+
+  /**
+   * POST /api/faucet/request
+   * Requests testnet funds
+   */
+  app.post('/api/faucet/request', async (req: Request, res: Response) => {
+    const { address } = req.body;
+    if (!address || !address.startsWith('0x')) {
+      res.status(400).json({ error: 'Invalid Ethereum address' });
+      return;
+    }
+
+    try {
+      const txHash = await FaucetService.getInstance().requestTestnetFunds(address);
+      res.json({ success: true, txHash });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * GET /api/leaderboard
+   * Returns cached leaderboard data
+   */
+  app.get('/api/leaderboard', (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const data = LeaderboardService.getInstance().getCachedLeaderboard();
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    res.json({
+        data: data.slice(startIndex, endIndex),
+        pagination: {
+            page,
+            limit,
+            total: data.length,
+            pages: Math.ceil(data.length / limit)
+        }
+    });
+  });
+
   // Socket.io Connection Logic
   io.on('connection', (socket) => {
-    logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_CONNECTED', socketId: socket.id });
+    const ip = socket.handshake.address;
+    logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_CONNECTED', socketId: socket.id, ip });
 
     // Sync automation state on connect
     const statePath = path.join(process.cwd(), 'logs/automation_state.json');
@@ -218,7 +335,10 @@ export function startSocketServer() {
     }
 
     socket.on('disconnect', () => {
-      logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_DISCONNECTED', socketId: socket.id });
+      const ip = socket.handshake.address;
+      const count = connectionCounts.get(ip) || 1;
+      connectionCounts.set(ip, count - 1);
+      logger.info({ module: 'SOCKET_SERVER', step: 'CLIENT_DISCONNECTED', socketId: socket.id, ip });
     });
 
     socket.on('hitl.approve', (data) => {
@@ -267,6 +387,17 @@ export function startSocketServer() {
   agentEvents.on('risk.update', (data) => {
     io.emit('risk.update', data);
   });
+
+  agentEvents.on('reputation.update', async () => {
+    const leaderboard = await LeaderboardService.getInstance().updateLeaderboard();
+    io.emit('leaderboard.update', leaderboard);
+  });
+
+  // Background polling for leaderboard
+  setInterval(async () => {
+      const leaderboard = await LeaderboardService.getInstance().updateLeaderboard();
+      io.emit('leaderboard.update', leaderboard);
+  }, 30000);
 
   httpServer.listen(PORT, () => {
     logger.info({ module: 'SERVER', step: 'SERVER_START', port: PORT });

@@ -6,9 +6,9 @@ import {
     Authorization,
     RiskAssessment,
     PnLMetrics,
-    SentinelConfig,
-    FailClosedException
+    SentinelConfig
 } from './types.js';
+import { FailClosedException } from './errors.js';
 
 export class SentinelClient {
   private config: SentinelConfig;
@@ -55,7 +55,18 @@ export class SentinelClient {
 
     try {
         const wallet = new ethers.Wallet(this.config.privateKey);
-        return await wallet.signTypedData(domain, types, intent);
+
+        // Ethers.js v6 expects BigInt for uint256 in TypedData
+        const formattedIntent = {
+          ...intent,
+          agentId: BigInt(intent.agentId),
+          amountUsdScaled: BigInt(intent.amountUsdScaled),
+          maxSlippageBps: BigInt(intent.maxSlippageBps),
+          nonce: BigInt(intent.nonce),
+          deadline: BigInt(intent.deadline)
+        };
+
+        return await wallet.signTypedData(domain, types, formattedIntent);
     } catch (e: any) {
         throw new FailClosedException(`Signing failed: ${e.message}`);
     }

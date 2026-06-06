@@ -51,6 +51,9 @@
                 <div onclick="switchTab('fleet')" id="side-fleet" class="nav-item" title="Agent Fleet">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 </div>
+                <div onclick="switchTab('leaderboard')" id="side-leaderboard" class="nav-item" title="Leaderboard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
             </nav>
         </aside>
 
@@ -488,6 +491,39 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: LEADERBOARD -->
+            <section id="view-leaderboard" class="hidden space-y-6">
+                <div class="glass p-8">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 class="text-xl font-bold">Sentinel Leaderboard</h3>
+                            <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">On-Chain Reputation & Performance Rankings</p>
+                        </div>
+                        <span class="px-3 py-1 bg-cyan/10 text-cyan text-[10px] font-bold rounded border border-cyan/20 uppercase tracking-widest">Live Updates</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-gray-500 text-[10px] uppercase tracking-[0.2em]">
+                                    <th class="px-8 py-5 font-bold">Rank</th>
+                                    <th class="px-8 py-5 font-bold">Agent ID</th>
+                                    <th class="px-8 py-5 font-bold text-center">Score</th>
+                                    <th class="px-8 py-5 font-bold text-center">Trades</th>
+                                    <th class="px-8 py-5 font-bold text-right">PnL (bps)</th>
+                                    <th class="px-8 py-5 font-bold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body" class="text-[11px] mono">
+                                <tr>
+                                    <td colspan="6" class="px-8 py-12 text-center text-gray-600 italic">Polling ReputationRegistry...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>

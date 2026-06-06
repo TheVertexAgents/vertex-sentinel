@@ -38,6 +38,7 @@ class ExecutionProxy {
   private readonly MAX_CONSECUTIVE_FAILURES = 3;
   private circuitBreakerOpenUntil = 0;
   private readonly CIRCUIT_BREAKER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+  private recoveryTimer: NodeJS.Timeout | null = null;
 
   constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia', pnlTracker: PnLTracker | null = null) {
     this.pnlTracker = pnlTracker;
@@ -212,7 +213,7 @@ class ExecutionProxy {
    * @dev Calls the Kraken service to execute an order.
    * Implements "Fail-Closed" behavior.
    */
-  private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint) {
+  private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1) {
     if (Date.now() < this.circuitBreakerOpenUntil) {
       this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
       throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);
@@ -300,6 +301,10 @@ class ExecutionProxy {
 
       // Reset circuit breaker on success
       this.consecutiveFailures = 0;
+      if (this.recoveryTimer) {
+          clearTimeout(this.recoveryTimer);
+          this.recoveryTimer = null;
+      }
 
       // Update PnL Tracker if available (Issue #171 Reconciliation fix)
       if (this.pnlTracker) {
@@ -329,8 +334,28 @@ class ExecutionProxy {
       const config = loadAgentMetadata();
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorCode = (error as any).code || ERR_KRAKEN_API_FAIL;
+
+      // Exponential Backoff for transient errors
+      const isTransient = errorCode === 503 || errorCode === 429 || errorMessage.includes('503') || errorMessage.includes('429');
+      if (isTransient && attempt < 3) {
+          const delay = Math.pow(2, attempt) * 1000;
+          this.log('WARN', `Transient exchange error (${errorCode}). Retrying in ${delay}ms...`, { TRACE_ID: traceId, attempt });
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps, attempt + 1);
+      }
       
       this.consecutiveFailures++;
+
+      // Emit alert on every failure
+      import('../orchestrator/socket-server.js').then(({ agentEvents }) => {
+          agentEvents.emit('risk.alert', {
+              type: 'EXECUTION_FAILURE',
+              message: `Execution failed: ${errorMessage}`,
+              traceId,
+              consecutiveFailures: this.consecutiveFailures
+          });
+      });
+
       if (this.consecutiveFailures >= this.MAX_CONSECUTIVE_FAILURES) {
         this.circuitBreakerOpenUntil = Date.now() + this.CIRCUIT_BREAKER_COOLDOWN_MS;
         this.log('CRITICAL', 'CIRCUIT BREAKER TRIPPED OPEN', { TRACE_ID: traceId, consecutiveFailures: this.consecutiveFailures });
@@ -341,6 +366,16 @@ class ExecutionProxy {
             consecutiveFailures: this.consecutiveFailures,
             breakerState: 'OPEN'
         });
+
+        // Self-healing: Schedule recovery
+        if (!this.recoveryTimer) {
+            this.recoveryTimer = setTimeout(() => {
+                this.log('INFO', 'Circuit Breaker Recovery: Attempting self-healing/reset.');
+                this.consecutiveFailures = 0;
+                this.circuitBreakerOpenUntil = 0;
+                this.recoveryTimer = null;
+            }, this.CIRCUIT_BREAKER_COOLDOWN_MS);
+        }
       }
 
       this.log('CRITICAL', 'Order Execution Failed (Fail-Closed)', { TRACE_ID: traceId, errorCode, error: errorMessage, consecutiveFailures: this.consecutiveFailures });
