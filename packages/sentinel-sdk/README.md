@@ -1,5 +1,7 @@
 # @vertex-agents/sentinel-sdk
 
+[![npm version](https://badge.fury.io/js/@vertex-agents%2Fsentinel-sdk.svg)](https://badge.fury.io/js/@vertex-agents%2Fsentinel-sdk)
+
 The official SDK for the Vertex Sentinel Layer — the verifiable risk-management layer for autonomous AI trading agents.
 
 ## Installation
