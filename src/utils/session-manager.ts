@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { logger } from './logger.js';
+import { randomBytes } from 'crypto';
 
 /**
  * @title SessionManager
@@ -55,7 +55,7 @@ export class SessionManager {
                     return resolve(null);
                 }
 
-                const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+                const token = randomBytes(32).toString('hex');
                 const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
 
                 this.db.run(

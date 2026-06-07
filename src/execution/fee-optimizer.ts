@@ -1,5 +1,5 @@
-import { logger } from '../../utils/logger.js';
-import { orderBookService } from '../strategy/order-book.js';
+import { logger } from '../utils/logger.js';
+import { orderBookService } from '../logic/strategy/order-book.js';
 
 export interface FeeRate {
     maker: number;

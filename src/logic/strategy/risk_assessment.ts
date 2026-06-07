@@ -137,7 +137,7 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const volatilityPenalty = Math.min(0.4, (volatility / 0.05) * 0.2);
 
     // Volume Penalty / Market Impact Analysis (v1.3.0)
-    const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
+    const currentAmountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
     let marketImpactBps = 0;
     const bestAsk = orderBookService.getBestAsk(pair);
     const { askDepth } = orderBookService.getMarketDepth(pair, 5);
@@ -145,10 +145,10 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     if (askDepth > 0 && bestAsk) {
         // Slippage estimate: (orderSize / liquidityAtLevel) × spread
         // Simplified for bootstrap: (amountUsd / askDepth) * spread * 10000
-        marketImpactBps = Math.floor((amountUsd / askDepth) * spread * 10000);
+        marketImpactBps = Math.floor((currentAmountUsd / askDepth) * spread * 10000);
     }
 
-    let volumePenalty = Math.min(0.3, (amountUsd / 1000) * 0.3);
+    let volumePenalty = Math.min(0.3, (currentAmountUsd / 1000) * 0.3);
     if (marketImpactBps > 50) {
         logger.warn({ module: 'RISK_STRATEGY', step: 'HIGH_IMPACT_DETECTED', marketImpactBps });
         volumePenalty = Math.max(volumePenalty, 0.6); // 0.6 = HIGH_IMPACT threshold

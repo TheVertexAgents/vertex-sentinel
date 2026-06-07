@@ -1,4 +1,5 @@
 import { logger } from '../../utils/logger.js';
+import { CcxtBaseAdapter } from '../adapters/ccxt-base.js';
 
 export interface StopLimitParams {
     symbol: string;
@@ -13,15 +14,21 @@ export interface StopLimitParams {
  * @dev Manages Stop-Limit orders.
  */
 export class StopLimitOrderService {
-    public async placeStopLimit(params: StopLimitParams): Promise<any> {
+    public async placeStopLimit(adapter: CcxtBaseAdapter, params: StopLimitParams): Promise<any> {
         logger.info({ module: 'STOP_LIMIT', step: 'PLACE_ORDER', params });
 
-        // Implementation would call exchange.createOrder with specific params
-        return {
-            id: 'sl_' + Math.random().toString(36).substring(7),
-            params,
-            status: 'ACCEPTED'
-        };
+        // CCXT standard for stop-limit orders often involves passing stopPrice in params
+        return await adapter.placeOrder(
+            params.symbol,
+            'limit',
+            params.side.toLowerCase(),
+            params.quantity,
+            params.limitPrice,
+            {
+                stopPrice: params.stopPrice,
+                type: 'stopLimit' // Some exchanges require explicit type in params
+            }
+        );
     }
 }
 

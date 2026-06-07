@@ -9,13 +9,11 @@ export class BinanceWeightTracker {
     private weight: number = 0;
     private readonly MAX_WEIGHT = 1200;
     private readonly BUFFER_THRESHOLD = 1100;
-    private windowStart: number = Date.now();
 
     constructor() {
         // Reset weight every 60 seconds
         setInterval(() => {
             this.weight = 0;
-            this.windowStart = Date.now();
         }, 60000);
     }
 

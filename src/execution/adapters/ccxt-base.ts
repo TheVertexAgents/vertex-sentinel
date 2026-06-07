@@ -1,4 +1,4 @@
-import ccxt from 'ccxt';
+import * as ccxt from 'ccxt';
 import { logger } from '../../utils/logger.js';
 import { SentinelError } from '../../utils/errors.js';
 
@@ -10,7 +10,7 @@ export class CcxtBaseAdapter {
     protected exchange: ccxt.Exchange;
 
     constructor(exchangeId: string, apiKey: string, secret: string) {
-        if (!ccxt.exchanges.includes(exchangeId)) {
+        if (!Object.keys((ccxt as any).exchanges).includes(exchangeId)) {
             throw new SentinelError(`Unsupported exchange: ${exchangeId}`);
         }
 
@@ -63,6 +63,14 @@ export class CcxtBaseAdapter {
         } catch (error: any) {
             this.handleError('CANCEL_ORDER_FAILED', error);
         }
+    }
+
+    public getExchangeId(): string {
+        return this.exchange.id;
+    }
+
+    public getExchange(): ccxt.Exchange {
+        return this.exchange;
     }
 
     protected handleError(step: string, error: any) {
