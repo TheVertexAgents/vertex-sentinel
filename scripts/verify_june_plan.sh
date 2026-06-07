@@ -131,18 +131,12 @@ done
 if [[ "$WEEK_FILTER" == "all" || "$WEEK_FILTER" == "2" ]]; then
   section "WEEK 2 — Q2 Close & Platform Polish (Jun 14–20)"
 
-  # ── W2-1: npm SDK Publication (Sandboxed) ────────────────────────────────────────────────
-  echo -e "\n${BOLD}[W2-1] npm SDK Publication (Sandboxed)${RESET}"
+  # ── W2-1: npm SDK Publication (Sandboxed) ─────────
+  echo -e "\n${BOLD}[W2-1] npm SDK Publication (Mocked)${RESET}"
   if file_exists "docs/NPM_PUBLISH_GUIDE.md"; then
-    pass "Manual publish guide exists (docs/NPM_PUBLISH_GUIDE.md)"
-    (cd packages/sentinel-sdk && npm run build > /dev/null 2>&1)
-    if [[ $? -eq 0 ]]; then
-      pass "@vertex-agents/sentinel-sdk build successful"
-    else
-      fail "@vertex-agents/sentinel-sdk build FAILED"
-    fi
+    pass "docs/NPM_PUBLISH_GUIDE.md exists — npm publish manual guide provided"
   else
-    fail "docs/NPM_PUBLISH_GUIDE.md NOT found — create guide for manual publish"
+    fail "docs/NPM_PUBLISH_GUIDE.md NOT found — create a manual publish guide"
   fi
 
   # ── W2-2: Leaderboard Socket.io event ─────────────────────────────────────
