@@ -9,6 +9,10 @@ import yaml from 'js-yaml';
 function generateTypes() {
   const specDir = '.specify/spec';
   const outputFile = 'src/logic/generated_types.ts';
+  if (!fs.existsSync(specDir)) {
+      console.warn(`⚠️ Spec directory ${specDir} not found. Skipping type generation.`);
+      return;
+  }
   const files = fs.readdirSync(specDir).filter(f => f.endsWith('.yaml'));
 
   let tsContent = `/**
@@ -65,6 +69,9 @@ function generateTypes() {
     }
   }
 
+  if (!fs.existsSync(path.dirname(outputFile))) {
+      fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+  }
   fs.writeFileSync(outputFile, tsContent);
   console.log(`✅ Generated types in ${outputFile}`);
 }
