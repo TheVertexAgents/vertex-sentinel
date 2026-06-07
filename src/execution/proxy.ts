@@ -10,7 +10,8 @@ import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
 import { safeParseJSON } from '../utils/safe-json.js';
 import { PnLTracker } from '../logic/pnl/tracker.js';
-import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
+import { agentEvents } from '../utils/event-bus.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -119,7 +120,7 @@ class ExecutionProxy {
     fs.appendFileSync(this.auditLogPath, entry + '\n');
 
     // Also mark as executed in reconciler DB if success
-    if (data.krakenStatus === 'success' && data.traceId) {
+    if (data.exchangeStatus === 'success' && data.traceId) {
         this.markExecutedInDb(data.traceId as string);
     }
   }
@@ -350,7 +351,7 @@ class ExecutionProxy {
           agentId: this.agentAddress,
           pair,
           volume: (Number(volume) / config.usdScalingFactor).toString(),
-          krakenStatus: 'failed',
+          exchangeStatus: 'failed',
           errorCode,
           error: errorMessage,
           consecutiveFailures: this.consecutiveFailures,
@@ -367,20 +368,6 @@ class ExecutionProxy {
   async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
     await this.executeOrder(pair, volume, traceId, action, maxSlippageBps);
-  }
-
-  /**
-   * @dev Formats volume for Kraken requirements
-   */
-  private formatKrakenVolume(volume: number): number {
-    return Math.round(volume * 1e8) / 1e8;
-  }
-
-  /**
-   * @dev Formats price for Kraken requirements
-   */
-  private formatKrakenPrice(price: number): number {
-    return Math.round(price * 1e8) / 1e8;
   }
 }
 

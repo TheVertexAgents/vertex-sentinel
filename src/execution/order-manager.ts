@@ -15,16 +15,20 @@ export class OrderManager {
         this.binance = new BinanceAdapter();
     }
 
+    public getBinanceAdapter(): BinanceAdapter {
+        return this.binance;
+    }
+
     public async placeMarketOrder(symbol: string, side: 'BUY' | 'SELL', amount: number) {
         logger.info({ module: 'ORDER_MANAGER', step: 'PLACE_MARKET', symbol, side, amount });
-        const result = await this.binance.placeOrder(symbol, 'market', side, amount);
+        const result = await this.binance.placeOrder(symbol, 'market', side.toLowerCase() as 'buy' | 'sell', amount);
         agentEvents.emit('order.filled', result);
         return result;
     }
 
     public async placeLimitOrder(symbol: string, side: 'BUY' | 'SELL', amount: number, price: number) {
         logger.info({ module: 'ORDER_MANAGER', step: 'PLACE_LIMIT', symbol, side, amount, price });
-        const result = await this.binance.placeOrder(symbol, 'limit', side, amount, price);
+        const result = await this.binance.placeOrder(symbol, 'limit', side.toLowerCase() as 'buy' | 'sell', amount, price);
         agentEvents.emit('order.placed', result);
         return result;
     }

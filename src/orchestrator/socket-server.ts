@@ -154,12 +154,12 @@ export function startSocketServer() {
   // REST Endpoints Registration
   const registerRoutes = (router: express.Router) => {
     router.get('/health', (_req: Request, res: Response) => {
-      res.json({ status: 'OK', timestamp: new Date().toISOString(), version: '1.3.0' });
+      return res.json({ status: 'OK', timestamp: new Date().toISOString(), version: '1.3.0' });
     });
 
     router.get('/quota', (_req: Request, res: Response) => {
       const usage = QuotaTracker.getInstance().getUsage();
-      res.json(usage);
+      return res.json(usage);
     });
 
     router.get('/agent', (_req: Request, res: Response) => {
@@ -167,30 +167,30 @@ export function startSocketServer() {
       if (fs.existsSync(agentIdPath)) {
         try {
           const data = JSON.parse(fs.readFileSync(agentIdPath, 'utf8'));
-          res.json(data);
+          return res.json(data);
         } catch (e) {
-          res.status(500).json({ error: 'Failed to parse agent metadata' });
+          return res.status(500).json({ error: 'Failed to parse agent metadata' });
         }
       } else {
-        res.status(404).json({ error: 'Agent metadata not found' });
+        return res.status(404).json({ error: 'Agent metadata not found' });
       }
     });
 
     router.get('/pnl', (_req: Request, res: Response) => {
       try {
         const metrics = getPnLTracker().getMetrics();
-        res.json(metrics);
+        return res.json(metrics);
       } catch (e) {
         const pnlPath = path.join(process.cwd(), 'logs/pnl.json');
         if (fs.existsSync(pnlPath)) {
           try {
             const data = JSON.parse(fs.readFileSync(pnlPath, 'utf8'));
-            res.json(data.summary || data);
+            return res.json(data.summary || data);
           } catch (err) {
-            res.status(500).json({ error: 'Failed to retrieve PnL data' });
+            return res.status(500).json({ error: 'Failed to retrieve PnL data' });
           }
         } else {
-          res.status(404).json({ error: 'PnL data not found' });
+          return res.status(404).json({ error: 'PnL data not found' });
         }
       }
     });
@@ -208,15 +208,15 @@ export function startSocketServer() {
           const endIndex = page * limit;
           const logs = lines.slice(startIndex, endIndex).map(l => JSON.parse(l));
 
-          res.json({
+          return res.json({
             logs,
             pagination: { page, limit, total: lines.length, pages: Math.ceil(lines.length / limit) }
           });
         } catch (e) {
-          res.status(500).json({ error: 'Failed to parse audit logs' });
+          return res.status(500).json({ error: 'Failed to parse audit logs' });
         }
       } else {
-        res.json({ logs: [], pagination: { page, limit, total: 0, pages: 0 } });
+        return res.json({ logs: [], pagination: { page, limit, total: 0, pages: 0 } });
       }
     });
 
@@ -224,12 +224,12 @@ export function startSocketServer() {
       const statePath = path.join(process.cwd(), 'logs/automation_state.json');
       if (fs.existsSync(statePath)) {
         try {
-          res.json(JSON.parse(fs.readFileSync(statePath, 'utf8')));
+          return res.json(JSON.parse(fs.readFileSync(statePath, 'utf8')));
         } catch (e) {
-          res.status(500).json({ error: 'Failed to parse automation state' });
+          return res.status(500).json({ error: 'Failed to parse automation state' });
         }
       } else {
-        res.json({ enabled: false, timestamp: new Date().toISOString() });
+        return res.json({ enabled: false, timestamp: new Date().toISOString() });
       }
     });
 
@@ -244,17 +244,17 @@ export function startSocketServer() {
         fs.writeFileSync(statePath, JSON.stringify(data, null, 2));
         agentEvents.emit('automation.toggle', { enabled });
         io.emit('automation.sync', { enabled });
-        res.json({ success: true, enabled });
+        return res.json({ success: true, enabled });
       } catch (e) {
-        res.status(500).json({ error: 'Failed to save automation state' });
+        return res.status(500).json({ error: 'Failed to save automation state' });
       }
     });
 
     router.post('/keys/rotate', (_req: Request, res: Response) => {
       try {
-        res.json(ApiKeyManager.getInstance().rotateKey());
+        return res.json(ApiKeyManager.getInstance().rotateKey());
       } catch (e) {
-        res.status(500).json({ error: 'Failed to rotate API keys' });
+        return res.status(500).json({ error: 'Failed to rotate API keys' });
       }
     });
 
@@ -263,9 +263,9 @@ export function startSocketServer() {
       if (!address || !address.startsWith('0x')) return res.status(400).json({ error: 'Invalid address' });
       try {
         const txHash = await FaucetService.getInstance().requestTestnetFunds(address);
-        res.json({ success: true, txHash });
+        return res.json({ success: true, txHash });
       } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message });
       }
     });
 
@@ -277,9 +277,9 @@ export function startSocketServer() {
       try {
         const session = await sessionManager.createSession(apiKey);
         if (!session) return res.status(401).json({ error: 'Failed to create session' });
-        res.json(session);
+        return res.json(session);
       } catch (e) {
-        res.status(500).json({ error: 'Session creation failed' });
+        return res.status(500).json({ error: 'Session creation failed' });
       }
     });
 
@@ -289,35 +289,35 @@ export function startSocketServer() {
         const token = authHeader.split(' ')[1];
         await sessionManager.revokeSession(token);
       }
-      res.json({ success: true });
+      return res.json({ success: true });
     });
 
     router.get('/sessions/me', (req: Request, res: Response) => {
-      res.json((req as any).user);
+      return res.json((req as any).user);
     });
 
     router.post('/beta/register', async (req: Request, res: Response) => {
       const { address, role } = req.body;
       if (!address) return res.status(400).json({ error: 'Address required' });
       try {
-        res.json(await betaAccessService.registerBetaUser(address, role));
+        return res.json(await betaAccessService.registerBetaUser(address, role));
       } catch (e: any) {
         if (e.message && e.message.includes('UNIQUE constraint failed')) return res.status(409).json({ error: 'Address already registered' });
-        res.status(500).json({ error: 'Beta registration failed' });
+        return res.status(500).json({ error: 'Beta registration failed' });
       }
     });
 
     router.get('/beta/users', (_req: Request, res: Response) => {
-      res.json(betaAccessService.getBetaUsers());
+      return res.json(betaAccessService.getBetaUsers());
     });
 
     router.post('/feedback', async (req: Request, res: Response) => {
       const { agentId, rating, comment, tradeId } = req.body;
       if (!agentId || !rating) return res.status(400).json({ error: 'AgentId and rating required' });
       try {
-        res.json(await feedbackService.submitFeedback({ agentId, rating, comment, tradeId }));
+        return res.json(await feedbackService.submitFeedback({ agentId, rating, comment, tradeId }));
       } catch (e) {
-        res.status(500).json({ error: 'Feedback submission failed' });
+        return res.status(500).json({ error: 'Feedback submission failed' });
       }
     });
 
@@ -327,7 +327,7 @@ export function startSocketServer() {
       const data = LeaderboardService.getInstance().getCachedLeaderboard();
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
-      res.json({
+      return res.json({
           data: data.slice(startIndex, endIndex),
           pagination: { page, limit, total: data.length, pages: Math.ceil(data.length / limit) }
       });
@@ -337,25 +337,25 @@ export function startSocketServer() {
       const exchangeId = (req.query.exchange as string) || 'binance';
       try {
         const pairs = await marketDataService.getSupportedPairs(exchangeId);
-        res.json({ exchange: exchangeId, pairs });
+        return res.json({ exchange: exchangeId, pairs });
       } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message });
       }
     });
 
     router.post('/orders/oco', async (req: Request, res: Response) => {
       try {
-        res.json(await orderManager.placeOCO(req.body));
+        return res.json(await orderManager.placeOCO(req.body));
       } catch (e: any) {
-        res.status(400).json({ error: e.message });
+        return res.status(400).json({ error: e.message });
       }
     });
 
     router.post('/orders/stop-limit', async (req: Request, res: Response) => {
       try {
-        res.json(await orderManager.placeStopLimit(req.body));
+        return res.json(await orderManager.placeStopLimit(req.body));
       } catch (e: any) {
-        res.status(400).json({ error: e.message });
+        return res.status(400).json({ error: e.message });
       }
     });
   };

@@ -1,5 +1,4 @@
 import { logger } from '../../utils/logger.js';
-import { KellyCriterion } from '../sizing/kelly.js';
 
 export interface RebalanceTarget {
     symbol: string;
@@ -28,7 +27,6 @@ export class PortfolioRebalancer {
 
         targets.forEach(target => {
             const currentHolding = holdings.find(h => h.symbol === target.symbol) || { symbol: target.symbol, amount: 0, price: 0 };
-            const currentWeight = (currentHolding.amount * currentHolding.price) / totalValueUsd;
             const targetValue = totalValueUsd * (target.targetWeightPct / 100);
             const currentValue = currentHolding.amount * currentHolding.price;
 
@@ -41,11 +39,11 @@ export class PortfolioRebalancer {
                 diffUsd = diffUsd > 0 ? maxOrderSize : -maxOrderSize;
             }
 
-            if (Math.abs(diffUsd) > 10) { // $10 minimum order
+            if (Math.abs(diffUsd) > 10) { // 0 minimum rebalance
                 orders.push({
                     symbol: target.symbol,
-                    action: diffUsd > 0 ? 'BUY' : 'SELL',
-                    amountUsd: Math.abs(diffUsd)
+                    side: diffUsd > 0 ? 'BUY' : 'SELL',
+                    amount: Math.abs(diffUsd) / currentHolding.price
                 });
             }
         });
@@ -53,5 +51,3 @@ export class PortfolioRebalancer {
         return orders;
     }
 }
-
-export const portfolioRebalancer = new PortfolioRebalancer();
