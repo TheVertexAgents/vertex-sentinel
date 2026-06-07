@@ -4,7 +4,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import type { Hex } from 'viem';
 import path from 'path';
 import fs from 'fs';
-import { getKrakenService } from '../services/kraken_service.js';
+import { orderManager } from './order-manager.js';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
@@ -181,7 +181,7 @@ class ExecutionProxy {
               throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`, ERR_UNAUTHORIZED_AGENT);
           }
 
-          this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch((err: any) => {
+          this.executeOrder(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch((err: any) => {
               this.log('ERROR', 'Background trade execution failed', { error: err.message });
           });
         }
@@ -210,54 +210,31 @@ class ExecutionProxy {
   }
 
   /**
-   * @dev Calls the Kraken service to execute an order.
-   * Implements "Fail-Closed" behavior.
+   * @dev Calls the Order Manager to execute an order across supported exchanges.
+   * Implements "Fail-Closed" behavior and Slippage Enforcement.
    */
-  private async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1): Promise<void> {
+  private async executeOrder(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1): Promise<void> {
     if (Date.now() < this.circuitBreakerOpenUntil) {
       this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
       throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);
     }
 
-    const paperMode = process.env.KRAKEN_PAPER_MODE === 'true';
-    this.log('INFO', 'Submitting order via KrakenService...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString(), paperMode });
+    this.log('INFO', 'Submitting order via OrderManager...', { TRACE_ID: traceId, pair, volume: volume.toString(), action, maxSlippageBps: maxSlippageBps.toString() });
     
     try {
       const config = loadAgentMetadata();
-      const kraken = getKrakenService();
-      // Constitution Alignment: Unit conversion and symbol formatting.
-      // Replace formatEther (10^18) with scaling factor based on config.usdScalingFactor.
       const amount = Number(volume) / config.usdScalingFactor;
 
-      // Multi-Asset Expansion: Normalize pairs for Kraken (e.g. BTC/USDC -> XBTUSD)
-      const baseQuoteMap: Record<string, string> = {
-          'BTC': 'XBT',
-          'WBTC': 'XBT'
-      };
-      
-      let base = pair, quote = '';
-      if (pair.includes('/')) {
-          [base, quote] = pair.split('/');
-      } else {
-          // Fallback if no slash
-          base = pair.substring(0, 3);
-          quote = pair.substring(3);
+      // Multi-exchange support: CCXT handles pairs like BTC/USDT or BTCUSDT
+      const cleanSymbol = pair.includes('/') ? pair.replace('/', '') : pair;
+
+      // Fetch ticker for reference price via BinanceAdapter (unified CCXT)
+      const ticker = await orderManager.getBinanceAdapter().fetchTicker(cleanSymbol);
+      const referencePrice = action.toLowerCase() === 'buy' ? ticker.ask : ticker.bid;
+
+      if (!referencePrice || referencePrice <= 0) {
+          throw new CriticalSecurityException(`Invalid or missing ticker data for ${cleanSymbol}`, 'EXCHANGE_ERROR');
       }
-      
-      const cleanBase = baseQuoteMap[base] || base;
-      const cleanQuote = quote === 'USDC' || quote === 'USDT' ? 'USD' : quote;
-      const cleanSymbol = `${cleanBase}${cleanQuote}`;
-
-      // Task 1.2: Enforce Slippage in the Execution Proxy
-      // Pre-execution price check
-      const tickerData = await kraken.getTicker(cleanSymbol);
-
-      if (!tickerData || !tickerData.a || !tickerData.b) {
-          throw new CriticalSecurityException(`Invalid or missing ticker data for ${cleanSymbol}`, ERR_KRAKEN_API_FAIL);
-      }
-      const currentPrice = action.toLowerCase() === 'buy' ? parseFloat(tickerData.a[0]) : parseFloat(tickerData.b[0]);
-
-      const referencePrice = currentPrice;
 
       // Calculate limit price based on slippage bps
       const slippageMultiplier = Number(maxSlippageBps) / 10000;
@@ -268,16 +245,16 @@ class ExecutionProxy {
         limitPrice = referencePrice * (1 - slippageMultiplier);
       }
 
-      // Round to 8 decimal places for exchange compatibility (Kraken padding)
-      limitPrice = this.formatKrakenPrice(limitPrice);
-      const paddedAmount = this.formatKrakenVolume(amount);
+      // Round to 8 decimal places for exchange compatibility
+      limitPrice = Number(limitPrice.toFixed(8));
+      const paddedAmount = Number(amount.toFixed(8));
 
       // Fail-Closed Validation
       if (!limitPrice || limitPrice <= 0 || !isFinite(limitPrice)) {
         throw new CriticalSecurityException(`Invalid calculated limitPrice: ${limitPrice} (Reference: ${referencePrice}, Slippage: ${maxSlippageBps})`, ERR_PRICE_INVALID);
       }
 
-      this.log('INFO', 'Executing Limit Order with Slippage Enforcement', {
+      this.log('INFO', 'Executing Limit Order via OrderManager', {
         TRACE_ID: traceId,
         referencePrice,
         calculatedLimitPrice: limitPrice,
@@ -285,19 +262,9 @@ class ExecutionProxy {
         side: action.toUpperCase()
       });
 
-      const resultData = await kraken.placeOrder({
-        symbol: cleanSymbol,
-        side: action.toLowerCase() as 'buy' | 'sell',
-        type: 'limit',
-        amount: paddedAmount,
-        price: limitPrice
-      });
+      const result = await orderManager.placeLimitOrder(cleanSymbol, action.toUpperCase() as 'BUY' | 'SELL', paddedAmount, limitPrice);
 
-      if ((resultData as any).error && (resultData as any).error.length > 0) {
-          throw new CriticalSecurityException(`Kraken API Error: ${(resultData as any).error.join(', ')}`, ERR_KRAKEN_API_FAIL);
-      }
-
-      const orderId = resultData.txid ? resultData.txid[0] : (resultData.order_id || 'UNKNOWN');
+      const orderId = result.id || result.orderId || 'UNKNOWN';
 
       // Reset circuit breaker on success
       this.consecutiveFailures = 0;
@@ -306,13 +273,13 @@ class ExecutionProxy {
           this.recoveryTimer = null;
       }
 
-      // Update PnL Tracker if available (Issue #171 Reconciliation fix)
+      // Update PnL Tracker if available
       if (this.pnlTracker) {
         this.pnlTracker.recordTrade({
             id: traceId,
             pair,
             side: action.toUpperCase() as 'BUY' | 'SELL',
-            price: resultData.price || referencePrice,
+            price: result.price || referencePrice,
             amount: paddedAmount,
             timestamp: new Date().toISOString()
         });
@@ -325,15 +292,15 @@ class ExecutionProxy {
           agentId: this.agentAddress,
           pair,
           volume: amount.toString(),
-          executionPrice: resultData.price || 0,
-          txHash: resultData.txid ? resultData.txid[0] : 'N/A', // Uses orderId as txHash identifier for Kraken orders
-          krakenStatus: 'success'
+          executionPrice: result.price || 0,
+          txHash: orderId,
+          exchangeStatus: 'success'
       });
 
     } catch (error: any) {
       const config = loadAgentMetadata();
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any).code || ERR_KRAKEN_API_FAIL;
+      const errorCode = (error as any).code || 'EXCHANGE_ERROR';
 
       // Exponential Backoff for transient errors
       const isTransient = errorCode === 503 || errorCode === 429 || errorMessage.includes('503') || errorMessage.includes('429');
@@ -341,19 +308,17 @@ class ExecutionProxy {
           const delay = Math.pow(2, attempt) * 1000;
           this.log('WARN', `Transient exchange error (${errorCode}). Retrying in ${delay}ms...`, { TRACE_ID: traceId, attempt });
           await new Promise(resolve => setTimeout(resolve, delay));
-          return this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps, attempt + 1);
+          return this.executeOrder(pair, volume, traceId, action, maxSlippageBps, attempt + 1);
       }
       
       this.consecutiveFailures++;
 
       // Emit alert on every failure
-      import('../orchestrator/socket-server.js').then(({ agentEvents }) => {
-          agentEvents.emit('risk.alert', {
-              type: 'EXECUTION_FAILURE',
-              message: `Execution failed: ${errorMessage}`,
-              traceId,
-              consecutiveFailures: this.consecutiveFailures
-          });
+      agentEvents.emit('risk.alert', {
+          type: 'EXECUTION_FAILURE',
+          message: `Execution failed: ${errorMessage}`,
+          traceId,
+          consecutiveFailures: this.consecutiveFailures
       });
 
       if (this.consecutiveFailures >= this.MAX_CONSECUTIVE_FAILURES) {
@@ -401,7 +366,7 @@ class ExecutionProxy {
    */
   async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
-    await this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
+    await this.executeOrder(pair, volume, traceId, action, maxSlippageBps);
   }
 
   /**

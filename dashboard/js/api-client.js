@@ -5,39 +5,49 @@
 class ApiClient {
     constructor() {
         this.baseUrl = window.location.origin;
+        this.versionedUrl = `${window.location.origin}/v1/api`;
         this.socket = null;
         this.listeners = new Map();
+        this.token = localStorage.getItem('SENTINEL_SESSION_TOKEN');
+    }
+
+    getHeaders(headers = {}) {
+        const h = { ...headers };
+        if (this.token) {
+            h['Authorization'] = `Bearer ${this.token}`;
+        }
+        return h;
     }
 
     // REST API Methods
     async fetchAgent() {
-        const res = await fetch(`${this.baseUrl}/api/agent`);
+        const res = await fetch(`${this.versionedUrl}/agent`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch agent metadata');
         return res.json();
     }
 
     async fetchPnL() {
-        const res = await fetch(`${this.baseUrl}/api/pnl`);
+        const res = await fetch(`${this.versionedUrl}/pnl`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch PnL metrics');
         return res.json();
     }
 
     async fetchAudit(page = 1, limit = 50) {
-        const res = await fetch(`${this.baseUrl}/api/audit?page=${page}&limit=${limit}`);
+        const res = await fetch(`${this.versionedUrl}/audit?page=${page}&limit=${limit}`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch audit logs');
         return res.json();
     }
 
     async fetchAutomation() {
-        const res = await fetch(`${this.baseUrl}/api/automation`);
+        const res = await fetch(`${this.versionedUrl}/automation`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch automation state');
         return res.json();
     }
 
     async toggleAutomation(enabled) {
-        const res = await fetch(`${this.baseUrl}/api/automation/toggle`, {
+        const res = await fetch(`${this.versionedUrl}/automation/toggle`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ enabled })
         });
         if (!res.ok) throw new Error('Failed to toggle automation');
@@ -45,13 +55,13 @@ class ApiClient {
     }
 
     async fetchQuota() {
-        const res = await fetch(`${this.baseUrl}/api/quota`);
+        const res = await fetch(`${this.versionedUrl}/quota`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch quota');
         return res.json();
     }
 
     async fetchLeaderboard(page = 1, limit = 10) {
-        const res = await fetch(`${this.baseUrl}/api/leaderboard?page=${page}&limit=${limit}`);
+        const res = await fetch(`${this.versionedUrl}/leaderboard?page=${page}&limit=${limit}`, { headers: this.getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch leaderboard');
         return res.json();
     }

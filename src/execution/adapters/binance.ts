@@ -1,20 +1,19 @@
 import crypto from 'crypto';
-import axios from 'axios';
-import { logger } from '../../utils/logger.js';
+import { CcxtBaseAdapter } from './ccxt-base.js';
+import { binanceWeightTracker } from './binance-weight-tracker.js';
 
 /**
  * @title BinanceAdapter
- * @dev Exchange adapter for Binance integration.
+ * @dev Exchange adapter for Binance integration, extending CcxtBaseAdapter.
  */
-export class BinanceAdapter {
-    private apiKey: string;
+export class BinanceAdapter extends CcxtBaseAdapter {
     private apiSecret: string;
-    private baseUrl: string;
 
     constructor() {
-        this.apiKey = process.env.BINANCE_API_KEY || '';
-        this.apiSecret = process.env.BINANCE_SECRET || '';
-        this.baseUrl = process.env.BINANCE_BASE_URL || 'https://api.binance.com';
+        const apiKey = process.env.BINANCE_API_KEY || '';
+        const secret = process.env.BINANCE_SECRET || '';
+        super('binance', apiKey, secret);
+        this.apiSecret = secret;
     }
 
     private sign(queryString: string): string {
@@ -24,69 +23,39 @@ export class BinanceAdapter {
             .digest('hex');
     }
 
+    /**
+     * @dev Override getBalance to include weight tracking.
+     */
     public async getBalance(): Promise<any> {
+        if (!binanceWeightTracker.checkWeight(10)) {
+            throw new Error('Binance rate limit buffer reached');
+        }
+        const balance = await super.getBalance();
+        binanceWeightTracker.increment(10);
+        return balance;
+    }
+
+    /**
+     * @dev Override placeOrder to include weight tracking.
+     */
+    public async placeOrder(symbol: string, type: string, side: string, amount: number, price?: number, params: any = {}): Promise<any> {
+        if (!binanceWeightTracker.checkWeight(1)) {
+            throw new Error('Binance rate limit buffer reached');
+        }
+        const order = await super.placeOrder(symbol, type, side, amount, price, params);
+        binanceWeightTracker.increment(1);
+        return order;
+    }
+
+    /**
+     * @dev Keep direct API access if needed via HMAC.
+     */
+    public async getDirectAccountInfo(): Promise<any> {
         const timestamp = Date.now();
         const queryString = `timestamp=${timestamp}`;
         const signature = this.sign(queryString);
 
-        try {
-            const res = await axios.get(`${this.baseUrl}/api/v3/account?${queryString}&signature=${signature}`, {
-                headers: { 'X-MBX-APIKEY': this.apiKey }
-            });
-            return res.data;
-        } catch (error: any) {
-            logger.error({ module: 'BINANCE_ADAPTER', step: 'GET_BALANCE_FAILED', error: error.message });
-            throw error;
-        }
-    }
-
-    public async placeOrder(params: { symbol: string, side: 'BUY' | 'SELL', type: string, quantity: number, price?: number }): Promise<any> {
-        const timestamp = Date.now();
-        let queryString = `symbol=${params.symbol}&side=${params.side}&type=${params.type}&quantity=${params.quantity}&timestamp=${timestamp}`;
-        if (params.price) queryString += `&price=${params.price}&timeInForce=GTC`;
-
-        const signature = this.sign(queryString);
-
-        try {
-            const res = await axios.post(`${this.baseUrl}/api/v3/order?${queryString}&signature=${signature}`, null, {
-                headers: { 'X-MBX-APIKEY': this.apiKey }
-            });
-            return res.data;
-        } catch (error: any) {
-            logger.error({ module: 'BINANCE_ADAPTER', step: 'PLACE_ORDER_FAILED', error: error.message });
-            throw error;
-        }
-    }
-
-    public async getOrderStatus(symbol: string, orderId: string): Promise<any> {
-        const timestamp = Date.now();
-        const queryString = `symbol=${symbol}&orderId=${orderId}&timestamp=${timestamp}`;
-        const signature = this.sign(queryString);
-
-        try {
-            const res = await axios.get(`${this.baseUrl}/api/v3/order?${queryString}&signature=${signature}`, {
-                headers: { 'X-MBX-APIKEY': this.apiKey }
-            });
-            return res.data;
-        } catch (error: any) {
-            logger.error({ module: 'BINANCE_ADAPTER', step: 'GET_ORDER_STATUS_FAILED', error: error.message });
-            throw error;
-        }
-    }
-
-    public async cancelOrder(symbol: string, orderId: string): Promise<any> {
-        const timestamp = Date.now();
-        const queryString = `symbol=${symbol}&orderId=${orderId}&timestamp=${timestamp}`;
-        const signature = this.sign(queryString);
-
-        try {
-            const res = await axios.delete(`${this.baseUrl}/api/v3/order?${queryString}&signature=${signature}`, {
-                headers: { 'X-MBX-APIKEY': this.apiKey }
-            });
-            return res.data;
-        } catch (error: any) {
-            logger.error({ module: 'BINANCE_ADAPTER', step: 'CANCEL_ORDER_FAILED', error: error.message });
-            throw error;
-        }
+        // This is a placeholder for direct calls if CCXT is insufficient
+        return { signature, timestamp };
     }
 }

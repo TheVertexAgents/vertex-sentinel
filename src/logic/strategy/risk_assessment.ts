@@ -7,6 +7,7 @@ import { getKrakenService } from '../../services/kraken_service.js';
 import { getNewsFeed } from './news_feed.js';
 import { AgentStackClient } from '../clients/agent_stack.js';
 import { KellyCriterion } from '../sizing/kelly.js';
+import { orderBookService } from './order-book.js';
 
 /**
  * @dev Strategy Output Schema.
@@ -32,6 +33,7 @@ export const TradeDecisionSchema = z.object({
   marketData: z.object({
     spread: z.number(),
     volatility: z.number(),
+    marketImpactBps: z.number().optional(),
   }).optional(),
 });
 
@@ -134,8 +136,23 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     // Volatility Penalty: 5% movement in 24h triggers 0.2 penalty
     const volatilityPenalty = Math.min(0.4, (volatility / 0.05) * 0.2);
 
-    // Volume Penalty: scaled to prevent "whale" moves relative to bootstrap liquidity ($100k)
-    const volumePenalty = Math.min(0.3, (Number(amountUsdScaled) / (loadAgentMetadata().usdScalingFactor * 1000)) * 0.3);
+    // Volume Penalty / Market Impact Analysis (v1.3.0)
+    const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
+    let marketImpactBps = 0;
+    const bestAsk = orderBookService.getBestAsk(pair);
+    const { askDepth } = orderBookService.getMarketDepth(pair, 5);
+
+    if (askDepth > 0 && bestAsk) {
+        // Slippage estimate: (orderSize / liquidityAtLevel) × spread
+        // Simplified for bootstrap: (amountUsd / askDepth) * spread * 10000
+        marketImpactBps = Math.floor((amountUsd / askDepth) * spread * 10000);
+    }
+
+    let volumePenalty = Math.min(0.3, (amountUsd / 1000) * 0.3);
+    if (marketImpactBps > 50) {
+        logger.warn({ module: 'RISK_STRATEGY', step: 'HIGH_IMPACT_DETECTED', marketImpactBps });
+        volumePenalty = Math.max(volumePenalty, 0.6); // 0.6 = HIGH_IMPACT threshold
+    }
 
     // Sentiment Penalty (Issue #171): Directly penalize neutral/bearish sentiment
     // If score < 0.55 (barely bullish), we start applying a penalty.
@@ -350,7 +367,7 @@ Output your response in valid JSON format:
         manualPenalty,
         aiScore: aiResult.riskScore
       },
-      marketData: { spread, volatility }
+      marketData: { spread, volatility, marketImpactBps }
     };
 
   } catch (error) {

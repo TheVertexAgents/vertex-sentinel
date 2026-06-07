@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Vertex Sentinel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #00E5FF;
+            --obsidian: #0B0E14;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--obsidian);
+            color: white;
+            overflow: hidden;
+        }
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+        }
+        .glow-cyan { text-shadow: 0 0 20px rgba(0, 229, 255, 0.5); }
+        .bg-grid {
+            background-image: linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-grid">
+    <div class="glass p-12 w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-700">
+        <div class="text-center space-y-2">
+            <h1 class="text-4xl font-black italic tracking-tighter glow-cyan">VERTEX <span class="text-cyan">SENTINEL</span></h1>
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-widest">Institutional Risk Layer</p>
+        </div>
+
+        <div class="space-y-6">
+            <div class="space-y-2">
+                <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">API Access Key</label>
+                <input type="password" id="api-key" placeholder="Enter your Sentinel API Key..."
+                    class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-cyan/50 transition-all placeholder:text-gray-700">
+            </div>
+
+            <button id="login-btn" class="w-full py-4 bg-cyan text-obsidian font-black uppercase tracking-[0.2em] text-xs rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-cyan/20">
+                Authorize Session
+            </button>
+        </div>
+
+        <div class="pt-6 border-t border-white/5 text-center">
+            <p class="text-[10px] text-gray-600 font-medium">No key? Contact your system administrator for Beta Access.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const apiKey = document.getElementById('api-key').value;
+            if (!apiKey) return alert('API Key is required');
+
+            try {
+                const response = await fetch('/api/sessions/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey })
+                });
+
+                if (response.ok) {
+                    const { token } = await response.json();
+                    localStorage.setItem('SENTINEL_SESSION_TOKEN', token);
+                    window.location.href = '/dashboard';
+                } else {
+                    const err = await response.json();
+                    alert(err.message || 'Authorization Failed');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Connection Error');
+            }
+        });
+    </script>
+</body>
+</html>

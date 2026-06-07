@@ -113,4 +113,21 @@ export class ApiKeyManager {
             expiresAt: 'never'
         };
     }
+
+    /**
+     * @dev Validates an API key
+     */
+    public async validateKey(key: string): Promise<boolean> {
+        const keys = this.loadKeys();
+        const found = keys.find(k => k.key === key);
+        if (!found) return false;
+
+        if (found.expiresAt && new Date(found.expiresAt).getTime() < Date.now()) {
+            return false;
+        }
+
+        return true;
+    }
 }
+
+export const apiKeyManager = ApiKeyManager.getInstance();

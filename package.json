@@ -19,6 +19,7 @@
     "onboard:sepolia": "NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "submit:sepolia": "NETWORK=sepolia NODE_OPTIONS='--import tsx --no-warnings' npx hardhat run scripts/deploy_sepolia.ts --network sepolia",
     "test:e2e": "NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npx mocha --timeout 15000 test/e2e/pnl_scenario.test.ts",
+    "test:stress": "NODE_OPTIONS='--import tsx --no-warnings' npx ts-node scripts/stress_test_cycle.ts",
     "node": "npx hardhat node",
     "dashboard": "npm start",
     "prepare": "bash scripts/setup-hooks.sh"

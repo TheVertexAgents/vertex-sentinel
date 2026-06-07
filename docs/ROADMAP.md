@@ -58,6 +58,24 @@
 
 ---
 
+## 🗓️ June 2026: Rest of Month (v1.4.0)
+*Goal: Multi-exchange depth, advanced order types, and institutional readiness.*
+
+| Issue | Label | Status |
+| :--- | :--- | :--- |
+| **[SECURITY]** JWT-style Auth Middleware & SQLite Sessions | `P0: Critical` | `DONE` ✅ |
+| **[SECURITY]** Binance Weight-System Throttling | `P1: Feature` | `DONE` ✅ |
+| **[UX]** Multi-User Dashboard Login & Beta Program | `P1: Demo` | `DONE` ✅ |
+| **[EXPANSION]** Full CCXT Integration Layer | `P1: Feature` | `DONE` ✅ |
+| **[EXPANSION]** Advanced Order Types (OCO/Stop-Limit) | `P1: Feature` | `DONE` ✅ |
+| **[DATA]** Real-Time L2 Order Book & Market Impact | `P2: Strategic` | `DONE` ✅ |
+| **[PERF]** Sub-Second Fast-Path (Template Caching) | `P1: Feature` | `DONE` ✅ |
+| **[API]** Backward-Compatible Versioning (/v1/api) | `P2: DevEx` | `DONE` ✅ |
+| **[STRATEGY]** Portfolio Rebalancing Scaffold | `P2: Strategic` | `DONE` ✅ |
+| **[QA]** Extreme Market Stress Test Suite | `P1: Demo` | `DONE` ✅ |
+
+---
+
 ## 🚀 Post-Hackathon Optimization (Next Steps)
 *Goal: Scalability, reliability, and institutional-grade performance.*
 
