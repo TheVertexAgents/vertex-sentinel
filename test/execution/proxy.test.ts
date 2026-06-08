@@ -7,7 +7,7 @@ import ExecutionProxy from '../../src/execution/proxy.js';
 import { KrakenService } from '../../src/services/kraken_service.js';
 
 describe('Execution Proxy Unit Tests', function () {
-    this.timeout(30000); // 30s timeout for binary execution
+    this.timeout(15000); // Reduced from 30s to 15s - tests should not take longer
     let sandbox: sinon.SinonSandbox;
     let proxy: any;
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
@@ -64,6 +64,7 @@ describe('Execution Proxy Unit Tests', function () {
     });
 
     it('should attempt real MCP loopback execution for trade', async function () {
+        this.timeout(5000); // Specific timeout for this async test
         // Use real loopback to comply with validation (no mocks)
         const { KrakenMcpServer } = await import('../../src/mcp/kraken/index.js');
         const mcpServer = new KrakenMcpServer();
@@ -94,6 +95,7 @@ describe('Execution Proxy Unit Tests', function () {
     });
 
     it('should map BTC/USD to XBTUSD and ETH/USDT to ETHUSD correctly', async function () {
+        // Mock KrakenService methods to avoid real network calls
         const getTickerStub = sandbox.stub(KrakenService.prototype, 'getTicker').resolves({
             a: ['50000', '0', '0'], b: ['49900', '0', '0'], symbol: 'XBTUSD',
             c: ['50000', '0'], v: ['0', '0'], p: ['0', '0'], t: [0, 0], l: ['0', '0'], h: ['0', '0'], o: '0'
@@ -122,7 +124,7 @@ describe('Execution Proxy Unit Tests', function () {
         });
 
         it('should format volume and price correctly for Kraken', async () => {
-            // Setup stub to succeed immediately
+            // Setup stub to succeed immediately (mocked - no real network call)
             getTickerStub.resolves({
                 a: ['50000.123456789', '0', '0'], b: ['49900.123456789', '0', '0'], symbol: 'XBTUSD',
                 c: ['50000', '0'], v: ['0', '0'], p: ['0', '0'], t: [0, 0], l: ['0', '0'], h: ['0', '0'], o: '0'
@@ -143,6 +145,7 @@ describe('Execution Proxy Unit Tests', function () {
         it('should NOT retry in proxy because retry is now in KrakenService', async () => {
             // This test is updated because callMcpToolWithRetry is gone and retry logic is moved to KrakenService.
             // Proxy now just calls KrakenService once and expects it to handle retries or throw.
+            // Mock error response (no real network call)
             getTickerStub.rejects(new Error('502 Bad Gateway'));
             
             try {
@@ -156,7 +159,7 @@ describe('Execution Proxy Unit Tests', function () {
         });
 
         it('should open Circuit Breaker after 3 consecutive execution failures', async () => {
-            // Fail execution continuously
+            // Fail execution continuously (mocked)
             getTickerStub.rejects(new Error('Exchange error: Connection lost'));
             
             for (let i = 0; i < 3; i++) {
