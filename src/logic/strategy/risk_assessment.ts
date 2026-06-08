@@ -176,8 +176,6 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const manualPenalty = Math.min(1.0, spreadPenalty + volatilityPenalty + volumePenalty + newsPenalty + sentimentPenalty);
 
     // 5. Genkit AI Risk Assessment
-    const amountUsd = Number(amountUsdScaled) / loadAgentMetadata().usdScalingFactor;
-
     // Caching AI Risk Assessment (#143)
     // Key includes pair and rounded amount to allow some reuse
     const aiRiskCacheKey = `risk-${pair}-${Math.floor(amountUsd / 10)}`;
