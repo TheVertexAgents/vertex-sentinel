@@ -23,7 +23,7 @@ export const ai = genkit({ plugins });
  */
 class RateLimiter {
   private requests: number[] = [];
-  private readonly maxRPM: number = 10;
+  private readonly maxRPM: number = 100;
 
   async wait(): Promise<void> {
     const now = Date.now();

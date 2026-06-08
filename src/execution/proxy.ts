@@ -29,7 +29,7 @@ type Network = 'local' | 'sepolia';
  */
 class ExecutionProxy {
   private client;
-  private contractAddress: `0x${string}`;
+  public contractAddress: `0x${string}`;
   private agentAddress: `0x${string}`;
   private auditLogPath = path.join(process.cwd(), 'logs/audit.json');
   private pnlTracker: PnLTracker | null;
@@ -40,10 +40,10 @@ class ExecutionProxy {
   private circuitBreakerOpenUntil = 0;
   private readonly CIRCUIT_BREAKER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
   private recoveryTimer: NodeJS.Timeout | null = null;
+  private unwatch: (() => void) | null = null;
 
   constructor(contractAddress?: `0x${string}`, network: Network = 'sepolia', pnlTracker: PnLTracker | null = null) {
     this.pnlTracker = pnlTracker;
-    // If contractAddress is not provided, try loading from deployments_sepolia.json if network is sepolia
     if (!contractAddress && network === 'sepolia') {
       const deploymentsPath = path.join(process.cwd(), 'deployments_sepolia.json');
       if (fs.existsSync(deploymentsPath)) {
@@ -55,7 +55,6 @@ class ExecutionProxy {
           throw new CriticalSecurityException(`Fail-Closed: Failed to load deployments_sepolia.json: ${error instanceof Error ? error.message : String(error)}`, ERR_JSON_PARSE);
         }
       } else {
-        // Strategic Fallback: Official Hackathon RiskRouter Address
         this.contractAddress = '0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC';
       }
     } else {
@@ -89,16 +88,12 @@ class ExecutionProxy {
         chainId: network === 'sepolia' ? 11155111 : 31337
     });
 
-    // Ensure logs directory exists
     const logsDir = path.dirname(this.auditLogPath);
     if (!fs.existsSync(logsDir)) {
         fs.mkdirSync(logsDir, { recursive: true });
     }
   }
 
-  /**
-   * @dev Structured JSON logging to stderr as mandated by Constitution v2.0.0.
-   */
   private log(level: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL', message: string, data: Record<string, unknown> = {}) {
     logger.error({
       level,
@@ -109,9 +104,6 @@ class ExecutionProxy {
     });
   }
 
-  /**
-   * @dev Audit logging to JSONL file.
-   */
   private auditLog(data: Record<string, unknown>) {
     const entry = JSON.stringify({
         timestamp: new Date().toISOString(),
@@ -119,8 +111,7 @@ class ExecutionProxy {
     });
     fs.appendFileSync(this.auditLogPath, entry + '\n');
 
-    // Also mark as executed in reconciler DB if success
-    if (data.exchangeStatus === 'success' && data.traceId) {
+    if (data.krakenStatus === 'success' && data.traceId) {
         this.markExecutedInDb(data.traceId as string);
     }
   }
@@ -134,19 +125,13 @@ class ExecutionProxy {
           db.run('INSERT OR IGNORE INTO executed_intents (intent_hash) VALUES (?)', [intentHash], () => {
               db.close();
           });
-      } catch (e) {
-          // Non-fatal
-      }
+      } catch (e) {}
   }
 
-  /**
-   * @dev Starts listening for TradeAuthorized events from the on-chain RiskRouter.
-   */
   async startListener() {
     this.log('INFO', 'Monitoring for TradeAuthorized events on-chain...');
 
-    // Listen for authorized trades
-    this.client.watchContractEvent({
+    this.unwatch = this.client.watchContractEvent({
       address: this.contractAddress,
       abi: RISK_ROUTER_ABI,
       eventName: 'TradeAuthorized',
@@ -170,7 +155,6 @@ class ExecutionProxy {
               maxSlippageBps: maxSlippageBps.toString()
           });
 
-          // Phase B: Agent ID Verification (Strict Check)
           if (agent.toLowerCase() !== this.agentAddress.toLowerCase()) {
               this.log('CRITICAL', 'SECURITY_BREACH_ATTEMPT: Unauthorized agent address in event', {
                   expected: this.agentAddress,
@@ -178,43 +162,25 @@ class ExecutionProxy {
                   intentHash,
                   errorCode: ERR_UNAUTHORIZED_AGENT
               });
-              // Fail-Closed: Halt or ignore? Request says "halt"
               throw new CriticalSecurityException(`Security Breach: Unauthorized agent ${agent}`, ERR_UNAUTHORIZED_AGENT);
           }
 
-          this.executeOrder(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch((err: any) => {
+          this.executeOnKraken(pair, amountUsdScaled, intentHash, action, maxSlippageBps).catch((err: any) => {
               this.log('ERROR', 'Background trade execution failed', { error: err.message });
-          });
-        }
-      },
-    });
-
-    // Listen for rejected trades (for logging/alerting)
-    this.client.watchContractEvent({
-      address: this.contractAddress,
-      abi: RISK_ROUTER_ABI,
-      eventName: 'TradeRejected',
-      onLogs: (logs) => {
-        for (const log of logs) {
-          const { intentHash, reason } = log.args as {
-            intentHash: `0x${string}`;
-            reason: string;
-          };
-
-          this.log('INFO', 'TRADE REJECTED BY SENTINEL', {
-              intentHash,
-              reason
           });
         }
       },
     });
   }
 
-  /**
-   * @dev Calls the Order Manager to execute an order across supported exchanges.
-   * Implements "Fail-Closed" behavior and Slippage Enforcement.
-   */
-  private async executeOrder(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1): Promise<void> {
+  stopListener() {
+    if (this.unwatch) {
+      this.unwatch();
+      this.unwatch = null;
+    }
+  }
+
+  public async executeOnKraken(pair: string, volume: bigint, traceId: string, action: string, maxSlippageBps: bigint, attempt: number = 1): Promise<void> {
     if (Date.now() < this.circuitBreakerOpenUntil) {
       this.log('CRITICAL', 'Circuit Breaker is OPEN. Trade blocked.', { TRACE_ID: traceId });
       throw new CriticalSecurityException('Circuit Breaker is OPEN', ERR_CIRCUIT_BREAKER_OPEN);
@@ -226,18 +192,17 @@ class ExecutionProxy {
       const config = loadAgentMetadata();
       const amount = Number(volume) / config.usdScalingFactor;
 
-      // Multi-exchange support: CCXT handles pairs like BTC/USDT or BTCUSDT
-      const cleanSymbol = pair.includes('/') ? pair.replace('/', '') : pair;
+      let krakenPair = pair.replace('/', '').replace('-', '');
+      if (krakenPair === 'BTCUSD' || krakenPair === 'BTCUSDC') krakenPair = 'XBTUSD';
+      if (krakenPair === 'ETHUSDT' || krakenPair === 'ETHUSDC') krakenPair = 'ETHUSD';
 
-      // Fetch ticker for reference price via BinanceAdapter (unified CCXT)
-      const ticker = await orderManager.getBinanceAdapter().fetchTicker(cleanSymbol);
+      const ticker = await orderManager.getBinanceAdapter().fetchTicker(krakenPair);
       const referencePrice = action.toLowerCase() === 'buy' ? ticker.ask : ticker.bid;
 
       if (!referencePrice || referencePrice <= 0) {
-          throw new CriticalSecurityException(`Invalid or missing ticker data for ${cleanSymbol}`, 'EXCHANGE_ERROR');
+          throw new CriticalSecurityException(`Invalid or missing ticker data for ${krakenPair}`, 'EXCHANGE_ERROR');
       }
 
-      // Calculate limit price based on slippage bps
       const slippageMultiplier = Number(maxSlippageBps) / 10000;
       let limitPrice: number;
       if (action.toLowerCase() === 'buy') {
@@ -246,11 +211,9 @@ class ExecutionProxy {
         limitPrice = referencePrice * (1 - slippageMultiplier);
       }
 
-      // Round to 8 decimal places for exchange compatibility
       limitPrice = Number(limitPrice.toFixed(8));
       const paddedAmount = Number(amount.toFixed(8));
 
-      // Fail-Closed Validation
       if (!limitPrice || limitPrice <= 0 || !isFinite(limitPrice)) {
         throw new CriticalSecurityException(`Invalid calculated limitPrice: ${limitPrice} (Reference: ${referencePrice}, Slippage: ${maxSlippageBps})`, ERR_PRICE_INVALID);
       }
@@ -263,18 +226,16 @@ class ExecutionProxy {
         side: action.toUpperCase()
       });
 
-      const result = await orderManager.placeLimitOrder(cleanSymbol, action.toUpperCase() as 'BUY' | 'SELL', paddedAmount, limitPrice);
+      const result = await orderManager.placeLimitOrder(krakenPair, action.toUpperCase() as 'BUY' | 'SELL', paddedAmount, limitPrice);
 
       const orderId = result.id || result.orderId || 'UNKNOWN';
 
-      // Reset circuit breaker on success
       this.consecutiveFailures = 0;
       if (this.recoveryTimer) {
           clearTimeout(this.recoveryTimer);
           this.recoveryTimer = null;
       }
 
-      // Update PnL Tracker if available
       if (this.pnlTracker) {
         this.pnlTracker.recordTrade({
             id: traceId,
@@ -286,7 +247,6 @@ class ExecutionProxy {
         });
       }
 
-      // Audit Logging
       this.auditLog({
           traceId,
           orderId,
@@ -295,7 +255,7 @@ class ExecutionProxy {
           volume: amount.toString(),
           executionPrice: result.price || 0,
           txHash: orderId,
-          exchangeStatus: 'success'
+          krakenStatus: 'success'
       });
 
     } catch (error: any) {
@@ -303,18 +263,16 @@ class ExecutionProxy {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorCode = (error as any).code || 'EXCHANGE_ERROR';
 
-      // Exponential Backoff for transient errors
       const isTransient = errorCode === 503 || errorCode === 429 || errorMessage.includes('503') || errorMessage.includes('429');
       if (isTransient && attempt < 3) {
           const delay = Math.pow(2, attempt) * 1000;
           this.log('WARN', `Transient exchange error (${errorCode}). Retrying in ${delay}ms...`, { TRACE_ID: traceId, attempt });
           await new Promise(resolve => setTimeout(resolve, delay));
-          return this.executeOrder(pair, volume, traceId, action, maxSlippageBps, attempt + 1);
+          return this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps, attempt + 1);
       }
       
       this.consecutiveFailures++;
 
-      // Emit alert on every failure
       agentEvents.emit('risk.alert', {
           type: 'EXECUTION_FAILURE',
           message: `Execution failed: ${errorMessage}`,
@@ -330,10 +288,10 @@ class ExecutionProxy {
             agentId: this.agentAddress,
             event: 'CIRCUIT_BREAKER_TRIPPED',
             consecutiveFailures: this.consecutiveFailures,
+            krakenStatus: 'failed',
             breakerState: 'OPEN'
         });
 
-        // Self-healing: Schedule recovery
         if (!this.recoveryTimer) {
             this.recoveryTimer = setTimeout(() => {
                 this.log('INFO', 'Circuit Breaker Recovery: Attempting self-healing/reset.');
@@ -351,7 +309,7 @@ class ExecutionProxy {
           agentId: this.agentAddress,
           pair,
           volume: (Number(volume) / config.usdScalingFactor).toString(),
-          exchangeStatus: 'failed',
+          krakenStatus: 'failed',
           errorCode,
           error: errorMessage,
           consecutiveFailures: this.consecutiveFailures,
@@ -362,12 +320,9 @@ class ExecutionProxy {
     }
   }
 
-  /**
-   * @dev Process an authorized trade intent directly (non-event path, for testing).
-   */
-  async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
+  public async processAuthorizedTrade(pair: string, volume: bigint, traceId: string = 'test-trace', action: string = 'buy', maxSlippageBps: bigint = 100n) {
     this.log('INFO', 'Processing direct trade authorization', { traceId, pair, volume: volume.toString() });
-    await this.executeOrder(pair, volume, traceId, action, maxSlippageBps);
+    await this.executeOnKraken(pair, volume, traceId, action, maxSlippageBps);
   }
 }
 
