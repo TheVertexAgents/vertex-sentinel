@@ -106,6 +106,11 @@ export async function analyzeRisk(pair: string, amountUsdScaled: bigint): Promis
     const ticker = tickerResult.value;
 
     // Sentiment failure should not crash the system — use neutral fallback
+    // EXCEPT for CriticalSecurityException (e.g. invalid API keys) which should fail-fast
+    if (sentimentResult.status === 'rejected' && sentimentResult.reason instanceof CriticalSecurityException) {
+      throw sentimentResult.reason;
+    }
+
     const sentiment = sentimentResult.status === 'fulfilled'
       ? sentimentResult.value
       : { headline: 'Sentiment Unavailable', indicator: 'Neutral', score: 0.5 };

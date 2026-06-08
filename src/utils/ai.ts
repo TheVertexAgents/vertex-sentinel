@@ -5,6 +5,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { groq, llama33x70bVersatile } from 'genkitx-groq';
 import { logger } from './logger.js';
 import { QuotaTracker } from './quota-tracker.js';
+import { CriticalSecurityException } from '../logic/errors.js';
 
 const plugins = [];
 if (process.env.GOOGLE_GENAI_API_KEY) {
@@ -150,6 +151,15 @@ export async function generateWithRetry(module: string, params: any, maxAttempts
     } catch (err: any) {
       circuitBreaker.recordFailure();
       attempts++;
+
+      // Fail-fast on invalid API keys (#Issue: indefinite retries in CI)
+      const isInvalidKey = (err.code === 400 || err.status === 400) &&
+                          (err.message?.includes('API key not valid') || err.message?.includes('INVALID_ARGUMENT'));
+
+      if (isInvalidKey) {
+        logger.error({ module, step: 'AUTH_FAILED', error: err.message });
+        throw new CriticalSecurityException(`Invalid AI API key, aborting: ${err.message}`, 'AUTH_FAILED');
+      }
       
       const isModelNotFoundError = err.message?.includes('NOT_FOUND') || err.message?.includes('not found');
       const isQuotaError = err.message?.includes('RESOURCE_EXHAUSTED') || err.message?.includes('429');
