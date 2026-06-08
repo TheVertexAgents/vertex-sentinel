@@ -20,7 +20,6 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
   it('should enforce 10 RPM cap', async () => {
     aiStub.resolves({ output: 'ok' });
 
-    const start = Date.now();
     const promises = [];
 
     // Send 11 requests immediately. Rate limiter should queue them.
@@ -30,7 +29,6 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
     }
 
     const results = await Promise.all(promises);
-    const elapsed = Date.now() - start;
 
     expect(results.length).to.equal(11);
     // The 11th request should be delayed. With 10 RPM cap, requests beyond 10
@@ -43,9 +41,7 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
     aiStub.onFirstCall().rejects(new Error('RESOURCE_EXHAUSTED'));
     aiStub.onSecondCall().resolves({ output: 'success after retry' });
 
-    const start = Date.now();
     const result = await generateWithRetry('test', { prompt: 'test' });
-    const elapsed = Date.now() - start;
 
     expect(result).to.equal('success after retry');
     // First attempt fails, backoff delay is applied, then retry succeeds.
