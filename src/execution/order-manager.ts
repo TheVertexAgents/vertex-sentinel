@@ -40,6 +40,10 @@ export class OrderManager {
         agentEvents.emit('order.stoplimit.placed', result);
         return result;
     }
+
+    public getBinanceAdapter(): BinanceAdapter {
+        return this.binance;
+    }
 }
 
 export const orderManager = new OrderManager();
