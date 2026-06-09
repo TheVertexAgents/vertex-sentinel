@@ -7,10 +7,10 @@ import { SentinelError } from '../../utils/errors.js';
  * @dev Abstract base wrapping ccxt unified API for multi-exchange support.
  */
 export class CcxtBaseAdapter {
-    protected exchange: ccxt.Exchange;
+    protected exchange: any;
 
     constructor(exchangeId: string, apiKey: string, secret: string) {
-        if (!ccxt.exchanges.includes(exchangeId)) {
+        if (!(ccxt as any).exchanges.includes(exchangeId)) {
             throw new SentinelError(`Unsupported exchange: ${exchangeId}`);
         }
 

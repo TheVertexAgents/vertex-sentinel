@@ -1,5 +1,4 @@
 import { logger } from '../../utils/logger.js';
-import { KellyCriterion } from '../sizing/kelly.js';
 
 export interface RebalanceTarget {
     symbol: string;
@@ -28,7 +27,6 @@ export class PortfolioRebalancer {
 
         targets.forEach(target => {
             const currentHolding = holdings.find(h => h.symbol === target.symbol) || { symbol: target.symbol, amount: 0, price: 0 };
-            const currentWeight = (currentHolding.amount * currentHolding.price) / totalValueUsd;
             const targetValue = totalValueUsd * (target.targetWeightPct / 100);
             const currentValue = currentHolding.amount * currentHolding.price;
 
