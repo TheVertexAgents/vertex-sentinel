@@ -6,15 +6,24 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
   this.timeout(15000); // Reduced from 90s - use shorter test times for CI
 
   let aiStub: any;
+  let clock: sinon.SinonFakeTimers;
 
   beforeEach(async () => {
+    clock = sinon.useFakeTimers();
     const aiModule = await import('../../src/utils/ai.js');
+    // Stub the top-level ai.generate method used by genkit
     aiStub = sinon.stub(aiModule.ai, 'generate');
+    // Also stub the underlying provider to be safe and avoid API key errors
+    sinon.stub(aiModule.ai, 'model').returns({
+        generate: async () => ({ output: 'ok' })
+    } as any);
+
     resetAIGlobals();
   });
 
   afterEach(() => {
-    aiStub.restore();
+    sinon.restore();
+    clock.restore();
   });
 
   it('should enforce 10 RPM cap', async () => {
@@ -22,20 +31,23 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
 
     const promises = [];
 
-    // Send 11 requests immediately. Rate limiter should queue them.
-    // We're testing the rate limiting logic, not waiting for 60s.
+    // Send 11 requests. The 11th should be queued.
     for (let i = 0; i < 11; i++) {
       promises.push(generateWithRetry('test', { prompt: 'test' }));
     }
 
+    // Wait a bit, 10 should have processed
+    await Promise.resolve(); // let microtasks run
+    expect(aiStub.callCount).to.equal(10);
+
+    // Fast-forward time to allow the 11th request
+    clock.tick(61000);
+
     const results = await Promise.all(promises);
 
     expect(results.length).to.equal(11);
-    // The 11th request should be delayed. With 10 RPM cap, requests beyond 10
-    // are queued. Verify that at least some queuing logic is in effect by
-    // checking that multiple calls happened (not just instant).
     expect(aiStub.callCount).to.equal(11);
-  }).timeout(20000);
+  });
 
   it('should apply conservative backoff for RESOURCE_EXHAUSTED', async () => {
     aiStub.onFirstCall().rejects(new Error('RESOURCE_EXHAUSTED'));
