@@ -37,8 +37,10 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
+    "@types/sinon": "^21.0.1",
     "chai": "^4.3.4",
     "mocha": "^10.0.6",
+    "sinon": "^22.0.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
