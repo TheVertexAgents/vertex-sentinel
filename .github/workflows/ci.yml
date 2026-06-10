@@ -7,9 +7,10 @@ on:
     branches: [ "main" ]
 
 jobs:
-  verify:
-    name: Build, Spec & Test
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       
@@ -27,14 +28,45 @@ jobs:
           npm run generate:types
           git diff --exit-code || (echo "Specs do not match generated types! Please run 'npm run generate:types' locally and commit the result." && exit 1)
 
-      - name: Compile Contracts
-        run: npm run compile
-
       - name: Type Safety & Lint
         run: npx tsc --noEmit
 
-      - name: Run Integration Tests
-        run: npm run test
+      - name: Run Unit Tests
+        run: NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npm run test:unit
+        timeout-minutes: 8
+        env:
+          GOOGLE_GENAI_API_KEY: 'mock-key'
+          AGENT_PRIVATE_KEY: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+          KRAKEN_API_KEY: 'mock-key'
+          KRAKEN_SECRET: 'mock-secret'
+          INFURA_KEY: 'mock-key'
+          LUNARCRUSH_KEY: 'mock-key'
+          STRYKR_PRISM_API: 'mock-key'
+          NETWORK: 'local'
+          NODE_ENV: 'test'
+
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Compile Contracts
+        run: npm run compile
+
+      - name: Run Contract Tests
+        run: NODE_ENV=test NODE_OPTIONS='--import tsx --no-warnings' npm run test:contracts
+        timeout-minutes: 8
         env:
           GOOGLE_GENAI_API_KEY: 'mock-key'
           AGENT_PRIVATE_KEY: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
@@ -46,6 +78,22 @@ jobs:
           NETWORK: 'sepolia'
           NODE_ENV: 'test'
 
+  sdk-build:
+    name: SDK Build & Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Install SDK dependencies
         run: npm --prefix packages/sentinel-sdk ci
 
@@ -54,11 +102,19 @@ jobs:
 
       - name: Run SDK smoke test
         run: npm --prefix packages/sentinel-sdk run smoke
+        timeout-minutes: 5
 
-      - name: Final Documentation Sync
+  final-checks:
+    name: Final Checks
+    runs-on: ubuntu-latest
+    needs: [unit-tests, contract-tests, sdk-build]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: CI Success Summary
         run: |
-          echo "Ensuring docs/guides updated in repository"
-          git --no-pager status --porcelain || true
-          git --no-pager add docs/guides || true
-          git --no-pager diff --staged --name-only || true
-          echo "Docs sync step complete"
+          echo "✅ CI Pipeline Complete - All Tests Passed"
+          echo "- Unit Tests: ✓"
+          echo "- Contract Tests: ✓"
+          echo "- SDK Build & Smoke Test: ✓"

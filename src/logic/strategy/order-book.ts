@@ -1,5 +1,4 @@
 import { agentEvents } from '../../utils/event-bus.js';
-import { logger } from '../../utils/logger.js';
 
 export interface OrderBookSnapshot {
     bids: [number, number][]; // [price, qty]

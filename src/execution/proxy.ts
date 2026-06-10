@@ -8,9 +8,10 @@ import { orderManager } from './order-manager.js';
 import { CriticalSecurityException } from '../logic/errors.js';
 import { loadAgentMetadata } from '../logic/config.js';
 import { logger } from '../utils/logger.js';
+import { agentEvents } from '../utils/event-bus.js';
 import { safeParseJSON } from '../utils/safe-json.js';
 import { PnLTracker } from '../logic/pnl/tracker.js';
-import { ERR_UNAUTHORIZED_AGENT, ERR_KRAKEN_API_FAIL, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
+import { ERR_UNAUTHORIZED_AGENT, ERR_PRICE_INVALID, ERR_JSON_PARSE, ERR_CIRCUIT_BREAKER_OPEN } from '../utils/constants.js';
 
 // Minimal ABI for the events we care about
 const RISK_ROUTER_ABI = parseAbi([
@@ -294,7 +295,7 @@ class ExecutionProxy {
           volume: amount.toString(),
           executionPrice: result.price || 0,
           txHash: orderId,
-          exchangeStatus: 'success'
+          krakenStatus: 'success'
       });
 
     } catch (error: any) {
@@ -369,19 +370,6 @@ class ExecutionProxy {
     await this.executeOrder(pair, volume, traceId, action, maxSlippageBps);
   }
 
-  /**
-   * @dev Formats volume for Kraken requirements
-   */
-  private formatKrakenVolume(volume: number): number {
-    return Math.round(volume * 1e8) / 1e8;
-  }
-
-  /**
-   * @dev Formats price for Kraken requirements
-   */
-  private formatKrakenPrice(price: number): number {
-    return Math.round(price * 1e8) / 1e8;
-  }
 }
 
 export default ExecutionProxy;

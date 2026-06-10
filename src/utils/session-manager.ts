@@ -1,7 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { logger } from './logger.js';
 
 /**
  * @title SessionManager

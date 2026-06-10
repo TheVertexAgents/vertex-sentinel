@@ -244,17 +244,17 @@ export function startSocketServer() {
         fs.writeFileSync(statePath, JSON.stringify(data, null, 2));
         agentEvents.emit('automation.toggle', { enabled });
         io.emit('automation.sync', { enabled });
-        res.json({ success: true, enabled });
+        return res.json({ success: true, enabled });
       } catch (e) {
-        res.status(500).json({ error: 'Failed to save automation state' });
+        return res.status(500).json({ error: 'Failed to save automation state' });
       }
     });
 
     router.post('/keys/rotate', (_req: Request, res: Response) => {
       try {
-        res.json(ApiKeyManager.getInstance().rotateKey());
+        return res.json(ApiKeyManager.getInstance().rotateKey());
       } catch (e) {
-        res.status(500).json({ error: 'Failed to rotate API keys' });
+        return res.status(500).json({ error: 'Failed to rotate API keys' });
       }
     });
 
@@ -263,9 +263,9 @@ export function startSocketServer() {
       if (!address || !address.startsWith('0x')) return res.status(400).json({ error: 'Invalid address' });
       try {
         const txHash = await FaucetService.getInstance().requestTestnetFunds(address);
-        res.json({ success: true, txHash });
+        return res.json({ success: true, txHash });
       } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message });
       }
     });
 
@@ -277,9 +277,9 @@ export function startSocketServer() {
       try {
         const session = await sessionManager.createSession(apiKey);
         if (!session) return res.status(401).json({ error: 'Failed to create session' });
-        res.json(session);
+        return res.json(session);
       } catch (e) {
-        res.status(500).json({ error: 'Session creation failed' });
+        return res.status(500).json({ error: 'Session creation failed' });
       }
     });
 
@@ -300,10 +300,10 @@ export function startSocketServer() {
       const { address, role } = req.body;
       if (!address) return res.status(400).json({ error: 'Address required' });
       try {
-        res.json(await betaAccessService.registerBetaUser(address, role));
+        return res.json(await betaAccessService.registerBetaUser(address, role));
       } catch (e: any) {
         if (e.message && e.message.includes('UNIQUE constraint failed')) return res.status(409).json({ error: 'Address already registered' });
-        res.status(500).json({ error: 'Beta registration failed' });
+        return res.status(500).json({ error: 'Beta registration failed' });
       }
     });
 
@@ -315,9 +315,9 @@ export function startSocketServer() {
       const { agentId, rating, comment, tradeId } = req.body;
       if (!agentId || !rating) return res.status(400).json({ error: 'AgentId and rating required' });
       try {
-        res.json(await feedbackService.submitFeedback({ agentId, rating, comment, tradeId }));
+        return res.json(await feedbackService.submitFeedback({ agentId, rating, comment, tradeId }));
       } catch (e) {
-        res.status(500).json({ error: 'Feedback submission failed' });
+        return res.status(500).json({ error: 'Feedback submission failed' });
       }
     });
 
@@ -337,25 +337,25 @@ export function startSocketServer() {
       const exchangeId = (req.query.exchange as string) || 'binance';
       try {
         const pairs = await marketDataService.getSupportedPairs(exchangeId);
-        res.json({ exchange: exchangeId, pairs });
+        return res.json({ exchange: exchangeId, pairs });
       } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        return res.status(500).json({ error: e.message });
       }
     });
 
     router.post('/orders/oco', async (req: Request, res: Response) => {
       try {
-        res.json(await orderManager.placeOCO(req.body));
+        return res.json(await orderManager.placeOCO(req.body));
       } catch (e: any) {
-        res.status(400).json({ error: e.message });
+        return res.status(400).json({ error: e.message });
       }
     });
 
     router.post('/orders/stop-limit', async (req: Request, res: Response) => {
       try {
-        res.json(await orderManager.placeStopLimit(req.body));
+        return res.json(await orderManager.placeStopLimit(req.body));
       } catch (e: any) {
-        res.status(400).json({ error: e.message });
+        return res.status(400).json({ error: e.message });
       }
     });
   };
@@ -444,10 +444,11 @@ export function startSocketServer() {
   });
 
   // Background polling for leaderboard
-  setInterval(async () => {
+  const leaderboardTimer = setInterval(async () => {
       const leaderboard = await LeaderboardService.getInstance().updateLeaderboard();
       io.emit('leaderboard.update', leaderboard);
   }, 30000);
+  if (leaderboardTimer.unref) leaderboardTimer.unref();
 
   httpServer.listen(PORT, () => {
     logger.info({ module: 'SERVER', step: 'SERVER_START', port: PORT });
