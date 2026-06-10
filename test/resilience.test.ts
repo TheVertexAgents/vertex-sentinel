@@ -1,15 +1,18 @@
 import { expect } from 'chai';
 import ExecutionProxy from '../src/execution/proxy.js';
-import { getKrakenService } from '../src/services/kraken_service.js';
+import { orderManager } from '../src/execution/order-manager.js';
 import sinon from 'sinon';
 import fs from 'fs';
 import path from 'path';
 
 describe('ExecutionProxy Resilience', () => {
     let proxy: ExecutionProxy;
-    let krakenStub: any;
+    let sandbox: sinon.SinonSandbox;
+    let fetchTickerStub: sinon.SinonStub;
+    let placeOrderStub: sinon.SinonStub;
 
     beforeEach(() => {
+        sandbox = sinon.createSandbox();
         // Mock agent-id.json
         const agentIdPath = path.join(process.cwd(), 'agent-id.json');
         if (!fs.existsSync(agentIdPath)) {
@@ -27,28 +30,30 @@ describe('ExecutionProxy Resilience', () => {
 
         proxy = new ExecutionProxy(undefined, 'local');
 
-        const kraken = getKrakenService();
-        krakenStub = sinon.stub(kraken);
+        // Fully mock OrderManager and BinanceAdapter to avoid real network calls
+        const adapter = orderManager.getBinanceAdapter();
+        fetchTickerStub = sandbox.stub(adapter, 'fetchTicker');
+        placeOrderStub = sandbox.stub(adapter, 'placeOrder');
 
-        // Default ticker mock
-        krakenStub.getTicker.resolves({ a: ['50000'], b: ['49990'] });
+        // Default ticker mock (CCXT unified format)
+        fetchTickerStub.resolves({ ask: 50000, bid: 49990, symbol: 'BTCUSD' });
     });
 
     afterEach(() => {
-        sinon.restore();
+        sandbox.restore();
     });
 
     it('should retry on transient errors (503)', async () => {
-        krakenStub.placeOrder.onCall(0).rejects({ message: 'Kraken 503 Service Unavailable', code: 503 });
-        krakenStub.placeOrder.onCall(1).resolves({ txid: ['SUCCESS_TX'] });
+        placeOrderStub.onCall(0).rejects({ message: 'Binance 503 Service Unavailable', code: 503 });
+        placeOrderStub.onCall(1).resolves({ id: 'SUCCESS_TX', price: 50000 });
 
         await proxy.processAuthorizedTrade('BTC/USD', 1000000n);
 
-        expect(krakenStub.placeOrder.callCount).to.equal(2);
+        expect(placeOrderStub.callCount).to.equal(2);
     }).timeout(10000);
 
     it('should trip circuit breaker after 3 failures', async () => {
-        krakenStub.placeOrder.rejects(new Error('Persistent Failure'));
+        placeOrderStub.rejects(new Error('Persistent Failure'));
 
         for (let i = 0; i < 3; i++) {
             try {
@@ -65,7 +70,7 @@ describe('ExecutionProxy Resilience', () => {
     });
 
     it('should auto-recover after cooldown', async () => {
-        krakenStub.placeOrder.rejects(new Error('Persistent Failure'));
+        placeOrderStub.rejects(new Error('Persistent Failure'));
 
         for (let i = 0; i < 3; i++) {
             try {
@@ -77,9 +82,9 @@ describe('ExecutionProxy Resilience', () => {
         (proxy as any).circuitBreakerOpenUntil = 0;
         (proxy as any).consecutiveFailures = 0;
 
-        krakenStub.placeOrder.resolves({ txid: ['RECOVERED_TX'] });
+        placeOrderStub.resolves({ id: 'RECOVERED_TX', price: 50000 });
         await proxy.processAuthorizedTrade('BTC/USD', 1000000n);
 
-        expect(krakenStub.placeOrder.callCount).to.be.greaterThan(3);
+        expect(placeOrderStub.callCount).to.be.greaterThan(3);
     });
 });

@@ -10,6 +10,8 @@ describe('Execution Proxy Unit Tests', function () {
     this.timeout(15000); // Reduced from 30s to 15s - tests should not take longer
     let sandbox: sinon.SinonSandbox;
     let proxy: any;
+    let fetchTickerStub: sinon.SinonStub;
+    let placeOrderStub: sinon.SinonStub;
     const auditLogPath = path.join(process.cwd(), 'logs/audit.json');
     const originalEnv = { ...process.env };
 
@@ -33,7 +35,7 @@ describe('Execution Proxy Unit Tests', function () {
 
     afterEach(async () => {
         process.env = { ...originalEnv };
-        sinon.restore();
+        sandbox.restore();
     });
 
     it('should initialize correctly with given address', () => {
@@ -66,12 +68,12 @@ describe('Execution Proxy Unit Tests', function () {
         this.timeout(5000); // Specific timeout for this async test
         
         // Mock BinanceAdapter to avoid real network calls during "real" loopback test
-        const fetchTickerStub = sandbox.stub(orderManager.getBinanceAdapter(), 'fetchTicker').resolves({
+        fetchTickerStub = sandbox.stub(orderManager.getBinanceAdapter(), 'fetchTicker').resolves({
             ask: 50000,
             bid: 49900,
             symbol: 'BTCUSDT'
         });
-        const placeOrderStub = sandbox.stub(orderManager.getBinanceAdapter(), 'placeOrder').resolves({
+        placeOrderStub = sandbox.stub(orderManager.getBinanceAdapter(), 'placeOrder').resolves({
             id: '123',
             price: 50000,
             symbol: 'BTCUSDT'
@@ -95,27 +97,24 @@ describe('Execution Proxy Unit Tests', function () {
 
     it('should map BTC/USD to BTCUSD and ETH/USDT to ETHUSDT correctly', async function () {
         // Mock BinanceAdapter methods to avoid real network calls
-        const fetchTickerStub = sandbox.stub(orderManager.getBinanceAdapter(), 'fetchTicker').resolves({
+        fetchTickerStub = sandbox.stub(orderManager.getBinanceAdapter(), 'fetchTicker').resolves({
             ask: 50000, bid: 49900, symbol: 'BTCUSDT'
         } as any);
-        const placeOrderStub = sandbox.stub(orderManager.getBinanceAdapter(), 'placeOrder').resolves({ orderId: '123', price: 50000 } as any);
+        placeOrderStub = sandbox.stub(orderManager.getBinanceAdapter(), 'placeOrder').resolves({ id: '123', price: 50000 } as any);
 
         await proxy.processAuthorizedTrade('BTC/USD', 100000n, 'TEST-TRACE-BTC', 'buy', 100n);
         expect(fetchTickerStub.calledWith('BTCUSD')).to.be.true;
-        expect(placeOrderStub.calledWith('BTCUSD', 'limit', 'buy', sinon.match.number, sinon.match.number)).to.be.true;
+        expect(placeOrderStub.calledWith('BTCUSD', 'limit', 'BUY', sinon.match.number, sinon.match.number)).to.be.true;
 
         fetchTickerStub.resetHistory();
         placeOrderStub.resetHistory();
         
         await proxy.processAuthorizedTrade('ETH/USDT', 100000n, 'TEST-TRACE-ETH', 'buy', 100n);
         expect(fetchTickerStub.calledWith('ETHUSDT')).to.be.true;
-        expect(placeOrderStub.calledWith('ETHUSDT', 'limit', 'buy', sinon.match.number, sinon.match.number)).to.be.true;
+        expect(placeOrderStub.calledWith('ETHUSDT', 'limit', 'BUY', sinon.match.number, sinon.match.number)).to.be.true;
     });
 
     describe('Day 3-4 Resilience: Circuit Breaker & Retry Logic', () => {
-        let fetchTickerStub: sinon.SinonStub;
-        let placeOrderStub: sinon.SinonStub;
-
         beforeEach(() => {
             fetchTickerStub = sandbox.stub(orderManager.getBinanceAdapter(), 'fetchTicker');
             placeOrderStub = sandbox.stub(orderManager.getBinanceAdapter(), 'placeOrder');

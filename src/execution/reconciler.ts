@@ -67,7 +67,8 @@ export class EventReconciler {
         this.lastCheckedBlock = 0n;
     }
 
-    setInterval(() => this.reconcile(), 60000); // Every 60 seconds
+    const timer = setInterval(() => this.reconcile(), 60000);
+    if (timer.unref) timer.unref();
   }
 
   async reconcile() {

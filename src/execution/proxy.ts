@@ -295,7 +295,7 @@ class ExecutionProxy {
           volume: amount.toString(),
           executionPrice: result.price || 0,
           txHash: orderId,
-          exchangeStatus: 'success'
+          krakenStatus: 'success'
       });
 
     } catch (error: any) {

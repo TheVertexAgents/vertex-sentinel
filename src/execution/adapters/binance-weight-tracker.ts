@@ -12,9 +12,10 @@ export class BinanceWeightTracker {
 
     constructor() {
         // Reset weight every 60 seconds
-        setInterval(() => {
+        const timer = setInterval(() => {
             this.weight = 0;
         }, 60000);
+        if (timer.unref) timer.unref();
     }
 
     public getWeight(): number {
