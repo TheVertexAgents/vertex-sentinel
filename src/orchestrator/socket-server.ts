@@ -444,10 +444,11 @@ export function startSocketServer() {
   });
 
   // Background polling for leaderboard
-  setInterval(async () => {
+  const leaderboardTimer = setInterval(async () => {
       const leaderboard = await LeaderboardService.getInstance().updateLeaderboard();
       io.emit('leaderboard.update', leaderboard);
   }, 30000);
+  if (leaderboardTimer.unref) leaderboardTimer.unref();
 
   httpServer.listen(PORT, () => {
     logger.info({ module: 'SERVER', step: 'SERVER_START', port: PORT });

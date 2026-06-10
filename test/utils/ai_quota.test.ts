@@ -14,7 +14,8 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
     // Stub the top-level ai.generate method used by genkit
     aiStub = sinon.stub(aiModule.ai, 'generate');
     // Also stub the underlying provider to be safe and avoid API key errors
-    sinon.stub(aiModule.ai, 'model').returns({
+    const googleAIModule = await import('@genkit-ai/google-genai');
+    sinon.stub(googleAIModule.googleAI, 'model').returns({
         generate: async () => ({ output: 'ok' })
     } as any);
 
@@ -53,7 +54,17 @@ describe('AI Rate Limiter & Quota Management (#148)', function() {
     aiStub.onFirstCall().rejects(new Error('RESOURCE_EXHAUSTED'));
     aiStub.onSecondCall().resolves({ output: 'success after retry' });
 
-    const result = await generateWithRetry('test', { prompt: 'test' });
+    const promise = generateWithRetry('test', { prompt: 'test' });
+
+    // Allow microtasks to run and start the retry delay
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Fast-forward time to skip the backoff delay (e.g. 10s)
+    clock.tick(15000);
+
+    const result = await promise;
 
     expect(result).to.equal('success after retry');
     // First attempt fails, backoff delay is applied, then retry succeeds.

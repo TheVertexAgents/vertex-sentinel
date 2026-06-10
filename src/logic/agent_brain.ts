@@ -488,7 +488,8 @@ async function main() {
   }
 
   // Start Risk Calibration Background Loop (every 10 minutes)
-  setInterval(() => riskCalibrator.runCalibration(), 600000);
+  const calibrationTimer = setInterval(() => riskCalibrator.runCalibration(), 600000);
+  if (calibrationTimer.unref) calibrationTimer.unref();
 
   // Initialize Execution Proxy and Event Reconciler for Institutional Reliability
   const network = (process.env.NETWORK === 'sepolia' ? 'sepolia' : 'local') as 'local' | 'sepolia';
