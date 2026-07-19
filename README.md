@@ -2,7 +2,7 @@
 
 # ⚡ Vertex Sentinel
 
-### The Open-Source, Trustless Standard for Verifiable, Non-Custodial Agentic Execution
+### The fail-closed execution layer for autonomous AI agents
 
 **EIP-712 Signed Intents · On-Chain Guardrails · Fail-Closed Execution · Zero Private Key Delegation**
 
@@ -13,20 +13,20 @@
 [![ERC-8004](https://img.shields.io/badge/ERC--8004-Agent%20Identity-10B981)](https://eips.ethereum.org/EIPS/eip-8004)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-[📖 Documentation](docs/LITEPAPER.md) · [🎯 Live Demo](dashboard/index.html) · [📊 Pitch Deck](pitch-deck.html) · [🔗 Deployed Contract](https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC)
+[📖 Documentation](docs/LITEPAPER.md) · [📊 Pitch Deck](pitch-deck.html) · [🔗 Deployed Contract](https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC)
 
 </div>
 
 ---
 
-## 🏆 AI Trading Agents Hackathon 2026
+## 🏆 Recognition & Verification
 
-> **Dual Challenge Submission**: ERC-8004 Agent Identity + Kraken CLI Trading
+> **Lablab.ai AI Trading Agents Hackathon — Special Award: Best Compliance & Risk Guardrails**
 
 | Challenge | Status | Evidence |
 |-----------|--------|----------|
-| **ERC-8004** | ✅ Complete | Agent Registry, Reputation Scoring, Validation Attestations |
-| **Kraken CLI** | ✅ Complete | 4 Live BTC/USD trades executed with full audit trail |
+| **ERC-8004 Agent Identity** | ✅ Complete | Agent Registry, Reputation Scoring, Validation Attestations |
+| **Kraken CLI Trading** | ✅ Complete | 4 Live BTC/USD trades executed with full audit trail |
 
 📄 **[View Live Execution Proof →](LIVE_EXECUTION_PROOF.md)**
 
@@ -235,7 +235,14 @@ vertex-sentinel/
 ## 🗺️ Roadmap
 
 - [x] **Phase 4**: Integration — Kraken MCP, Live Trading & Sentiment Ingestion
-- [ ] **Phase 5**: Expansion — Multi-exchange support & Dynamic Risk modules
+- [x] **Phase 5**: Expansion — Multi-exchange support & Dynamic Risk modules
+- [ ] **Phase 6**: Future-proof execution — quantum-safe verification path, receipt hardening, and long-horizon auditability
+
+---
+
+## 🔮 Vision
+
+Vertex Sentinel is designed as a long-lived execution layer, not a point solution. We’re building toward post-quantum-safe verifiable agent execution by hardening identity, intent signing, and audit receipts over time — while keeping the current fail-closed model intact.
 
 ---
 
