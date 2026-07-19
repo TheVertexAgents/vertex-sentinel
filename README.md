@@ -235,7 +235,14 @@ vertex-sentinel/
 ## 🗺️ Roadmap
 
 - [x] **Phase 4**: Integration — Kraken MCP, Live Trading & Sentiment Ingestion
-- [ ] **Phase 5**: Expansion — Multi-exchange support & Dynamic Risk modules
+- [x] **Phase 5**: Expansion — Multi-exchange support & Dynamic Risk modules
+- [ ] **Phase 6**: Future-proof execution — quantum-safe verification path, receipt hardening, and long-horizon auditability
+
+---
+
+## 🔮 Vision
+
+Vertex Sentinel is designed as a long-lived execution layer, not a point solution. We’re building toward post-quantum-safe verifiable agent execution by hardening identity, intent signing, and audit receipts over time — while keeping the current fail-closed model intact.
 
 ---
 
