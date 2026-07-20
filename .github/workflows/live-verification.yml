@@ -1,0 +1,86 @@
+name: Live Verification Artifacts
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  live-verification:
+    name: Live Verification & Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Start dashboard/server in background
+        run: |
+          nohup npm run dashboard > dashboard.log 2>&1 &
+          echo $! > dashboard.pid
+        env:
+          NODE_ENV: test
+          NETWORK: local
+
+      - name: Wait for dashboard to be ready
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3005/dashboard/index.html >/dev/null; then
+              echo "Dashboard ready after ${i} attempts"
+              exit 0
+            fi
+            echo "Waiting for dashboard... attempt ${i}"
+            sleep 2
+          done
+          echo "Dashboard did not become ready in time"
+          exit 1
+
+      - name: Run dashboard verification
+        run: npx tsx verify_dashboard.ts
+        env:
+          NODE_ENV: test
+          NETWORK: local
+
+      - name: Run claim-gate verification
+        run: python scripts/claim_gate.py
+        env:
+          NODE_ENV: test
+
+      - name: Upload dashboard verification screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-verification
+          path: dashboard_verification.png
+          retention-days: 30
+
+      - name: Upload dashboard logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-logs
+          path: |
+            dashboard.log
+            logs/app.log
+          retention-days: 30
+
+      - name: Live verification summary
+        if: always()
+        run: |
+          echo "✅ Live verification complete"
+          echo "- Dashboard screenshot: dashboard_verification.png"
+          echo "- Dashboard logs: dashboard.log"
+          echo "- App logs: logs/app.log"

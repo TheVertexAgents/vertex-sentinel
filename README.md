@@ -15,6 +15,8 @@
 
 [📖 Documentation](docs/LITEPAPER.md) · [📊 Pitch Deck](pitch-deck.html) · [🔗 Deployed Contract](https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC)
 
+> **Claims Notice**: All public claims in this README are pinned to `docs/claims/claim_lock.yml` and validated by CI via `.github/workflows/claim-gate.yml`. Do not edit claim wording without updating the lockfile first.
+
 </div>
 
 ---
@@ -22,10 +24,13 @@
 ## 🏆 Recognition & Verification
 
 > **Lablab.ai AI Trading Agents Hackathon — Special Award: Best Compliance & Risk Guardrails**
+> Status: `recognition.hackathon.lablab.best-compliance.v1`
+> State: self-reported; pending organizer canonical result page/link.
+> Scope: third-party verification pending.
 
-- **ERC-8004 Agent Identity** — claim: `identity.erc8004.implementation.v1` — status: observed
-- **Kraken CLI Trading** — claim: `execution.kraken.btc-paper-trading.v1` — status: simulation
-- **Lablab Award** — claim: `recognition.hackathon.lablab.best-compliance.v1` — status: self-reported (pending organizer page)
+- **ERC-8004 Agent Identity** — claim: `identity.erc8004.implementation.v1` — scope: testnet; observed in-repo; external verification via Sepolia explorer transactions pending.
+- **Kraken CLI Trading** — claim: `execution.kraken.btc-paper-trading.v1` — scope: simulation; paper-trading mode only; no live funds moved.
+- **Lablab Award** — claim: `recognition.hackathon.lablab.best-compliance.v1` — state: self-reported; pending organizer page confirmation.
 
 📄 **[View Claim Lock →](docs/claims/claim_lock.yml)** · **[Execution Proof →](LIVE_EXECUTION_PROOF.md)**
 

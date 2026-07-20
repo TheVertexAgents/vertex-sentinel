@@ -131,4 +131,9 @@ This file contains two distinct proof segments that must **not** be combined int
 **Proof Segments Verified by**: Vertex Sentinel Core Engine  
 **Execution Proof Version**: 3.0.1 (Scope-Split Revision)  
 **Date**: 2026-04-28  
+
+**Claim Alignment:**
+- Segment 1 maps to `execution.kraken.arc-session-14-apr.v1` in `docs/claims/claim_lock.yml`.
+- Segment 2 maps to `execution.kraken.btc-paper-trading.v1` in `docs/claims/claim_lock.yml`.
+
 **Notes**: Segment 1 is Arc L1 economic-bonding proof; Segment 2 is a Kraken test-environment paper-trading log. These are separate environments and must not be presented as a single live-execution milestone.
