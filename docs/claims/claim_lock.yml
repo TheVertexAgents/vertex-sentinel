@@ -1,0 +1,88 @@
+claim_lock_version: 1.0.0
+generated_from: pinned commit 7109f6e (READM-1 fix)
+locked_at: 2026-07-20
+
+claims:
+  - claim_id: recognition.hackathon.lablab.best-compliance.v1
+    public_text: "Lablab.ai AI Trading Agents Hackathon — Special Award: Best Compliance & Risk Guardrails"
+    claim_type: award
+    scope: third_party_verified
+    state: self_reported
+    run_id: "lablab-ai-trading-agents-2026"
+    observed_at: "2026-04"
+    evidence:
+      - ref: "hackathon records / organizer announcement"
+        artifact_sha256: UNVERIFIED
+        external_locator: "pending organizer canonical result page + exact category"
+    limitations: ["Currently self-reported; upgrade to third_party_verified when organizer page is linked."]
+    supersedes: []
+
+  - claim_id: identity.erc8004.implementation.v1
+    public_text: "Agent Registry, Reputation Scoring, Validation Attestations"
+    claim_type: maturity
+    scope: testnet
+    state: observed
+    run_id: "erc8004-integration-q2-2026"
+    observed_at: "2026-04"
+    evidence:
+      - ref: "contracts/AgentRegistry.sol"
+        artifact_sha256: PLACEHOLDER
+        external_locator: ""
+    limitations: ["Registries are in-repo; external verification via Sepolia / target chain explorer tx required."]
+    supersedes: []
+
+  - claim_id: execution.kraken.btc-paper-trading.v1
+    public_text: "4 simulated BTC/USD trades logged on April 5, 2026 via Kraken test environment"
+    claim_type: quantitative
+    scope: simulation
+    state: observed
+    run_id: "kraken-btc-sim-05-apr-2026"
+    observed_at: "2026-04-05"
+    evidence:
+      - ref: "LIVE_EXECUTION_PROOF.md"
+        artifact_sha256: PLACEHOLDER
+        external_locator: "Runs LIVE-IHNIDEAJ, LIVE-J5YTJ2Z6, LIVE-CA0ZKG18, LIVE-5ERBD4KX (paper mode, no mainnet tx IDs)"
+    limitations: ["Paper-trading log; not live exchange execution; no mainnet funds moved; derivable performance is not investment performance."]
+    supersedes: []
+
+  - claim_id: execution.kraken.arc-session-14-apr.v1
+    public_text: "Arc L1 verifiable handshake: USDC nanopayments for trade authorization and heartbeat attestations"
+    claim_type: maturity
+    scope: live_exchange
+    state: observed
+    run_id: "arc-handshake-14-apr-2026"
+    observed_at: "2026-04-14"
+    evidence:
+      - ref: "LIVE_EXECUTION_PROOF.md:Segment 1"
+        artifact_sha256: PLACEHOLDER
+        external_locator: "CirclePayments proof IDs + Arc L1 heartbeat txs (proof hashes in doc)"
+    limitations: ["Arc proof covers economic-bonding and heartbeat, not Kraken live order execution."]
+    supersedes: []
+
+  - claim_id: deployment.sepolia.riskrouter.v1
+    public_text: "RiskRouter deployed on Sepolia testnet"
+    claim_type: maturity
+    scope: testnet
+    state: observed
+    run_id: "sepolia-deploy-q2-2026"
+    observed_at: "2026-04"
+    evidence:
+      - ref: "https://sepolia.etherscan.io/address/0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC"
+        artifact_sha256: UNVERIFIED
+        external_locator: "0xd6A6952545FF6E6E6681c2d15C59f9EB8F40FdBC"
+    limitations: ["Sepolia only; mainnet deployment pending completed audit."]
+    supersedes: []
+
+  - claim_id: maturity.testnet-only.audit-pending.v1
+    public_text: "Smart-contract audit is pending before mainnet deployment"
+    claim_type: maturity
+    scope: testnet
+    state: planned
+    run_id: "mainnet-readiness-q3-q4-2026"
+    observed_at: "2026-04-28"
+    evidence:
+      - ref: "MISSION_VERIFICATION_SUMMARY.md"
+        artifact_sha256: PLACEHOLDER
+        external_locator: ""
+    limitations: ["Self-reported internal milestone; no external audit report linked yet."]
+    supersedes: []
