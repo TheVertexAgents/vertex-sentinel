@@ -1,15 +1,9 @@
-# 🚀 Vertex Sentinel: Live Sentiment-Aware Execution Proof
+# 🚀 Vertex Sentinel: Execution Proof
 
-**Updated**: 2026-04-28
-**Status**: ✅ VERIFIED - Milestone Achieved
+This file contains two distinct proof segments that must **not** be combined into a single claim:
 
----
-
-## Executive Summary
-
-Vertex Sentinel has achieved its final production milestone: **Arc Verifiable Handshake Activation**. This proof documents the transition from simulation to real economically-bonded interactions via Circle WaaS and the Arc L1. Every trade authorization and agent heartbeat is now backed by a USDC nanopayment, establishing immutable proof of life and risk-alignment between the Agent and the Orchestrator.
-
-**Key Milestone**: Economic Bonding & Verifiable Layer Activation on Arc L1.
+1. **Arc L1 Verifiable Handshake Activation** — on-chain economic bonding on Arc.
+2. **Kraken Test-Environment Execution Log** — paper-trading trades in a controlled sandbox.
 
 ---
 
@@ -43,15 +37,56 @@ Vertex Sentinel has achieved its final production milestone: **Arc Verifiable Ha
 
 ---
 
-## Live Execution Timeline (April 14, 2026)
+## Segment 1 — Arc L1 Verifiable Handshake Activation
 
-### Session Summary: `session-2vydqn3f`
+**Scope:** `live_exchange` (Arc L1, Circle WaaS — economic-bonding layer, not Kraken trading)  
+**State:** `observed`  
+**Observed at:** 2026-04-28  
 
-| Trade | Timestamp | Pair | Action | Price | Result |
-|-------|-----------|------|--------|-------|--------|
-| #1 | 10:21:08Z | SOL/USDC | ANALYZE | $76.21 | ✅ Risk Checked (21%) |
-| #2 | 15:27:43Z | SOL/USDC | ANALYZE | $162.72 | ✅ Risk Checked (23%) |
-| #3 | 15:56:18Z | BTC/USD | BUY | $60,000 | ✅ EXECUTED (0.1 BTC) |
+### Requirement Checklist
+
+- ✅ **Arc L1 Settlement**: Real USDC nanopayments used for trade authorization and heartbeats.
+- ✅ **Circle WaaS Integration**: Production keys enforced; simulation mode removed for the Arc economic-bonding layer.
+- ✅ **Economic Bonding**: Agent establishes economic proof of risk-alignment with the Orchestrator.
+- ✅ **UUID Hardening**: Session IDs upgraded to production-grade UUIDs for audit uniqueness.
+- ✅ **Production Cleanliness**: Simulation bypasses and placeholders (`0xCIRCLE`) removed from the Arc layer.
+
+---
+
+## Segment 2 — Kraken Test-Environment Execution Log
+
+**Scope:** `simulation` (Kraken test environment / paper trading, NOT live exchange execution)  
+**State:** `observed`  
+**Observed at:** 2026-04-05 (paper-trading run) and 2026-04-14 (separate session `session-2vydqn3f`)  
+**Limitations:** No mainnet funds moved; orders were not submitted to live Kraken matching engine; no mainnet tx IDs available.
+
+## Live Sentiment Analysis Results (Seg 2 — April 14, 2026 session)
+
+### Risk Assessment Context (SOL/USDC)
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Total Risk Score** | 23% | 🟢 LOW RISK |
+| **Confidence Level** | 77% | ✅ HIGH |
+| **Market Spread** | 0.0234% | ✅ TIGHT |
+| **Volatility (1h)** | 6.50% | ⚠ MODERATE |
+| **Social Sentiment** | Bullish (LunarCrush V4) | 🚀 POSITIVE |
+
+### Reasoning Extract
+
+> "The trade size is minimal at approximately 1.6% of total USD balance, and the SOL/USDC pair displays high liquidity with a tight 0.02% bid/ask spread. **While news data is neutral, LLM sentiment remains bullish on Solana momentum.**"
+
+---
+
+## Execution Timeline — Kraken Test Environment (April 14, 2026)
+
+**Session:** `session-2vydqn3f`
+
+| Trade | Timestamp | Pair | Action | Price | Environment | Result |
+|-------|-----------|------|--------|-------|-------------|--------|
+| #1 | 10:21:08Z | SOL/USDC | ANALYZE | $76.21 | Paper Trading | ✅ Risk Checked (21%) |
+| #2 | 15:27:43Z | SOL/USDC | ANALYZE | $162.72 | Paper Trading | ✅ Risk Checked (23%) |
+| #3 | 15:56:18Z | BTC/USD | BUY | $60,000 | Paper Trading | ✅ EXECUTED (0.1 BTC) |
 
 ### Audit Trail Evidence
 
@@ -66,8 +101,10 @@ Vertex Sentinel has achieved its final production milestone: **Arc Verifiable Ha
     "reasoningHash": "0xcb8186a1bb654481421a3cb27a5288d62e579464d28dc991cdafed2cc9cc5dca",
     "confidenceScaled": "850"
   },
-  "signature": "0x74952ba70a2a2813c51607c421df89ee32a2bf2f741bd1bab8159d5f0510cf7f39560e6765f3e842835043a988a98a02d23d5d4f3e70a58ad00c9d18113eb4361c",
-  "reasoning": "Live Sentiment Analysis (LunarCrush V4) Integrated. Risk score confirmed within bounds."
+  "signature": "0x74952ba70a2a2813c51607c421df89ee32a2bf2f741bd1bab8159d5f0510cf7f39560e6765f3e842835043a988a98a02d23d5d4f3e70a58ad00c9d18113eb4361c.",
+  "reasoning": "Live Sentiment Analysis (LunarCrush V4) Integrated. Risk score confirmed within bounds.",
+  "environment": "paper_trading",
+  "network": "none"
 }
 ```
 
@@ -91,6 +128,7 @@ Vertex Sentinel has achieved its final production milestone: **Arc Verifiable Ha
 
 ---
 
-**Milestone Verified by**: Vertex Sentinel Core Engine  
-**Execution Proof Version**: 3.0.0 (Final Production Readiness)
-**Date**: 2026-04-28
+**Proof Segments Verified by**: Vertex Sentinel Core Engine  
+**Execution Proof Version**: 3.0.1 (Scope-Split Revision)  
+**Date**: 2026-04-28  
+**Notes**: Segment 1 is Arc L1 economic-bonding proof; Segment 2 is a Kraken test-environment paper-trading log. These are separate environments and must not be presented as a single live-execution milestone.

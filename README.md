@@ -23,12 +23,11 @@
 
 > **Lablab.ai AI Trading Agents Hackathon — Special Award: Best Compliance & Risk Guardrails**
 
-| Challenge | Status | Evidence |
-|-----------|--------|----------|
-| **ERC-8004 Agent Identity** | ✅ Complete | Agent Registry, Reputation Scoring, Validation Attestations |
-| **Kraken CLI Trading** | ✅ Complete | 4 Live BTC/USD trades executed with full audit trail |
+- **ERC-8004 Agent Identity** — claim: `identity.erc8004.implementation.v1` — status: observed
+- **Kraken CLI Trading** — claim: `execution.kraken.btc-paper-trading.v1` — status: simulation
+- **Lablab Award** — claim: `recognition.hackathon.lablab.best-compliance.v1` — status: self-reported (pending organizer page)
 
-📄 **[View Live Execution Proof →](LIVE_EXECUTION_PROOF.md)**
+📄 **[View Claim Lock →](docs/claims/claim_lock.yml)** · **[Execution Proof →](LIVE_EXECUTION_PROOF.md)**
 
 ---
 
@@ -93,18 +92,18 @@ Vertex Sentinel introduces a **3-layer security architecture** that makes unauth
 
 ---
 
-## 🚀 Live Execution Proof
+## 📝 Paper-Trading Execution Proof
 
-**4 Real BTC/USD Trades** executed on April 5, 2026 via Kraken API:
+**4 simulated BTC/USD trades** were logged on April 5, 2026 via Kraken test environment in paper-trading mode, not live mainnet exchange execution:
 
-| Trade | Order ID | Amount | Price | Signature |
-|-------|----------|--------|-------|-----------|
-| #1 | `LIVE-IHNIDEAJ` | 0.00011 BTC | $67,345.80 | `0xd685...621c` |
-| #2 | `LIVE-J5YTJ2Z6` | 0.00012 BTC | $67,345.70 | `0xb1aa...5d1b` |
-| #3 | `LIVE-CA0ZKG18` | 0.00013 BTC | $67,345.80 | `0xdd15...711c` |
-| #4 | `LIVE-5ERBD4KX` | 0.00014 BTC | $67,351.70 | `0x9300...1e1c` |
+| Trade | Run ID | Amount | Price | Scope |
+|-------|----------|--------|-------|-------|
+| #1 | `LIVE-IHNIDEAJ` | 0.00011 BTC | $67,345.80 | Paper / Simulation |
+| #2 | `LIVE-J5YTJ2Z6` | 0.00012 BTC | $67,345.70 | Paper / Simulation |
+| #3 | `LIVE-CA0ZKG18` | 0.00013 BTC | $67,345.80 | Paper / Simulation |
+| #4 | `LIVE-5ERBD4KX` | 0.00014 BTC | $67,351.70 | Paper / Simulation |
 
-**Total Volume**: 0.00050 BTC | **Success Rate**: 100% | **All Signatures Verified** ✅
+**Volume Logged**: 0.00050 BTC | **Environment**: Paper Trading (Simulation) | **Network**: N/A (offline)
 
 ---
 

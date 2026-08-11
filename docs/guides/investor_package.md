@@ -12,7 +12,7 @@ that prevents unauthorized capital movement through cryptographic intent attesta
 bonding, and on-chain anchoring. In a recent demo run, Vertex produced verifiable, auditable
 evidence for two simulated trades (SOL/USDC and ETH/USDC) with fully posted CirclePayments
 proofs and heartbeat checkpoints. Notably, the ETH position reported exposure of $8,073.16 and
-an unrealized PnL of +$2,036.57 — a +33.85% ROI — while all proofs were anchored on-chain
+an unrealized PnL of +$2,036.57 — a **+33.85% simulated ROI** — not live-exchange performance, while all proofs were anchored on-chain
 (SOL proof `0xa5725f...9b8b`, ETH proof `0x8ce63b...1b28`; heartbeats `0xe2bebe...843c`,
 `0xea9d92...39fd`). Vertex is positioned to be the institutional "Bouncer" for agentic capital.
 
