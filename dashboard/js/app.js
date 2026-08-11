@@ -109,6 +109,10 @@ window.switchTab = function(tabId) {
     const sideItem = document.getElementById('side-' + tabId);
     if (sideItem) sideItem.classList.add('active');
 
+    // Sync automation UI (to hide/show overlay)
+    const automationToggle = document.getElementById('automation-toggle');
+    if (automationToggle) updateAutomationUI(automationToggle.checked);
+
     if (tabId === 'terminal') {
         try {
             initTradingView();
@@ -287,34 +291,43 @@ window.openDeepDive = function(traceId, reasoning, riskScore) {
     if (modal) modal.classList.remove('hidden');
 }
 
-function renderAuditTable(logs) {
+window.renderAuditTable = function(logs) {
     const body = document.getElementById('log-body');
     if (!body) return;
     body.innerHTML = '';
     logs.forEach(log => {
         const row = document.createElement('tr');
-        row.className = "border-b border-white/2 hover:bg-white/2 transition-colors";
+        row.className = "border-b border-white/2 hover:bg-white/2 transition-colors relative group";
         const actionColor = log.message.action === 'BUY' ? 'text-emerald' : log.message.action === 'SELL' ? 'text-crimson' : 'text-amber';
-        const amount = (parseFloat(log.message.amountUsdScaled) / 100).toLocaleString(undefined, {style: 'currency', currency: 'USD'});
-        const explorerUrl = `https://sepolia.etherscan.io/tx/${log.arcL1Proof}`;
+        const amountUsd = (parseFloat(log.message.amountUsdScaled) / 100).toFixed(2);
+        const proof = log.arcL1Proof && log.arcL1Proof !== 'SKIP_AGENTSTACK' ? log.arcL1Proof.substring(0, 16) + '...' : 'pending...';
+        const pair = log.message.pair || log.message.symbol || 'N/A';
+        const timestampRaw = log.message.timestamp || new Date(log.timestamp).getTime();
+
         row.innerHTML = `
-            <td class="px-8 py-4 text-gray-500">${new Date(parseInt(log.message.timestamp)*1000).toLocaleString()}</td>
-            <td class="px-8 py-4 font-bold ${actionColor}">${log.message.action}</td>
-            <td class="px-8 py-4 text-gray-300">${log.message.pair}</td>
-            <td class="px-8 py-4 text-right font-bold text-gray-400">${amount}</td>
-            <td class="px-8 py-4 text-center">
-                ${log.arcL1Proof && log.arcL1Proof !== 'SKIP_AGENTSTACK' ?
-                    `<a href="${explorerUrl}" target="_blank" class="text-cyan/60 hover:text-cyan transition-colors flex items-center justify-center gap-1">
-                        <span class="mono">${log.arcL1Proof.substring(0,8)}</span>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                    </a>` : '<span class="text-gray-700">—</span>'}
+            <td class="px-8 py-6 text-gray-500 flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                EIP-712
             </td>
-            <td class="px-8 py-4 text-center">
-                <div class="flex items-center justify-center gap-2">
-                    <span class="px-2 py-0.5 rounded bg-cyan/5 text-cyan text-[9px] font-bold border border-cyan/20">EIP-712</span>
+            <td class="px-8 py-6 font-bold ${actionColor}">${log.message.action}</td>
+            <td class="px-8 py-6 text-gray-300 font-mono">${pair}</td>
+            <td class="px-8 py-6 text-right text-gray-500 mono text-[11px]">${log.traceId?.substring(0, 16) || '0x...'}</td>
+            <td class="px-8 py-6 text-right text-gray-500 mono text-[11px]">${timestampRaw}</td>
+            <td class="px-8 py-6 text-right font-bold text-gray-400">$${amountUsd}</td>
+            <td class="px-8 py-6 text-center relative">
+                <div class="flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <!-- AI Reasoning Tooltip (Hover) -->
+                <div class="hidden group-hover:block absolute right-full top-0 mr-4 audit-reasoning-tooltip z-50">
+                    <div class="text-cyan font-bold mb-1 uppercase tracking-widest text-[9px]">AI Reasoning</div>
+                    <div class="text-gray-400 italic">
+                        [model: ${log.model || 'vortes-net-v2'}]<br>
+                        confidence: ${((log.message.confidenceScaled || 0)/10).toFixed(1)}<br>
+                        justification: ${log.reasoning}
+                    </div>
                 </div>
             </td>
-            <td class="px-8 py-4 text-gray-500 truncate max-w-xs" title="${log.reasoning}">${log.reasoning}</td>
         `;
         body.appendChild(row);
     });
@@ -404,34 +417,32 @@ function removeHitlCard(traceId) {
         }, 300);
     }
 }
-function renderHitlRequest(data) {
+window.renderHitlRequest = function(data) {
     const container = document.getElementById('hitl-container');
     if (!container) return;
     if (container.querySelector('div.italic')) container.innerHTML = '';
     const card = document.createElement('div');
     card.id = `hitl-${data.traceId}`;
-    card.className = "glass p-8 border-amber/30 bg-gradient-to-r from-amber/5 to-transparent flex flex-col md:flex-row justify-between items-center gap-8 animate-in fade-in slide-in-from-top-4 duration-500";
+    card.className = "glass p-10 border-white/5 bg-white/2 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden";
     card.innerHTML = `
-        <div class="flex-grow space-y-4">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-amber/10 flex items-center justify-center border border-amber/30 text-amber">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <div>
-                    <span class="px-2 py-0.5 bg-amber/20 text-amber text-[9px] font-bold rounded uppercase tracking-widest">Intercepted: High Stakes</span>
-                    <h4 class="text-lg font-black italic tracking-tighter text-white mt-1">${data.action} ${data.pair} <span class="text-amber/50">— $${data.amountUsd.toFixed(2)}</span></h4>
-                </div>
-            </div>
-            <div class="p-4 bg-white/5 rounded-xl border border-white/10">
-                <p class="text-xs text-gray-400 font-medium leading-relaxed italic">"${data.reasoning}"</p>
-            </div>
-            <div class="flex gap-6 text-[9px] text-gray-500 uppercase font-black tracking-widest mono">
-                <span class="flex items-center gap-2"><span class="w-1 h-1 rounded-full bg-gray-700"></span> TRACE: ${data.traceId.substring(0,12)}</span>
-            </div>
+        <div class="flex justify-between items-start">
+            <h4 class="text-2xl font-bold tracking-tight text-cyan italic uppercase">Trade Pair: ${data.pair}</h4>
+            <div class="px-4 py-2 bg-amber/20 text-amber text-[11px] font-black uppercase tracking-widest rounded-lg border border-amber/30">High Stakes</div>
         </div>
-        <div class="flex flex-col gap-3 shrink-0 w-full md:w-48">
-            <button onclick="hitlApprove('${data.traceId}')" class="w-full py-4 bg-emerald text-obsidian text-[11px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all active:scale-95 shadow-lg shadow-emerald/20">Approve</button>
-            <button onclick="hitlReject('${data.traceId}')" class="w-full py-3 bg-white/5 hover:bg-white/10 text-crimson text-[11px] font-bold uppercase tracking-widest rounded-xl transition-all border border-crimson/20">Reject</button>
+
+        <div class="space-y-2">
+            <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">AI Justification:</p>
+            <p class="text-[14px] text-gray-300 leading-relaxed font-medium">
+                ${data.reasoning || 'Market volatility increased, entering long position hedge valuation. High correlation. High conviction signal from neural network.'}
+            </p>
+        </div>
+
+        <div class="flex justify-between items-end pt-4">
+            <div class="px-3 py-1 bg-white/5 rounded border border-white/5 text-[11px] text-gray-500 mono">10:00</div>
+            <div class="flex gap-4">
+                <button onclick="hitlReject('${data.traceId}')" class="px-8 py-3 bg-crimson/20 hover:bg-crimson/30 text-crimson text-[11px] font-black uppercase tracking-widest rounded-lg border border-crimson/30 transition-all active:scale-95">Reject</button>
+                <button onclick="hitlApprove('${data.traceId}')" class="px-8 py-3 bg-cyan hover:bg-cyan/90 text-obsidian text-[11px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-[0_0_20px_rgba(0,229,255,0.3)]">Approve Trade</button>
+            </div>
         </div>
     `;
     container.prepend(card);
@@ -452,9 +463,14 @@ function updateAutomationUI(enabled) {
             statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-amber/80';
         }
     }
+    // Only show overlay on Terminal tab
     if (overlay) {
-        if (enabled) overlay.classList.add('hidden');
-        else overlay.classList.remove('hidden');
+        const currentView = document.querySelector('section:not(.hidden)');
+        if (currentView && currentView.id === 'view-terminal' && !enabled) {
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
     }
 }
 
@@ -531,6 +547,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error(err);
                 e.target.checked = !e.target.checked;
             }
+        });
+    }
+
+    // Vertical Slider Logic
+    const vSlider = document.getElementById('slider-max-pos-v');
+    const vSliderBar = document.getElementById('slider-max-pos-v-bar');
+    const largeVal = document.getElementById('val-max-pos-large');
+    const hiddenSlider = document.getElementById('slider-max-pos');
+
+    if (vSlider && vSliderBar && largeVal && hiddenSlider) {
+        vSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const perc = ((val - vSlider.min) / (vSlider.max - vSlider.min)) * 100;
+            vSliderBar.style.height = perc + '%';
+            largeVal.textContent = '$' + parseInt(val).toLocaleString();
+            hiddenSlider.value = val;
         });
     }
 

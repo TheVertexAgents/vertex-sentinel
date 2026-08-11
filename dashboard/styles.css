@@ -75,8 +75,66 @@ body {
 
 .glow-cyan { text-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
 .glow-emerald { text-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+.glow-red { text-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
 
 .mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Custom Audit Tooltip Style */
+.audit-reasoning-tooltip {
+    position: absolute;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--cyan);
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 50;
+    max-width: 300px;
+    font-size: 11px;
+    color: #e2e8f0;
+    pointer-events: none;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+}
+
+/* Panic Button Styling */
+.panic-button-large {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ff4d4d 0%, #cc0000 70%, #800000 100%);
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.panic-button-large:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px rgba(239, 68, 68, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.panic-button-large:active {
+    transform: scale(0.95);
+}
+
+.panic-button-large::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
 
 /* Sidebar Layout */
 .app-container {
@@ -249,3 +307,9 @@ input[type=range]::-webkit-slider-thumb {
 .dark-theme ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
 .dark-theme ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
 .dark-theme ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Font Size Overrides for Visibility */
+.text-\[8px\] { font-size: 10px !important; }
+.text-\[9px\] { font-size: 11px !important; }
+.text-\[10px\] { font-size: 12px !important; }
+.text-\[11px\] { font-size: 13px !important; }
