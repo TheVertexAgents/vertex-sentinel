@@ -2,8 +2,8 @@
 
 ## A Verifiable, Fail-Closed Security Layer for Autonomous AI Trading Agents
 
-**Whitepaper v2.1.0**  
-**August 2026**
+**Whitepaper v2.0.0**  
+**April 2026**
 
 *VertexAgents — Building Trust Infrastructure for the Agentic Economy*
 
@@ -958,51 +958,16 @@ Vertex Sentinel creates value for multiple stakeholders:
 - Pro tier: Advanced risk analytics
 - Enterprise tier: Custom circuit breakers, dedicated support
 
-### 13.3 Token Economics ($VRTX)
+### 13.3 Token Economics (Future)
 
-The Vertex Sentinel protocol is accompanied by a community token, $VRTX, launched on Solana via pump.fun.
+A governance token is planned for Phase 3 to enable:
 
-| Parameter | Value |
-|-----------|-------|
-| Token Name | Vertex Sentinel |
-| Ticker | VRTX |
-| Chain | Solana |
-| Launch Platform | pump.fun |
-| Total Supply | 1,000,000,000 VRTX |
-| Decimals | 6 |
-| Token Standard | SPL |
-| Dev Buy-In | 5% of total supply |
-| Buy-In Execution | Same transaction as creation, single wallet |
-| Wallet Clustering | None |
-| Bonding Curve Target | ~$69,700 |
-| Graduation Target | Raydium LP burn confirmed |
-
-**Launch Mechanics:**
-1. Token created on pump.fun with finalized metadata, logo, description, and social links.
-2. Dev buy-in executed in the same transaction as creation at 5% supply.
-3. Bonding curve progresses from 0% to graduation target through organic and coordinated traction.
-4. Upon graduation, liquidity migrates to Raydium with LP tokens burned.
-
-**Non-Financial-Advice Disclaimer:**
-$VRTX is a utility/community token for the Vertex Sentinel protocol. It does not represent equity, revenue sharing, or a claim on protocol profits. Nothing in this documentation constitutes financial advice, an offer to sell securities, or a solicitation of investment. Token holders have no governance rights unless explicitly granted by future governance mechanisms. Cryptocurrency assets are subject to market risk; conduct your own due diligence.
-
-**Legal Constraints:**
-- No Ethereum-mainnet-live or guaranteed-return claims
-- All public copy must include the non-financial-advice disclaimer
-- Wallet address documented in secure profile, not public repositories
-
-### 13.4 Future Token Governance (Planned)
-
-A governance token mechanism is planned for Phase 3 to enable:
 - Protocol governance voting
 - Staking for fee discounts
 - Security mining rewards
 - Liquidity incentives
 
-Token governance launch is contingent on regulatory clarity and community readiness.
-
 **Note**: Token launch is contingent on regulatory clarity and community readiness.
-
 
 ---
 
@@ -1369,7 +1334,7 @@ When integrating Vertex Sentinel, verify the following:
 ---
 
 **Document Version:** 2.0.0  
-**Last Updated:** August 2026  
+**Last Updated:** April 2026  
 **Total Pages:** ~50  
 **Word Count:** ~8,000  
 **License:** CC BY-SA 4.0
