@@ -97,7 +97,7 @@
     "@types/sinon": "^21.0.1",
     "@types/ws": "^8.18.1",
     "ethers": "^6.10.0",
-    "hardhat": "^2.28.6",
+    "hardhat": "^3.4.5",
     "hardhat-gas-reporter": "^1.0.10",
     "json-schema-to-typescript": "^15.0.4",
     "nock": "^14.0.14",
